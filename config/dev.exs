@@ -2,10 +2,10 @@ import Config
 
 # Configure your database
 config :personal_finance, PersonalFinance.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "personal_finance",
+  password: "personal_finance_pwd",
   hostname: "localhost",
-  database: "personal_finance_dev",
+  database: "personal_finance_db",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
