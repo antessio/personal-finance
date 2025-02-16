@@ -19,7 +19,6 @@
 # Transactions 
 
 - date
-- macro category
-- category
+- categories
 - amount
 - description
