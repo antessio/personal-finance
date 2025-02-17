@@ -60,7 +60,8 @@ defmodule PersonalFinance.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:typed_struct, "0.1.4"},
-      {:dialyxir, "~> 1.4.5", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.4.5", only: [:dev], runtime: false},
+      {:uuidv7, "~> 1.0"}
     ]
   end
 

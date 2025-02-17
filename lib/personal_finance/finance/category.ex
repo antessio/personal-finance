@@ -17,4 +17,9 @@ defmodule PersonalFinance.Finance.Category do
     |> cast(attrs, [:name, :macro_category, :emoji, :matchers])
     |> validate_required([:name, :macro_category, :emoji, :matchers])
   end
+
+  def from_map(attrs) do
+    %PersonalFinance.Finance.Category{}
+    |> cast(attrs, [:name, :macro_category, :emoji, :matchers])
+  end
 end
