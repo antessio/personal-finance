@@ -20,4 +20,20 @@ defmodule PersonalFinance.FinanceFixtures do
 
     category
   end
+
+  @doc """
+  Generate a transaction.
+  """
+  def transaction_fixture(attrs \\ %{}) do
+    {:ok, transaction} =
+      attrs
+      |> Enum.into(%{
+        amount: "120.5",
+        date: ~D[2025-02-15],
+        description: "some description"
+      })
+      |> PersonalFinance.Finance.create_transaction()
+
+    transaction
+  end
 end

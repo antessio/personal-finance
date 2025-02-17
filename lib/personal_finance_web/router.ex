@@ -88,6 +88,14 @@ defmodule PersonalFinanceWeb.Router do
 
       live "/categories/:id", CategoryLive.Show, :show
       live "/categories/:id/show/edit", CategoryLive.Show, :edit
+
+      # transactions
+      live "/transactions", TransactionLive.Index, :index
+      live "/transactions/new", TransactionLive.Index, :new
+      live "/transactions/:id/edit", TransactionLive.Index, :edit
+
+      live "/transactions/:id", TransactionLive.Show, :show
+      live "/transactions/:id/show/edit", TransactionLive.Show, :edit
     end
   end
 end
