@@ -21,7 +21,6 @@ defmodule PersonalFinance.Finance.Transaction do
 
   @doc false
   def changeset(transaction, attrs, categories \\ []) do
-    IO.inspect(attrs, label: "transaction attrs")
     transaction
     |> cast(attrs, [:date, :amount, :description])
     |> validate_required([:date, :amount, :description])
@@ -30,5 +29,15 @@ defmodule PersonalFinance.Finance.Transaction do
 
   def assign_categories(transaction, categories) do
     %PersonalFinance.Finance.Transaction{transaction | categories: categories}
+  end
+
+  def to_map(%PersonalFinance.Finance.Transaction{} = transaction) do
+    %{
+      id: transaction.id,
+      date: transaction.date,
+      description: transaction.description,
+      amount: transaction.amount,
+      categories: transaction.categories
+    }
   end
 end

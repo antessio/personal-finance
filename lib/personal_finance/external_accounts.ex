@@ -4,10 +4,12 @@ defmodule PersonalFinance.ExternalAccounts do
   """
 
   import Ecto.Query, warn: false
+  alias PersonalFinance.Finance.Transaction
+  alias PersonalFinance.Finance
+  alias PersonalFinance.ExternalAccounts.WidibaAccountProcessor
   alias PersonalFinance.Repo
 
   alias PersonalFinance.ExternalAccounts.Accounts
-
 
   defmodule CreateAccountCommand do
     use TypedStruct
@@ -113,7 +115,10 @@ defmodule PersonalFinance.ExternalAccounts do
   end
 
   @spec import_account(CreateAccountCommand.t()) :: {:ok, %Accounts{}} | {:error, any()}
-  def import_account(%PersonalFinance.ExternalAccounts.CreateAccountCommand{source_type: source_type, file_content: file_content}) do
+  def import_account(%PersonalFinance.ExternalAccounts.CreateAccountCommand{
+        source_type: source_type,
+        file_content: file_content
+      }) do
     %Accounts{}
     |> Accounts.changeset(%{
       source_type: source_type,
@@ -123,10 +128,32 @@ defmodule PersonalFinance.ExternalAccounts do
     |> Repo.insert()
   end
 
-  @spec process_account_import(id :: integer) :: :ok | {:error, any()}
+  @account_processors [WidibaAccountProcessor]
+
+  @spec process_account_import(id :: integer) :: %{ok: [Transaction.t()], errors: [String.t()]}
   def process_account_import(id) do
-    account = get_accounts!(id)
-    :ok
+    with {:ok, transactions} <-
+           id
+           |> get_accounts!()
+           |> dbg()
+           |> then(&process_account/1)
+           do
+      transactions
+      |> Enum.map(&Transaction.to_map/1)
+      |> Enum.reduce(%{ok: [], errors: []}, fn transaction, acc ->
+        IO.inspect(transaction, label: "transaction porco dio")
+        case Finance.create_transaction(transaction) do
+          {:ok, trn} -> %{acc | ok: [trn.id | acc.ok]}
+          {:error, error} -> %{acc | errors: [error | acc.errors]}
+        end
+      end)
+    end
   end
 
+  @spec process_account(%Accounts{}) :: {:ok, [Transaction.t()]} | {:error, String.t()} | :skip
+  defp process_account(%Accounts{} = account) do
+    @account_processors
+    |> Enum.find(fn processor -> processor.can_process?(account) end)
+    |> then(fn processor -> processor.process_account(account) end)
+  end
 end

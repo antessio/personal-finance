@@ -7,10 +7,18 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
 
   @regex ~r/Data\s(\d{2}\/\d{2}\/\d{2})\sOra\s(\d{2}\.\d{2})/
 
+
+
+  @impl true
+  @spec can_process?(%Accounts{}) :: boolean()
+  def can_process?(%Accounts{source_type: "widiba"}), do: true
+  def can_process?(_), do: false
+
+
   @impl true
   def process_account(%Accounts{
-        status: :pending,
-        source_type: :widiba,
+        status: "pending",
+        source_type: "widiba",
         file_content: file_content
       }) do
     transaction_categorization = TransactionsCategorization.categorize_transactions()
@@ -22,14 +30,14 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
      |> Enum.map(&parse_line(&1, transaction_categorization))}
   end
 
-  def process_account(%Accounts{source_type: :widiba}), do: {:error, "Invalid account status"}
+  def process_account(%Accounts{source_type: "widiba"}), do: {:error, "Invalid account status"}
   def process_account(_), do: :skip
 
   @spec parse_line(Map.t(), (Transaction.t() -> Transaction.t())) :: Transaction.t()
   defp parse_line(%{
          "CAUSALE" => causale,
          "DATA CONT." => data_cont,
-         "DATA VAL." => data_val,
+         "DATA VAL." => _data_val,
          "IMPORTO (€)(€)" => importo,
          "DESCRIZIONE" => descrizione
        }, transaction_categorization) do
