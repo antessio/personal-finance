@@ -1,0 +1,28 @@
+<.header>
+  Accounts {@accounts.id}
+  <:subtitle>This is a accounts record from your database.</:subtitle>
+  <:actions>
+    <.link patch={~p"/accounts/#{@accounts}/show/edit"} phx-click={JS.push_focus()}>
+      <.button>Edit accounts</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Source type">{@accounts.source_type}</:item>
+  <:item title="File content">{@accounts.file_content}</:item>
+  <:item title="Status">{@accounts.status}</:item>
+</.list>
+
+<.back navigate={~p"/accounts"}>Back to accounts</.back>
+
+<.modal :if={@live_action == :edit} id="accounts-modal" show on_cancel={JS.patch(~p"/accounts/#{@accounts}")}>
+  <.live_component
+    module={PersonalFinanceWeb.AccountsLive.FormComponent}
+    id={@accounts.id}
+    title={@page_title}
+    action={@live_action}
+    accounts={@accounts}
+    patch={~p"/accounts/#{@accounts}"}
+  />
+</.modal>
