@@ -123,37 +123,50 @@ defmodule PersonalFinance.ExternalAccounts do
     |> Accounts.changeset(%{
       source_type: source_type,
       file_content: file_content,
-      status: :pending
+      status: "pending"
     })
     |> Repo.insert()
   end
 
   @account_processors [WidibaAccountProcessor]
 
-  @spec process_account_import(id :: integer) :: %{ok: [Transaction.t()], errors: [String.t()]}
+  @spec process_account_import(id :: integer) ::
+          {:ok, %Accounts{}, [Transaction.t()]} | {:error, %Accounts{}, [String.t()]}
   def process_account_import(id) do
-    with {:ok, transactions} <-
-           id
-           |> get_accounts!()
-           |> dbg()
-           |> then(&process_account/1)
-           do
+    id
+    |> get_accounts!()
+    |> then(&process_account/1)
+    |> dbg()
+  end
+
+  @spec process_account(%Accounts{}) ::
+          {:ok, %Accounts{}, [String.t()]} | {:error, %Accounts{}, [String.t()]}
+  defp process_account(%Accounts{} = account) do
+    ## TODO: transactions and account update should be done in a transaction or using events
+    @account_processors
+    |> Enum.find(fn processor -> processor.can_process?(account) end)
+    |> then(fn processor -> processor.process_account(account) end)
+    |> then(fn result ->
+      case result do
+        {:ok, transactions} -> transactions |> Enum.map(&Transaction.to_map/1)
+        {:skip} -> []
+      end
+    end)
+    |> then(fn transactions ->
       transactions
-      |> Enum.map(&Transaction.to_map/1)
       |> Enum.reduce(%{ok: [], errors: []}, fn transaction, acc ->
-        IO.inspect(transaction, label: "transaction porco dio")
         case Finance.create_transaction(transaction) do
           {:ok, trn} -> %{acc | ok: [trn.id | acc.ok]}
           {:error, error} -> %{acc | errors: [error | acc.errors]}
         end
       end)
-    end
-  end
+    end)
+    |> case do
+      %{ok: [], errors: errors} ->
+        {:error, account |> update_accounts(%{status: "error"}), errors}
 
-  @spec process_account(%Accounts{}) :: {:ok, [Transaction.t()]} | {:error, String.t()} | :skip
-  defp process_account(%Accounts{} = account) do
-    @account_processors
-    |> Enum.find(fn processor -> processor.can_process?(account) end)
-    |> then(fn processor -> processor.process_account(account) end)
+      %{ok: transactions, errors: []} ->
+        {:ok, account |> update_accounts(%{status: "completed"}), transactions}
+    end
   end
 end

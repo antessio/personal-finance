@@ -1,4 +1,5 @@
 defmodule PersonalFinanceWeb.AccountsLive.Index do
+  alias Phoenix.LiveView.Route
   use PersonalFinanceWeb, :live_view
 
   alias PersonalFinance.ExternalAccounts
@@ -43,5 +44,19 @@ defmodule PersonalFinanceWeb.AccountsLive.Index do
     {:ok, _} = ExternalAccounts.delete_accounts(accounts)
 
     {:noreply, stream_delete(socket, :accounts_collection, accounts)}
+  end
+
+  @impl true
+  def handle_event("process", %{"id" => id}, socket) do
+    case ExternalAccounts.process_account_import(id) |> dbg() do
+      {:ok, _accounts, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Account processed successfully")
+         |> push_patch(to: ~p"/accounts")}
+
+      {:error,_accounts, _errors} ->
+        {:noreply, socket}
+    end
   end
 end
