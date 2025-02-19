@@ -22,3 +22,10 @@
 - categories
 - amount
 - description
+
+
+# Transaction import
+
+- source type
+- file path
+- status

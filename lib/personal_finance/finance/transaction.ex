@@ -2,6 +2,8 @@ defmodule PersonalFinance.Finance.Transaction do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   @primary_key {:id, UUIDv7, autogenerate: true}
   schema "transactions" do
     field :date, :date
