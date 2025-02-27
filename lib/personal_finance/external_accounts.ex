@@ -4,6 +4,7 @@ defmodule PersonalFinance.ExternalAccounts do
   """
 
   import Ecto.Query, warn: false
+  alias PersonalFinance.ExternalAccounts.IntesaAccountProcessor
   alias PersonalFinance.Finance.Transaction
   alias PersonalFinance.Finance
   alias PersonalFinance.ExternalAccounts.WidibaAccountProcessor
@@ -16,7 +17,7 @@ defmodule PersonalFinance.ExternalAccounts do
 
     typedstruct do
       field :source_type, String.t()
-      field :file_content, String.t()
+      field :file_path, String.t()
     end
   end
 
@@ -117,18 +118,18 @@ defmodule PersonalFinance.ExternalAccounts do
   @spec import_account(CreateAccountCommand.t()) :: {:ok, %Accounts{}} | {:error, any()}
   def import_account(%PersonalFinance.ExternalAccounts.CreateAccountCommand{
         source_type: source_type,
-        file_content: file_content
+        file_path: file_path
       }) do
     %Accounts{}
     |> Accounts.changeset(%{
       source_type: source_type,
-      file_content: file_content,
+      file_path: file_path,
       status: "pending"
     })
     |> Repo.insert()
   end
 
-  @account_processors [WidibaAccountProcessor]
+  @account_processors [WidibaAccountProcessor, IntesaAccountProcessor]
 
   @spec process_account_import(id :: integer) ::
           {:ok, %Accounts{}, [Transaction.t()]} | {:error, %Accounts{}, [String.t()]}

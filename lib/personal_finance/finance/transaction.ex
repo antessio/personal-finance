@@ -10,6 +10,7 @@ defmodule PersonalFinance.Finance.Transaction do
     field :description, :string
     field :amount, :decimal
     field :unique_id, :string
+    field :source, :string
 
     many_to_many :categories, PersonalFinance.Finance.Category,
       join_through: "transactions_categories",
@@ -23,8 +24,8 @@ defmodule PersonalFinance.Finance.Transaction do
   @doc false
   def changeset(transaction, attrs, categories \\ []) do
     transaction
-    |> cast(attrs, [:date, :amount, :description, :unique_id])
-    |> validate_required([:date, :amount, :description, :unique_id])
+    |> cast(attrs, [:date, :amount, :description, :unique_id, :source])
+    |> validate_required([:date, :amount, :description, :unique_id, :source])
     |> put_assoc(:categories, categories)
   end
 
@@ -51,6 +52,7 @@ defmodule PersonalFinance.Finance.Transaction do
       id: transaction.id,
       date: transaction.date,
       description: transaction.description,
+      source: transaction.source,
       amount: transaction.amount,
       categories: transaction.categories,
       unique_id: transaction.unique_id

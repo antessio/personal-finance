@@ -8,7 +8,7 @@ defmodule PersonalFinance.ExternalAccountsTest do
 
     import PersonalFinance.ExternalAccountsFixtures
 
-    @invalid_attrs %{status: nil, source_type: nil, file_content: nil}
+    @invalid_attrs %{status: nil, source_type: nil, file_path: nil}
 
     test "list_accounts/0 returns all accounts" do
       accounts = accounts_fixture()
@@ -21,12 +21,12 @@ defmodule PersonalFinance.ExternalAccountsTest do
     end
 
     test "create_accounts/1 with valid data creates a accounts" do
-      valid_attrs = %{status: "some status", source_type: "some source_type", file_content: "some file_content"}
+      valid_attrs = %{status: "some status", source_type: "some source_type", file_path: "some file_path"}
 
       assert {:ok, %Accounts{} = accounts} = ExternalAccounts.create_accounts(valid_attrs)
       assert accounts.status == "some status"
       assert accounts.source_type == "some source_type"
-      assert accounts.file_content == "some file_content"
+      assert accounts.file_path == "some file_path"
     end
 
     test "create_accounts/1 with invalid data returns error changeset" do
@@ -35,12 +35,12 @@ defmodule PersonalFinance.ExternalAccountsTest do
 
     test "update_accounts/2 with valid data updates the accounts" do
       accounts = accounts_fixture()
-      update_attrs = %{status: "some updated status", source_type: "some updated source_type", file_content: "some updated file_content"}
+      update_attrs = %{status: "some updated status", source_type: "some updated source_type", file_path: "some updated file_path"}
 
       assert {:ok, %Accounts{} = accounts} = ExternalAccounts.update_accounts(accounts, update_attrs)
       assert accounts.status == "some updated status"
       assert accounts.source_type == "some updated source_type"
-      assert accounts.file_content == "some updated file_content"
+      assert accounts.file_path == "some updated file_path"
     end
 
     test "update_accounts/2 with invalid data returns error changeset" do

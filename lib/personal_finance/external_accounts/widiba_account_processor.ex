@@ -7,23 +7,22 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
 
   @regex ~r/Data\s(\d{2}\/\d{2}\/\d{2})\sOra\s(\d{2}\.\d{2})/
 
-
-
   @impl true
   @spec can_process?(%Accounts{}) :: boolean()
   def can_process?(%Accounts{source_type: "widiba"}), do: true
   def can_process?(_), do: false
 
-
   @impl true
   def process_account(%Accounts{
         status: "pending",
         source_type: "widiba",
-        file_content: file_content
+        file_path: file_path
       }) do
     transaction_categorization = TransactionsCategorization.categorize_transactions()
+
     {:ok,
-     file_content
+     file_path
+     |> File.read!()
      |> String.split("\n")
      |> Stream.map(& &1)
      |> CSV.decode!(headers: true, separator: ?,, trim: true)
@@ -34,13 +33,16 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
   def process_account(_), do: :skip
 
   @spec parse_line(Map.t(), (Transaction.t() -> Transaction.t())) :: Transaction.t()
-  defp parse_line(%{
-         "CAUSALE" => causale,
-         "DATA CONT." => data_cont,
-         "DATA VAL." => _data_val,
-         "IMPORTO (€)(€)" => importo,
-         "DESCRIZIONE" => descrizione
-       }, transaction_categorization) do
+  defp parse_line(
+         %{
+           "CAUSALE" => causale,
+           "DATA CONT." => data_cont,
+           "DATA VAL." => _data_val,
+           "IMPORTO (€)(€)" => importo,
+           "DESCRIZIONE" => descrizione
+         },
+         transaction_categorization
+       ) do
     # convert string to date in the format dd/mm/yyyy
     date =
       case extract_date_time(descrizione) do
@@ -54,15 +56,14 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
     %Transaction{
       date: date,
       amount: amount,
-      description: causale <> " " <> descrizione
+      description: causale <> " " <> descrizione,
+      source: "widiba"
     }
     |> transaction_categorization.()
   end
 
   @spec extract_date_time(String.t()) :: {:ok, DateTime} | {:error, String.t()}
   defp extract_date_time(string) do
-
-
     case Regex.run(@regex, string) do
       [_, date, time] ->
         time = String.replace(time, ".", ":")

@@ -20,7 +20,7 @@ defmodule PersonalFinanceWeb.AccountsLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:source_type]} type="text" label="Source type" />
-        <.input field={@form[:file_content]} type="text" label="File content" />
+        <.input field={@form[:file_path]} type="text" label="File path" />
         <.input field={@form[:status]} type="text" label="Status" />
         <:actions>
           <.button phx-disable-with="Saving...">Save Accounts</.button>

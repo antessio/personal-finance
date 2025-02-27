@@ -63,7 +63,8 @@ defmodule PersonalFinance.MixProject do
       {:dialyxir, "~> 1.4.5", only: [:dev], runtime: false},
       {:uuidv7, "~> 1.0"},
       {:csv, "~> 3.2"},
-      {:timex, "~> 3.7"}
+      {:timex, "~> 3.7"},
+      {:xlsxir, "~> 1.6.4"}
     ]
   end
 

@@ -4,7 +4,7 @@ defmodule PersonalFinance.Repo.Migrations.CreateAccounts do
   def change do
     create table(:accounts) do
       add :source_type, :string
-      add :file_content, :text
+      add :file_path, :string
       add :status, :string
 
       timestamps(type: :utc_datetime)

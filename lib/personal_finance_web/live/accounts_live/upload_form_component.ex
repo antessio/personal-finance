@@ -56,7 +56,7 @@ defmodule PersonalFinanceWeb.AccountsLive.UploadFormComponent do
      |> assign(assigns)
      |> assign(:source_types, ExternalAccounts.Accounts.source_types())
      |> assign(:uploaded_files, [])
-     |> allow_upload(:file, accept: ~w(.csv), max_entries: 2)
+     |> allow_upload(:file, accept: ~w(.csv .xlsx), max_entries: 2)
     }
 
   end
