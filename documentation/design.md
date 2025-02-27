@@ -22,6 +22,7 @@
 - categories
 - amount
 - description
+- skip
 
 
 # Transaction import
@@ -29,3 +30,10 @@
 - source type
 - file path
 - status
+
+
+# Budget
+
+- month
+- year
+- category
