@@ -53,7 +53,7 @@ defmodule PersonalFinance.Finance do
   def create_category(attrs \\ %{}) do
     %Category{}
     |> Category.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:unique_id])
   end
 
   @doc """
@@ -155,9 +155,12 @@ defmodule PersonalFinance.Finance do
     |> Enum.map(& &1.id)
     |> then(& Repo.all(from category in Category, where: category.id in ^&1))
 
+    unique_id = Transaction.get_unique_id(attrs)
+    attrs = Map.put(attrs, :unique_id, unique_id)
+
     %Transaction{}
     |> Transaction.changeset(attrs, categories)
-    |> Repo.insert()
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:unique_id])
   end
 
   @doc """
@@ -179,6 +182,7 @@ defmodule PersonalFinance.Finance do
     |> then(& Repo.all(from category in Category, where: category.id in ^&1))
 
     transaction
+    |> Transaction.assign_unique_id()
     |> Transaction.changeset(attrs, categories)
     |> Repo.update()
   end

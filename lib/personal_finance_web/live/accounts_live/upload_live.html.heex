@@ -1,0 +1,94 @@
+<.header>
+  Upload Account
+</.header>
+
+<div class="upload-container">
+  <form id="upload-form" phx-submit="save" phx-change="validate">
+    <div class="form-group">
+      <label for="source_type">Source Type</label>
+      <select id="source_type" name="source_type" class="form-control">
+        <%= for source_type <- @source_types do %>
+          <option value={source_type}><%= source_type %></option>
+        <% end %>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="file">File</label>
+      <.live_file_input upload={@uploads.file} class="form-control-file" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Upload</button>
+
+    <!-- use phx-drop-target with the upload ref to enable file drag and drop -->
+    <section phx-drop-target={@uploads.file.ref} class="drop-target">
+      <!-- Phoenix.Component.upload_errors/1 returns a list of error atoms -->
+      <p :for={err <- upload_errors(@uploads.file)} class="alert alert-danger">
+        <%= error_to_string(err) %>
+      </p>
+    </section>
+  </form>
+</div>
+
+<style>
+  .upload-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .form-control-file {
+    display: block;
+    margin-top: 5px;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background-color: #0056b3;
+  }
+
+  .drop-target {
+    margin-top: 20px;
+    padding: 10px;
+    border: 2px dashed #ccc;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .alert {
+    margin-top: 10px;
+    padding: 10px;
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+  }
+</style>
