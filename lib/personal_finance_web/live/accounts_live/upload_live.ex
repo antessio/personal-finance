@@ -11,7 +11,7 @@ defmodule PersonalFinanceWeb.AccountsLive.UploadLive do
      socket
      |> assign(:source_types, PersonalFinance.ExternalAccounts.Accounts.source_types())
      |> assign(:uploaded_files, [])
-     |> allow_upload(:file, accept: ~w(.csv), max_entries: 1)}
+     |> allow_upload(:file, accept: ~w(.csv .xlsx), max_entries: 1)}
   end
 
   @impl true
@@ -22,21 +22,13 @@ defmodule PersonalFinanceWeb.AccountsLive.UploadLive do
   @impl true
   def handle_event("save", %{"source_type" => source_type}, socket) do
     [%ExternalAccounts.Accounts{id: id}] =
-      consume_uploaded_entries(socket, :file, fn %{path: path}, entry ->
-        # dest = Path.join(Application.app_dir(:my_app, "priv/static/uploads"), Path.basename(path))
+      consume_uploaded_entries(socket, :file, fn %{path: path}, _entry ->
+        dest = Path.join(Application.app_dir(:personal_finance, "priv/static/uploads"), Path.basename(path))
         # # You will need to create `priv/static/uploads` for `File.cp!/2` to work.
-        # File.cp!(path, dest)
-        IO.inspect(path, label: "path")
-        IO.inspect(entry, label: "entry")
-
-        File.read!(path)
-        |> IO.inspect(label: "file_content")
-
-        file_content = File.read!(path)
-
+        File.cp!(path, dest)
         command = %ExternalAccounts.CreateAccountCommand{
           source_type: source_type,
-          file_content: file_content
+          file_path: dest
         }
 
         ExternalAccounts.import_account(command)
@@ -46,30 +38,6 @@ defmodule PersonalFinanceWeb.AccountsLive.UploadLive do
      socket
      |> put_flash(:info, "File uploaded successfully. Account ID: #{id}")}
   end
-
-  # def handle_event(
-  #       "upload",
-  #       %{"upload_form" => %{"source_type" => source_type, "file" => file}},
-  #       socket
-  #     ) do
-  #   file_content = File.read!(file.path)
-
-  #   command = %ExternalAccounts.CreateAccountCommand{
-  #     source_type: source_type,
-  #     file_content: file_content
-  #   }
-
-  #   case ExternalAccounts.import_account(command) do
-  #     {:ok, _account} ->
-  #       {:noreply,
-  #        socket
-  #        |> put_flash(:info, "File uploaded successfully")
-  #        |> push_patch(to: socket.assigns.patch)}
-
-  #     {:error, reason} ->
-  #       {:noreply, put_flash(socket, :error, "Failed to upload file: #{reason}")}
-  #   end
-  # end
 
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do

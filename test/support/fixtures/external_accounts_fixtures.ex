@@ -11,7 +11,7 @@ defmodule PersonalFinance.ExternalAccountsFixtures do
     {:ok, accounts} =
       attrs
       |> Enum.into(%{
-        file_content: "some file_content",
+        file_path: "some path",
         source_type: "some source_type",
         status: "some status"
       })

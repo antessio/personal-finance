@@ -4,9 +4,9 @@ defmodule PersonalFinanceWeb.AccountsLiveTest do
   import Phoenix.LiveViewTest
   import PersonalFinance.ExternalAccountsFixtures
 
-  @create_attrs %{status: "some status", source_type: "some source_type", file_content: "some file_content"}
-  @update_attrs %{status: "some updated status", source_type: "some updated source_type", file_content: "some updated file_content"}
-  @invalid_attrs %{status: nil, source_type: nil, file_content: nil}
+  @create_attrs %{status: "some status", source_type: "some source_type", file_path: "some file_path"}
+  @update_attrs %{status: "some updated status", source_type: "some updated source_type", file_path: "some updated file_path"}
+  @invalid_attrs %{status: nil, source_type: nil, file_path: nil}
 
   defp create_accounts(_) do
     accounts = accounts_fixture()
