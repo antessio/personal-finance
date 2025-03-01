@@ -19,7 +19,6 @@ defmodule PersonalFinance.ExternalAccounts.TransactionsCategorization do
   defp any_matcher_matches?(transaction, category) do
     category.matchers
     |> Enum.map(&convert_matcher_to_regex/1)
-    |> dbg()
     |> Enum.any?(&Regex.match?(&1, transaction.description))
   end
 

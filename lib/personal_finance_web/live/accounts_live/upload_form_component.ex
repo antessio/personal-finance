@@ -80,29 +80,6 @@ defmodule PersonalFinanceWeb.AccountsLive.UploadFormComponent do
     {:noreply, update(socket, :uploaded_files, &(&1 ++ uploaded_files))}
   end
 
-  # def handle_event(
-  #       "upload",
-  #       %{"upload_form" => %{"source_type" => source_type, "file" => file}},
-  #       socket
-  #     ) do
-  #   file_content = File.read!(file.path)
-
-  #   command = %ExternalAccounts.CreateAccountCommand{
-  #     source_type: source_type,
-  #     file_content: file_content
-  #   }
-
-  #   case ExternalAccounts.import_account(command) do
-  #     {:ok, _account} ->
-  #       {:noreply,
-  #        socket
-  #        |> put_flash(:info, "File uploaded successfully")
-  #        |> push_patch(to: socket.assigns.patch)}
-
-  #     {:error, reason} ->
-  #       {:noreply, put_flash(socket, :error, "Failed to upload file: #{reason}")}
-  #   end
-  # end
 
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do

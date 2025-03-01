@@ -68,7 +68,6 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
       [_, date, time] ->
         time = String.replace(time, ".", ":")
         datetime_string = date <> " " <> time
-        IO.inspect(datetime_string, label: "Parsed DateTime")
         Timex.parse(datetime_string, "%d/%m/%y %H:%M", :strftime)
 
       _ ->

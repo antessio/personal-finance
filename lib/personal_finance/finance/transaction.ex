@@ -26,6 +26,7 @@ defmodule PersonalFinance.Finance.Transaction do
     transaction
     |> cast(attrs, [:date, :amount, :description, :unique_id, :source])
     |> validate_required([:date, :amount, :description, :unique_id, :source])
+    |> unique_constraint(:unique_id)
     |> put_assoc(:categories, categories)
   end
 

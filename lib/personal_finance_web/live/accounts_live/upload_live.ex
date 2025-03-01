@@ -1,6 +1,5 @@
 defmodule PersonalFinanceWeb.AccountsLive.UploadLive do
-  alias Phoenix.LiveView.Route
-  alias PersonalFinance.Accounts
+
   use PersonalFinanceWeb, :live_view
 
   alias PersonalFinance.ExternalAccounts

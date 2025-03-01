@@ -1,5 +1,4 @@
 defmodule PersonalFinanceWeb.AccountsLive.Index do
-  alias Phoenix.LiveView.Route
   use PersonalFinanceWeb, :live_view
 
   alias PersonalFinance.ExternalAccounts

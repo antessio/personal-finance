@@ -26,7 +26,7 @@ defmodule PersonalFinanceWeb.TransactionLive.FormComponent do
         <div id="categories-fields">
           <label class="block mb-1 font-semibold">Categories</label>
           <div class="flex flex-wrap gap-2 mb-2">
-            <%= for {category, index} <- Enum.with_index(@selected_categories || []) do %>
+            <%= for {category, _index} <- Enum.with_index(@selected_categories || []) do %>
               <div class="flex items-center bg-blue-100 text-blue-700 px-3 py-1 rounded-lg">
                 <span>{category.name}</span>
                 <button

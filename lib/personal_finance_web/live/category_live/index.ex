@@ -53,10 +53,6 @@ defmodule PersonalFinanceWeb.CategoryLive.Index do
     {:noreply, assign(socket, :matchers, new_matchers)}
   end
 
-  @impl true
-  def handle_info({PersonalFinanceWeb.CategoryLive.FormComponent, {:saved, category}}, socket) do
-    {:noreply, stream_insert(socket, :categories, category)}
-  end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
@@ -64,5 +60,10 @@ defmodule PersonalFinanceWeb.CategoryLive.Index do
     {:ok, _} = Finance.delete_category(category)
 
     {:noreply, stream_delete(socket, :categories, category)}
+  end
+
+  @impl true
+  def handle_info({PersonalFinanceWeb.CategoryLive.FormComponent, {:saved, category}}, socket) do
+    {:noreply, stream_insert(socket, :categories, category)}
   end
 end
