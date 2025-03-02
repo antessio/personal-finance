@@ -1,57 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" class="[scrollbar-gutter:stable]">
+<html lang="en" class="h-full scrollbar-gutter-stable">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Personal Finance Manager" suffix=" by antessio" >
+    <.live_title default="Home" suffix=" • Personal Finance Manager">
       {assigns[:page_title]}
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
   </head>
-  <body class="bg-white">
-    <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_user do %>
-        <li class="text-[0.8125rem] leading-6 text-gray-900">
-          {@current_user.email}
-        </li>
-        <li>
-          <.link
-            href={~p"/users/settings"}
-            class="text-[0.8125rem] leading-6 text-gray-900 font-semibold hover:text-gray-700"
-          >
-            Settings
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_out"}
-            method="delete"
-            class="text-[0.8125rem] leading-6 text-gray-900 font-semibold hover:text-gray-700"
-          >
-            Log out
-          </.link>
-        </li>
-      <% else %>
-        <li>
-          <.link
-            href={~p"/users/register"}
-            class="text-[0.8125rem] leading-6 text-gray-900 font-semibold hover:text-gray-700"
-          >
-            Register
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/users/log_in"}
-            class="text-[0.8125rem] leading-6 text-gray-900 font-semibold hover:text-gray-700"
-          >
-            Log in
-          </.link>
-        </li>
-      <% end %>
-    </ul>
-    {@inner_content}
+  <body class="h-full bg-blue-50">
+    <header class="px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between border-b border-gray-200 py-3 text-sm">
+        <div class="flex items-center gap-4">
+          <a href="/">
+            <img src={~p"/images/logo.svg"} width="36" alt="Personal Finance Manager Logo" />
+          </a>
+          <p class="bg-blue-100 text-blue-600 rounded-full px-2 font-medium leading-6">
+            Personal Finance Manager
+          </p>
+        </div>
+        <div class="flex items-center gap-4 font-semibold leading-6 text-gray-900">
+          <%= if @current_user do %>
+            {@current_user.email}
+            <.link href={~p"/users/settings"} class="text-sm font-medium text-gray-700 hover:text-blue-600">
+              Settings
+            </.link>
+            <.link href={~p"/users/log_out"} method="delete" class="text-sm font-medium text-gray-700 hover:text-red-600">
+              Log out
+            </.link>
+          <% else %>
+            <.link href={~p"/users/register"} class="text-sm font-medium text-gray-700 hover:text-blue-600">
+              Register
+            </.link>
+            <.link href={~p"/users/log_in"} class="text-sm font-medium text-gray-700 hover:text-blue-600">
+              Log in
+            </.link>
+          <% end %>
+        </div>
+      </div>
+  </header>
+    <main class="relative min-h-screen">
+      <!-- Main content -->
+      <div class="relative z-10 px-4 py-5 sm:px-6 sm:py-5 lg:px-8 xl:px-28">
+        {@inner_content}
+      </div>
+    </main>
   </body>
 </html>
