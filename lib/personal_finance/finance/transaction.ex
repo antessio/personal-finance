@@ -11,23 +11,24 @@ defmodule PersonalFinance.Finance.Transaction do
     field :amount, :decimal
     field :unique_id, :string
     field :source, :string
+    field :skip, :boolean, default: false
 
     many_to_many :categories, PersonalFinance.Finance.Category,
       join_through: "transactions_categories",
       join_keys: [transaction_id: :id, category_id: :id],
-      on_delete: :delete_all
+      on_delete: :delete_all,
+      on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end
 
-
   @doc false
   def changeset(transaction, attrs, categories \\ []) do
     transaction
-    |> cast(attrs, [:date, :amount, :description, :unique_id, :source])
+    |> cast(attrs, [:date, :amount, :description, :unique_id, :source, :skip])
     |> validate_required([:date, :amount, :description, :unique_id, :source])
     |> unique_constraint(:unique_id)
-    |> put_assoc(:categories, categories)
+    |> cast_assoc(:categories, with: &PersonalFinance.Finance.Category.changeset/2)
   end
 
   def assign_categories(transaction, categories) do
@@ -46,6 +47,12 @@ defmodule PersonalFinance.Finance.Transaction do
   def get_unique_id(transaction) do
     unique_string = "#{transaction.date}-#{transaction.amount}-#{transaction.description}"
     :crypto.hash(:sha256, unique_string) |> Base.encode16(case: :lower)
+  end
+
+  @spec toggle_skip(PersonalFinance.Finance.Transaction.t()) :: Ecto.Changeset.t()
+  def toggle_skip(transaction) do
+    IO.inspect(transaction, label: "transaction")
+    changeset(transaction, %{skip: !transaction.skip})
   end
 
   def to_map(%PersonalFinance.Finance.Transaction{} = transaction) do

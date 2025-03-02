@@ -2,7 +2,7 @@
   Listing Transactions
   <:actions>
     <.link patch={~p"/transactions/new"}>
-      <.button >New Transaction</.button>
+      <.button>New Transaction</.button>
     </.link>
   </:actions>
 </.header>
@@ -12,18 +12,37 @@
   rows={@streams.transactions}
   row_click={fn {_id, transaction} -> JS.navigate(~p"/transactions/#{transaction}") end}
 >
-  <:col :let={{_id, transaction}} label="Date">{transaction.date}</:col>
+  <:col :let={{_id, transaction}} label="Date">
+    <div class="w-24">{transaction.date}</div>
+  </:col>
   <:col :let={{_id, transaction}} label="Amount">{transaction.amount}</:col>
-  <:col :let={{_id, transaction}} label="Description">{transaction.description}</:col>
-  <:col :let={{_id, transaction}} label="Unique ID">{transaction.unique_id}</:col>
-  <:col :let={{_id, transaction}} label="Source">{transaction.source}</:col>
+  <:col :let={{_id, transaction}} label="Unique ID">
+    {String.slice(transaction.unique_id, 0, 8)}...
+  </:col>
+  <:col :let={{_id, transaction}} label="Description">
+    <div class="w-64">
+      {transaction.description}
+    </div>
+  </:col>
+  <:col :let={{_id, transaction}} label="Source">
+    <div class="w-5">{transaction.source}</div>
+  </:col>
+  <:col :let={{_id, transaction}} label="Included">
+    <div class="w-5">
+      <%= if transaction.skip do %>
+        <span>❌</span>
+      <% else %>
+        <span>✅</span>
+      <% end %>
+    </div>
+  </:col>
   <:col :let={{_id, transaction}} label="Categories">
-  <ul>
-    <%= for category <- transaction.categories do %>
-      <li><%= category.name %></li>
-    <% end %>
-  </ul>
-</:col>  
+    <ul>
+      <%= for category <- transaction.categories do %>
+        <li>{category.name}</li>
+      <% end %>
+    </ul>
+  </:col>
 
   <:action :let={{_id, transaction}}>
     <div class="sr-only">
@@ -39,9 +58,23 @@
       Delete
     </.link>
   </:action>
+  <:action :let={{id, transaction}}>
+    <.link phx-click={JS.push("toggle_skip", value: %{id: transaction.id})}>
+      <%= if transaction.skip do %>
+        Include
+      <% else %>
+        Skip
+      <% end %>
+    </.link>
+  </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="transaction-modal" show on_cancel={JS.patch(~p"/transactions")}>
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="transaction-modal"
+  show
+  on_cancel={JS.patch(~p"/transactions")}
+>
   <.live_component
     module={PersonalFinanceWeb.TransactionLive.FormComponent}
     id={@transaction.id || :new}
