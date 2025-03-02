@@ -4,6 +4,8 @@ defmodule PersonalFinance.ExternalAccounts do
   """
 
   import Ecto.Query, warn: false
+  require Logger
+  alias PersonalFinance.ExternalAccounts.PayPalAccountProcessor
   alias PersonalFinance.ExternalAccounts.IntesaAccountProcessor
   alias PersonalFinance.Finance.Transaction
   alias PersonalFinance.Finance
@@ -129,7 +131,7 @@ defmodule PersonalFinance.ExternalAccounts do
     |> Repo.insert()
   end
 
-  @account_processors [WidibaAccountProcessor, IntesaAccountProcessor]
+  @account_processors [WidibaAccountProcessor, IntesaAccountProcessor, PayPalAccountProcessor]
 
   @spec process_account_import(id :: integer) ::
           {:ok, %Accounts{}, [Transaction.t()]} | {:error, %Accounts{}, [String.t()]}
@@ -137,7 +139,6 @@ defmodule PersonalFinance.ExternalAccounts do
     id
     |> get_accounts!()
     |> then(&process_account/1)
-    |> dbg()
   end
 
   @spec process_account(%Accounts{}) ::
@@ -149,25 +150,32 @@ defmodule PersonalFinance.ExternalAccounts do
     |> then(fn processor -> processor.process_account(account) end)
     |> then(fn result ->
       case result do
-        {:ok, transactions} -> transactions |> Enum.map(&Transaction.to_map/1)
-        {:skip} -> []
+        {:ok, transactions} ->
+          transactions |> Enum.map(&Transaction.to_map/1)
+
+        {:skip} ->
+          []
+
+        {:error, error} ->
+          Logger.error("Failed to process account: #{error}")
+          []
       end
     end)
-    |> then(fn transactions ->
-      transactions
-      |> Enum.reduce(%{ok: [], errors: []}, fn transaction, acc ->
-        case Finance.create_transaction(transaction) do
-          {:ok, trn} -> %{acc | ok: [trn.id | acc.ok]}
-          {:error, error} -> %{acc | errors: [error | acc.errors]}
-        end
-      end)
-    end)
+    |> then(fn transactions -> Finance.create_transactions(transactions) end)
+    # |> then(fn transactions ->
+    #   transactions
+    #   |> Enum.reduce(%{ok: [], errors: []}, fn transaction, acc ->
+    #     case Finance.create_transaction(transaction) do
+    #       {:ok, trn} -> %{acc | ok: [trn.id | acc.ok]}
+    #       {:error, error} -> %{acc | errors: [error | acc.errors]}
+    #     end
+    #   end)
+    # end)
     |> case do
-      %{ok: [], errors: errors} ->
-        {:error, account |> update_accounts(%{status: "error"}), errors}
-
-      %{ok: transactions, errors: []} ->
-        {:ok, account |> update_accounts(%{status: "completed"}), transactions}
+      {:ok, transactions} -> {:ok, account |> update_accounts(%{status: "completed"}), transactions}
+      {:error, error} -> {:error, account |> update_accounts(%{status: "error"}), error}
     end
   end
+
+
 end

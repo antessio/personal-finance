@@ -68,18 +68,6 @@ defmodule PersonalFinanceWeb.Router do
       on_mount: [{PersonalFinanceWeb.UserAuth, :ensure_authenticated}] do
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-    end
-  end
-
-  scope "/", PersonalFinanceWeb do
-    pipe_through [:browser]
-
-    delete "/users/log_out", UserSessionController, :delete
-
-    live_session :current_user,
-      on_mount: [{PersonalFinanceWeb.UserAuth, :mount_current_user}] do
-      live "/users/confirm/:token", UserConfirmationLive, :edit
-      live "/users/confirm", UserConfirmationInstructionsLive, :new
 
       # categories
       live "/categories", CategoryLive.Index, :index
@@ -106,6 +94,20 @@ defmodule PersonalFinanceWeb.Router do
 
       live "/accounts/:id", AccountsLive.Show, :show
       live "/accounts/:id/show/edit", AccountsLive.Show, :edit
+    end
+  end
+
+  scope "/", PersonalFinanceWeb do
+    pipe_through [:browser]
+
+    delete "/users/log_out", UserSessionController, :delete
+
+    live_session :current_user,
+      on_mount: [{PersonalFinanceWeb.UserAuth, :mount_current_user}] do
+      live "/users/confirm/:token", UserConfirmationLive, :edit
+      live "/users/confirm", UserConfirmationInstructionsLive, :new
+
+
     end
   end
 end

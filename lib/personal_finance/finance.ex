@@ -4,6 +4,7 @@ defmodule PersonalFinance.Finance do
   """
 
   import Ecto.Query, warn: false
+  alias Ecto.Multi
   alias PersonalFinance.Finance.MacroCategory
   alias PersonalFinance.Repo
 
@@ -103,7 +104,6 @@ defmodule PersonalFinance.Finance do
     Category.changeset(category, attrs)
   end
 
-
   @spec get_macro_categories() :: [PersonalFinance.Finance.MacroCategory.t()]
   def get_macro_categories() do
     [
@@ -150,10 +150,11 @@ defmodule PersonalFinance.Finance do
 
   @spec create_transaction(map()) :: {:ok, %Transaction{}} | {:error, %Ecto.Changeset{}}
   def create_transaction(attrs \\ %{}) do
-    categories = attrs
-    |> Map.get("categories", [])
-    |> Enum.map(& &1.id)
-    |> then(& Repo.all(from category in Category, where: category.id in ^&1))
+    categories =
+      attrs
+      |> Map.get("categories", [])
+      |> Enum.map(& &1.id)
+      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
 
     unique_id = Transaction.get_unique_id(attrs)
     attrs = Map.put(attrs, :unique_id, unique_id)
@@ -161,6 +162,41 @@ defmodule PersonalFinance.Finance do
     %Transaction{}
     |> Transaction.changeset(attrs, categories)
     |> Repo.insert(on_conflict: :replace_all, conflict_target: [:unique_id])
+  end
+
+  @spec create_transactions([map()]) :: [{:ok, %Transaction{}}] | [{:error, %Ecto.Changeset{}}]
+  def create_transactions(attrs_list \\ []) do
+    categories_by_id =
+      attrs_list
+      |> Enum.flat_map(&Map.get(&1, "categories", []))
+      |> Enum.uniq_by(& &1.id)
+      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
+      |> Enum.group_by(& &1.id)
+
+      multi =
+        Enum.reduce(attrs_list, Multi.new(), fn attrs, multi ->
+          unique_id = Transaction.get_unique_id(attrs)
+          attrs = Map.put(attrs, :unique_id, unique_id)
+
+          categories =
+            attrs
+            |> Map.get("categories", [])
+            |> Enum.map(& &1.id)
+            |> Enum.map(&Map.get(categories_by_id, &1, []))
+            |> List.flatten()
+          %Transaction{}
+          |> Transaction.changeset(attrs, categories)
+          |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1))
+        end)
+
+      case Repo.transaction(multi) do
+        {:ok, result} ->
+          transactions = result |> Map.values() |> dbg()
+          {:ok, transactions}
+
+        {:error, _operation, changeset, _changes} ->
+          {:error, changeset}
+      end
   end
 
   @doc """
@@ -176,10 +212,11 @@ defmodule PersonalFinance.Finance do
 
   """
   def update_transaction(%Transaction{} = transaction, attrs) do
-    categories = attrs
-    |> Map.get("categories", [])
-    |> Enum.map(& &1.id)
-    |> then(& Repo.all(from category in Category, where: category.id in ^&1))
+    categories =
+      attrs
+      |> Map.get("categories", [])
+      |> Enum.map(& &1.id)
+      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
 
     transaction
     |> Transaction.assign_unique_id()
