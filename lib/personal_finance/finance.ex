@@ -173,30 +173,31 @@ defmodule PersonalFinance.Finance do
       |> then(&Repo.all(from category in Category, where: category.id in ^&1))
       |> Enum.group_by(& &1.id)
 
-      multi =
-        Enum.reduce(attrs_list, Multi.new(), fn attrs, multi ->
-          unique_id = Transaction.get_unique_id(attrs)
-          attrs = Map.put(attrs, :unique_id, unique_id)
+    multi =
+      Enum.reduce(attrs_list, Multi.new(), fn attrs, multi ->
+        unique_id = Transaction.get_unique_id(attrs)
+        attrs = Map.put(attrs, :unique_id, unique_id)
 
-          categories =
-            attrs
-            |> Map.get("categories", [])
-            |> Enum.map(& &1.id)
-            |> Enum.map(&Map.get(categories_by_id, &1, []))
-            |> List.flatten()
-          %Transaction{}
-          |> Transaction.changeset(attrs, categories)
-          |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1))
-        end)
+        categories =
+          attrs
+          |> Map.get("categories", [])
+          |> Enum.map(& &1.id)
+          |> Enum.map(&Map.get(categories_by_id, &1, []))
+          |> List.flatten()
 
-      case Repo.transaction(multi) do
-        {:ok, result} ->
-          transactions = result |> Map.values() |> dbg()
-          {:ok, transactions}
+        %Transaction{}
+        |> Transaction.changeset(attrs, categories)
+        |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1))
+      end)
 
-        {:error, _operation, changeset, _changes} ->
-          {:error, changeset}
-      end
+    case Repo.transaction(multi) do
+      {:ok, result} ->
+        transactions = result |> Map.values() |> dbg()
+        {:ok, transactions}
+
+      {:error, _operation, changeset, _changes} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -251,5 +252,15 @@ defmodule PersonalFinance.Finance do
   """
   def change_transaction(%Transaction{} = transaction, attrs \\ %{}) do
     Transaction.changeset(transaction, attrs)
+  end
+
+  def toggle_skip_transaction!(id) do
+    {:ok, transaction} =
+      id
+      |> get_transaction!()
+      |> Transaction.toggle_skip()
+      |> Repo.update()
+
+    transaction
   end
 end

@@ -57,6 +57,14 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   end
 
   @impl true
+  def handle_event("toggle_skip", %{"id" => id}, socket) do
+
+    transaction = Finance.toggle_skip_transaction!(id)
+
+    {:noreply, stream_insert(socket, :transactions, transaction)}
+  end
+
+  @impl true
   def handle_event("add_category_transaction", %{"category_id" => category_id}, socket) do
     category_id = String.to_integer(category_id)
     categories = socket.assigns.selected_categories || []
