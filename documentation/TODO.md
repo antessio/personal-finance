@@ -3,9 +3,9 @@
 ## Features
 - [ ] Monthly / Annual budget
 - [ ] Finance analysis: reports
-- [ ] Intesa import
+- [x] Intesa import
 - [ ] Satispay import
-- [ ] Paypal import
+- [x] Paypal import
 - [ ] Skip transactions
 - [ ] Export to format
 - [ ] Reprocess transactions
