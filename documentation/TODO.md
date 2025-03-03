@@ -6,7 +6,7 @@
 - [x] Intesa import
 - [ ] Satispay import
 - [x] Paypal import
-- [ ] Skip transactions
+- [x] Skip transactions
 - [ ] Export to format
 - [ ] Reprocess transactions
 
