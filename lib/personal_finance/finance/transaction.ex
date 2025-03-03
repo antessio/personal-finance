@@ -28,7 +28,7 @@ defmodule PersonalFinance.Finance.Transaction do
     |> cast(attrs, [:date, :amount, :description, :unique_id, :source, :skip])
     |> validate_required([:date, :amount, :description, :unique_id, :source])
     |> unique_constraint(:unique_id)
-    |> cast_assoc(:categories, with: &PersonalFinance.Finance.Category.changeset/2)
+    |> put_assoc(:categories, categories)
   end
 
   def assign_categories(transaction, categories) do
@@ -51,7 +51,6 @@ defmodule PersonalFinance.Finance.Transaction do
 
   @spec toggle_skip(PersonalFinance.Finance.Transaction.t()) :: Ecto.Changeset.t()
   def toggle_skip(transaction) do
-    IO.inspect(transaction, label: "transaction")
     changeset(transaction, %{skip: !transaction.skip})
   end
 

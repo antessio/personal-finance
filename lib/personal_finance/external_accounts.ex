@@ -5,6 +5,7 @@ defmodule PersonalFinance.ExternalAccounts do
 
   import Ecto.Query, warn: false
   require Logger
+  alias PersonalFinance.ExternalAccounts.SatispayAccountProcessor
   alias PersonalFinance.ExternalAccounts.PayPalAccountProcessor
   alias PersonalFinance.ExternalAccounts.IntesaAccountProcessor
   alias PersonalFinance.Finance.Transaction
@@ -131,7 +132,7 @@ defmodule PersonalFinance.ExternalAccounts do
     |> Repo.insert()
   end
 
-  @account_processors [WidibaAccountProcessor, IntesaAccountProcessor, PayPalAccountProcessor]
+  @account_processors [WidibaAccountProcessor, IntesaAccountProcessor, PayPalAccountProcessor, SatispayAccountProcessor]
 
   @spec process_account_import(id :: integer) ::
           {:ok, %Accounts{}, [Transaction.t()]} | {:error, %Accounts{}, [String.t()]}
@@ -162,15 +163,6 @@ defmodule PersonalFinance.ExternalAccounts do
       end
     end)
     |> then(fn transactions -> Finance.create_transactions(transactions) end)
-    # |> then(fn transactions ->
-    #   transactions
-    #   |> Enum.reduce(%{ok: [], errors: []}, fn transaction, acc ->
-    #     case Finance.create_transaction(transaction) do
-    #       {:ok, trn} -> %{acc | ok: [trn.id | acc.ok]}
-    #       {:error, error} -> %{acc | errors: [error | acc.errors]}
-    #     end
-    #   end)
-    # end)
     |> case do
       {:ok, transactions} -> {:ok, account |> update_accounts(%{status: "completed"}), transactions}
       {:error, error} -> {:error, account |> update_accounts(%{status: "error"}), error}

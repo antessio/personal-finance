@@ -18,24 +18,6 @@ defmodule PersonalFinance.ExternalAccounts.PayPalAccountProcessor do
       }) do
     transaction_categorization = TransactionsCategorization.categorize_transactions()
 
-    # file_content
-    # |> String.replace_prefix("\uFEFF", "")
-    # |> dbg()
-    # |> String.split("\n")
-    # |> Stream.map(& &1)
-    # |> Stream.map(&String.replace(&1, "\"", "|"))
-    # |> Stream.map(&String.replace(&1, "|,", "|;"))
-    # |> Enum.map(&IO.inspect(&1, label: "PORCODIO"))
-    # |> CSV.decode(
-    #   headers: true,
-    #   separator: ?;,
-    #   trim: true,
-    #   escape_character: ?|,
-    #   unredact_exceptions: true,
-    #   field_transform: fn x -> x end
-    # )
-    # |> Stream.take(2)
-    # |> Enum.each(&IO.inspect/1)
 
     {:ok,
      file_path
