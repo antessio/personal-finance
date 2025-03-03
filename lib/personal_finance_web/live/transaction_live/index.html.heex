@@ -4,6 +4,9 @@
     <.link patch={~p"/transactions/new"}>
       <.button>New Transaction</.button>
     </.link>
+    <.link phx-click={JS.push("reprocess_categories")}>
+      <.button>Reprocess Categories</.button>
+    </.link>
   </:actions>
 </.header>
 

@@ -17,6 +17,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     categories = Finance.list_categories()
     transaction = Finance.get_transaction!(id)
+
     socket
     |> assign(:page_title, "Edit Transaction")
     |> assign(:categories, categories)
@@ -58,10 +59,32 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
 
   @impl true
   def handle_event("toggle_skip", %{"id" => id}, socket) do
-
     transaction = Finance.toggle_skip_transaction!(id)
 
     {:noreply, stream_insert(socket, :transactions, transaction)}
+  end
+
+  @impl true
+  def handle_event("reprocess_categories", _, socket) do
+    transactions =
+      Finance.list_transactions()
+      |> Enum.map(&Finance.process_categories(&1))
+
+    processed_transactions =
+      Enum.filter(transactions, fn
+        {:ok, _transaction} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:ok, transaction} -> transaction end)
+      |> dbg()
+
+
+      socket =
+        Enum.reduce(processed_transactions, socket, fn transaction, acc_socket ->
+          stream_insert(acc_socket, :transactions, transaction)
+        end)
+
+      {:noreply, socket}
   end
 
   @impl true

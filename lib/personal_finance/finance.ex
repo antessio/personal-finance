@@ -4,6 +4,7 @@ defmodule PersonalFinance.Finance do
   """
 
   import Ecto.Query, warn: false
+  alias PersonalFinance.ExternalAccounts.TransactionsCategorization
   alias Ecto.Multi
   alias PersonalFinance.Finance.MacroCategory
   alias PersonalFinance.Repo
@@ -262,5 +263,11 @@ defmodule PersonalFinance.Finance do
       |> Repo.update()
 
     transaction
+  end
+
+  def process_categories(transaction) do
+    transaction
+    |> then(&Transaction.changeset(&1, %{}, TransactionsCategorization.get_categories_matching(&1)))
+    |> Repo.update()
   end
 end

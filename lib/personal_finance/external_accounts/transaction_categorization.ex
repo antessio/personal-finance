@@ -16,6 +16,14 @@ defmodule PersonalFinance.ExternalAccounts.TransactionsCategorization do
     end
   end
 
+  @spec get_categories_matching(PersonalFinance.Finance.Transaction.t()) :: [PersonalFinance.Finance.Category.t()]
+  def get_categories_matching(transaction) do
+    Finance.list_categories()
+    |> Enum.filter(&any_matcher_matches?(transaction, &1))
+    |> Enum.uniq()
+
+  end
+
   defp any_matcher_matches?(transaction, category) do
     category.matchers
     |> Enum.map(&convert_matcher_to_regex/1)
