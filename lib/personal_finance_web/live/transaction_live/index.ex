@@ -10,9 +10,9 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     Enum.map(1..12, fn month ->
       month
       |> Integer.to_string()
-      |> then(& String.pad_leading(&1, 2, "0"))
-      |> then(& "#{year}-#{&1}")
-      |> then(& %{value: &1, label: &1})
+      |> then(&String.pad_leading(&1, 2, "0"))
+      |> then(&"#{year}-#{&1}")
+      |> then(&%{value: &1, label: &1})
     end)
   end
 
@@ -32,14 +32,12 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
       |> Enum.map(&concatenated_months/1)
       |> List.flatten()
 
-
     {:ok,
      socket
      |> assign(:filters, filters)
      |> assign(:months, months)
      |> assign(:sources, ["widiba", "intesa", "paypal", "satispay"])
-     |> stream(:transactions, transactions)
-    }
+     |> stream(:transactions, transactions)}
   end
 
   @impl true
@@ -90,17 +88,44 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     {:noreply, stream_delete(socket, :transactions, transaction)}
   end
 
-  def handle_event("filter", %{"skipped_included" => skipped_included, "month_year" => month_year, "source" => source}, socket) do
+
+
+  @impl true
+  def handle_event(
+        "filter",
+        %{"skipped_included" => skipped_included, "month_year" => month_year, "source" => source} = f,
+        socket
+      ) do
+        IO.inspect(f, label: "filter")
     filters = %{
       month_year: month_year || "",
-      skipped_included: skipped_included && "included" == skipped_included,
+      skipped_included: parse_skip_included(skipped_included),
       source: source || ""
     }
 
     # Fetch filtered transactions
+    # IO.inspect(Enum.count(socket.assigns.transactions), label: "transactions count")
     transactions = Finance.list_transactions(filters)
+    IO.inspect(Enum.count(transactions), label: "filtered transactions count")
 
-    {:noreply, assign(socket, :transactions, transactions)}
+    {:noreply,
+     socket
+     |> stream(:transactions, [], reset: true)
+     |> add_transactions_stream(transactions)}
+
+    # {:noreply, stream_insert(socket, :transactions, transactions)}
+  end
+  defp parse_skip_included("included"), do: true
+  defp parse_skip_included("skipped"), do: false
+  defp parse_skip_included(""), do: ""
+
+  defp add_transactions_stream(socket, []) do
+    socket
+  end
+  defp add_transactions_stream(socket, transactions) do
+    Enum.reduce(transactions, socket, fn transaction, acc_socket ->
+      stream_insert(acc_socket, :transactions, transaction)
+    end)
   end
 
   @impl true

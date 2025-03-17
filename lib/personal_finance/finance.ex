@@ -135,7 +135,6 @@ defmodule PersonalFinance.Finance do
   end
 
   def list_transactions(%{month_year: month_year, skipped_included: skipped_included, source: source} = filters) do
-    IO.inspect(filters, label: "filters")
     query =
       Transaction
       |> Transaction.by_month(%{month_year: month_year})

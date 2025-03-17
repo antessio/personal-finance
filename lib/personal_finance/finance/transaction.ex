@@ -71,11 +71,11 @@ defmodule PersonalFinance.Finance.Transaction do
   def by_month(query, %{month_year: ""}), do: query
 
   def by_month(query, %{month_year: month_year}) do
-    start_date_month = Timex.parse("#{month_year}-01", "%Y-%m-%d")
-    end_date_month = Timex.add(start_date_month, months: 1)
+    {:ok, start_date_month } = Timex.parse("#{month_year}-01", "{YYYY}-{0M}-{D}")
+    end_date_month = Timex.shift(start_date_month, months: 1)
 
     Query.from(t in query,
-      where: t.inserted_at >= ^start_date_month and t.inserted_at < ^end_date_month
+      where: t.date >= ^start_date_month and t.date < ^end_date_month
     )
   end
 
