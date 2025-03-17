@@ -18,7 +18,6 @@ defmodule PersonalFinance.ExternalAccounts.PayPalAccountProcessor do
       }) do
     transaction_categorization = TransactionsCategorization.categorize_transactions()
 
-
     {:ok,
      file_path
      |> File.read!()
@@ -35,7 +34,10 @@ defmodule PersonalFinance.ExternalAccounts.PayPalAccountProcessor do
        escape_character: ?|,
        unredact_exceptions: true
      )
-     |> Enum.filter(fn row -> row["Stato"] == "Completata" and row["Nome"] != "" end)
+     |> Enum.filter(fn row ->
+       row["Stato"] == "Completata" and row["Nome"] != "" and
+         row["Tipo"] != "Autorizzazione generica"
+     end)
      |> Enum.map(&parse_line(&1, transaction_categorization))}
   end
 

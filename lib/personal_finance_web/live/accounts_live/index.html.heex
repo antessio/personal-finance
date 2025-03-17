@@ -15,6 +15,7 @@
   rows={@streams.accounts_collection}
   row_click={fn {_id, accounts} -> JS.navigate(~p"/accounts/#{accounts}") end}
 >
+  <:col :let={{_id, accounts}} label="ID">{accounts.id}</:col>
   <:col :let={{_id, accounts}} label="Source type">{accounts.source_type}</:col>
   
 
