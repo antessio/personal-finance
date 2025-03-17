@@ -4,6 +4,7 @@ defmodule PersonalFinance.Finance do
   """
 
   import Ecto.Query, warn: false
+  alias Ecto.Query
   alias PersonalFinance.ExternalAccounts.TransactionsCategorization
   alias Ecto.Multi
   alias PersonalFinance.Finance.MacroCategory
@@ -55,7 +56,7 @@ defmodule PersonalFinance.Finance do
   def create_category(attrs \\ %{}) do
     %Category{}
     |> Category.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:unique_id])
+    |> Repo.insert()
   end
 
   @doc """
@@ -132,6 +133,20 @@ defmodule PersonalFinance.Finance do
     Repo.all(Transaction)
     |> Repo.preload(:categories)
   end
+
+  def list_transactions(%{month_year: month_year, skipped_included: skipped_included, source: source} = filters) do
+    IO.inspect(filters, label: "filters")
+    query =
+      Transaction
+      |> Transaction.by_month(%{month_year: month_year})
+      |> Transaction.by_skip(%{skipped_included: skipped_included})
+      |> Transaction.by_source(%{source: source})
+    Repo.all(query)
+    |> Repo.preload(:categories)
+  end
+
+
+
 
   @doc """
   Gets a single transaction.

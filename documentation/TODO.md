@@ -9,10 +9,15 @@
 - [x] Skip transactions
 - [ ] Export to format
 - [x] Reprocess transactions
+- [ ] Filter by month
+- [ ] Filter skipped
+- [ ] Filter by source
 
 ## Bugs
 - [ ] Live view not updated after processing account
 - [ ] Live view not redirected after upload
+- [ ] Categorization on insert doesn't work
+- [ ] Categorization should merge if there is already one
 
 ## Enhancements
 - [ ] Async flow

@@ -1,4 +1,6 @@
 defmodule PersonalFinance.Finance.Transaction do
+  import Ecto.Query, warn: false
+  alias Ecto.Query
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -64,5 +66,29 @@ defmodule PersonalFinance.Finance.Transaction do
       categories: transaction.categories,
       unique_id: transaction.unique_id
     }
+  end
+
+  def by_month(query, %{month_year: ""}), do: query
+
+  def by_month(query, %{month_year: month_year}) do
+    start_date_month = Timex.parse("#{month_year}-01", "%Y-%m-%d")
+    end_date_month = Timex.add(start_date_month, months: 1)
+
+    Query.from(t in query,
+      where: t.inserted_at >= ^start_date_month and t.inserted_at < ^end_date_month
+    )
+  end
+
+  def by_skip(query, %{skipped_included: ""}), do: query
+
+  def by_skip(query, %{skipped_included: skipped_included}) do
+    Query.from(t in query,
+      where: t.skip == ^skipped_included)
+  end
+
+  def by_source(query, %{source: ""}), do: query
+
+  def by_source(query, %{source: source}) do
+    Query.from(t in query, where: t.source == ^source)
   end
 end
