@@ -37,6 +37,13 @@
         {source}
       </option>
     </select>
+    
+<!-- Category Filter -->
+    <select name="category" class="border rounded p-2">
+      <option value="">-</option>
+      <option value="uncategorized">Uncategorized</option>
+      <option :for={category <- @categories} value={category.id} selected={@filters.category == category.id}> {category.name} </option>
+    </select>
   </form>
 </.header>
 

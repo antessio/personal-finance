@@ -101,4 +101,17 @@ defmodule PersonalFinance.Finance.Transaction do
   def by_source(query, %{source: source}) do
     Query.from(t in query, where: t.source == ^source)
   end
+  def by_category(query, %{category_id: nil}), do: query
+  def by_category(query, %{category_id: ""}) do
+    Query.from(t in query,
+      left_join: c in assoc(t, :categories),
+      where: is_nil(c.id)
+    )
+  end
+  def by_category(query, %{category_id: category_id}) do
+    Query.from(t in query,
+      join: c in assoc(t, :categories),
+      where: c.id == ^category_id
+    )
+  end
 end

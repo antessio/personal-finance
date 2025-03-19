@@ -134,12 +134,13 @@ defmodule PersonalFinance.Finance do
     |> Repo.preload(:categories)
   end
 
-  def list_transactions(%{month_year: month_year, skipped_included: skipped_included, source: source} = filters) do
+  def list_transactions(%{month_year: month_year, skipped_included: skipped_included, source: source, category: category_id} = filters) do
     query =
       Transaction
       |> Transaction.by_month(%{month_year: month_year})
       |> Transaction.by_skip(%{skipped_included: skipped_included})
       |> Transaction.by_source(%{source: source})
+      |> Transaction.by_category(%{category_id: category_id})
     Repo.all(query)
     |> Repo.preload(:categories)
   end

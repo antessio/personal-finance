@@ -22,7 +22,8 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     filters = %{
       month_year: "",
       skipped_included: "",
-      source: ""
+      source: "",
+      category: ""
     }
 
     transactions = Finance.list_transactions(filters)
@@ -37,6 +38,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
      |> assign(:filters, filters)
      |> assign(:months, months)
      |> assign(:sources, ["widiba", "intesa", "paypal", "satispay"])
+     |> assign(:categories, Finance.list_categories())
      |> stream(:transactions, transactions)}
   end
 
@@ -93,28 +95,32 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   @impl true
   def handle_event(
         "filter",
-        %{"skipped_included" => skipped_included, "month_year" => month_year, "source" => source} = f,
+        %{"skipped_included" => skipped_included, "month_year" => month_year, "source" => source, "category" => category} = f,
         socket
       ) do
-        IO.inspect(f, label: "filter")
     filters = %{
       month_year: month_year || "",
       skipped_included: parse_skip_included(skipped_included),
-      source: source || ""
+      source: source || "",
+      category: parse_category_filter(category)
     }
 
-    # Fetch filtered transactions
-    # IO.inspect(Enum.count(socket.assigns.transactions), label: "transactions count")
+
     transactions = Finance.list_transactions(filters)
-    IO.inspect(Enum.count(transactions), label: "filtered transactions count")
 
     {:noreply,
      socket
      |> stream(:transactions, [], reset: true)
      |> add_transactions_stream(transactions)}
 
-    # {:noreply, stream_insert(socket, :transactions, transactions)}
   end
+
+
+  defp parse_category_filter(nil), do: nil
+  defp parse_category_filter(""), do: nil
+  defp parse_category_filter("uncategorized"), do: ""
+  defp parse_category_filter(category_id), do: category_id
+
   defp parse_skip_included("included"), do: false
   defp parse_skip_included("skipped"), do: true
   defp parse_skip_included(""), do: ""
