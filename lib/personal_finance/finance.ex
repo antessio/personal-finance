@@ -207,7 +207,7 @@ defmodule PersonalFinance.Finance do
 
     case Repo.transaction(multi) do
       {:ok, result} ->
-        transactions = result |> Map.values() |> dbg()
+        transactions = result |> Map.values()
         {:ok, transactions}
 
       {:error, _operation, changeset, _changes} ->
@@ -281,7 +281,8 @@ defmodule PersonalFinance.Finance do
 
   def process_categories(transaction) do
     transaction
-    |> then(&Transaction.changeset(&1, %{}, TransactionsCategorization.get_categories_matching(&1)))
+    |> Transaction.assign_categories(TransactionsCategorization.get_categories_matching(transaction))
+    |> then(&Transaction.changeset(&1, %{}, &1.categories))
     |> Repo.update()
   end
 end

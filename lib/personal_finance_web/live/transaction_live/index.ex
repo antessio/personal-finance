@@ -115,8 +115,8 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
 
     # {:noreply, stream_insert(socket, :transactions, transactions)}
   end
-  defp parse_skip_included("included"), do: true
-  defp parse_skip_included("skipped"), do: false
+  defp parse_skip_included("included"), do: false
+  defp parse_skip_included("skipped"), do: true
   defp parse_skip_included(""), do: ""
 
   defp add_transactions_stream(socket, []) do
@@ -147,7 +147,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
         _ -> false
       end)
       |> Enum.map(fn {:ok, transaction} -> transaction end)
-      |> dbg()
 
     socket =
       Enum.reduce(processed_transactions, socket, fn transaction, acc_socket ->
@@ -166,7 +165,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     if category_id in Enum.map(categories, & &1.id) do
       {:noreply, socket}
     else
-      category = Finance.get_category!(category_id) |> dbg()
+      category = Finance.get_category!(category_id)
       {:noreply, assign(socket, :selected_categories, categories ++ [category])}
     end
   end

@@ -34,7 +34,17 @@ defmodule PersonalFinance.Finance.Transaction do
   end
 
   def assign_categories(transaction, categories) do
-    %PersonalFinance.Finance.Transaction{transaction | categories: categories}
+    %PersonalFinance.Finance.Transaction{transaction | categories: merge_categories(transaction.categories, categories)}
+  end
+
+  def assign_categories(transaction, []) do
+    transaction
+  end
+
+  @spec merge_categories([PersonalFinance.Finance.Category.t()], [PersonalFinance.Finance.Category.t()]) ::
+          [PersonalFinance.Finance.Category.t()]
+  defp merge_categories(existing_categories, new_categories) do
+    Enum.uniq(existing_categories ++ new_categories) |> dbg()
   end
 
   @spec assign_unique_id(PersonalFinance.Finance.Transaction.t()) ::

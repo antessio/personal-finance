@@ -2,6 +2,8 @@ defmodule PersonalFinance.Finance.Category do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   schema "categories" do
     field :name, :string
     field :macro_category, Ecto.Enum, values: PersonalFinance.Finance.MacroCategory.allowed_types()

@@ -47,7 +47,7 @@ defmodule PersonalFinanceWeb.AccountsLive.Index do
 
   @impl true
   def handle_event("process", %{"id" => id}, socket) do
-    case ExternalAccounts.process_account_import(id) |> dbg() do
+    case ExternalAccounts.process_account_import(id)  do
       {:ok, _accounts, _} ->
         {:noreply,
          socket

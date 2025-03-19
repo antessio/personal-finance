@@ -21,7 +21,6 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
     {:ok,
      file_path
      |> File.read!()
-     |> dbg()
      |> String.replace_prefix("\uFEFF", "")
      |> String.replace("\n", "\r\n")
      |> String.split("\n")
@@ -76,7 +75,6 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
     |> translate_month()
     |> fix_days()
     |>  Timex.parse("%d %b %Y. %H:%M:%S", :strftime)
-    |> dbg()
     |> case do
       {:ok, date} -> date
       _ -> raise "Failed to parse date: #{date}"

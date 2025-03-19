@@ -111,9 +111,8 @@ defmodule PersonalFinanceWeb.TransactionLive.FormComponent do
     transaction_params = socket.assigns.selected_categories
     |> Enum.map(& Map.from_struct(&1))
     |> then(& Map.put_new(transaction_params, "categories", &1))
-    |> dbg()
 
-    case Finance.create_transaction(transaction_params)|> dbg() do
+    case Finance.create_transaction(transaction_params) do
       {:ok, transaction} ->
         notify_parent({:saved, transaction})
 

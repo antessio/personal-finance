@@ -66,7 +66,6 @@ defmodule PersonalFinance.ExternalAccounts.PayPalAccountProcessor do
     {:ok, date} =
       datetime_string
       |> Timex.parse("%d/%m/%Y %H:%M:%S", :strftime)
-      |> dbg()
 
     # convert string to float
     amount = String.to_float(amount)
