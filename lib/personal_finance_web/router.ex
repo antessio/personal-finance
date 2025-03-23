@@ -80,6 +80,7 @@ defmodule PersonalFinanceWeb.Router do
       # transactions
       live "/transactions", TransactionLive.Index, :index
       live "/transactions/new", TransactionLive.Index, :new
+      live "/transactions/bulk_categorization", TransactionLive.Index, :bulk_categorization
       live "/transactions/:id/edit", TransactionLive.Index, :edit
 
       live "/transactions/:id", TransactionLive.Show, :show

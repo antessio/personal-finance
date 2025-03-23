@@ -85,6 +85,19 @@ defmodule PersonalFinanceWeb.TransactionLive.FormComponent do
     save_transaction(socket, socket.assigns.action, transaction_params)
   end
 
+  @impl true
+  def handle_event("add_category_transaction", %{"category_id" => category_id}, socket) do
+    category_id = String.to_integer(category_id)
+    categories = socket.assigns.selected_categories || []
+
+    # Ensure we don't add duplicates
+    if category_id in Enum.map(categories, & &1.id) do
+      {:noreply, socket}
+    else
+      category = Finance.get_category!(category_id)
+      {:noreply, assign(socket, :selected_categories, categories ++ [category])}
+    end
+  end
   defp save_transaction(socket, :edit, transaction_params) do
     IO.inspect(transaction_params, label: "transaction params")
 

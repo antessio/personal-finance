@@ -4,7 +4,6 @@ defmodule PersonalFinance.Finance do
   """
 
   import Ecto.Query, warn: false
-  alias Ecto.Query
   alias PersonalFinance.ExternalAccounts.TransactionsCategorization
   alias Ecto.Multi
   alias PersonalFinance.Finance.MacroCategory
@@ -134,19 +133,22 @@ defmodule PersonalFinance.Finance do
     |> Repo.preload(:categories)
   end
 
-  def list_transactions(%{month_year: month_year, skipped_included: skipped_included, source: source, category: category_id} = filters) do
+  def list_transactions(%{
+        month_year: month_year,
+        skipped_included: skipped_included,
+        source: source,
+        categories: category_ids
+      }) do
     query =
       Transaction
       |> Transaction.by_month(%{month_year: month_year})
       |> Transaction.by_skip(%{skipped_included: skipped_included})
       |> Transaction.by_source(%{source: source})
-      |> Transaction.by_category(%{category_id: category_id})
+      |> Transaction.by_category(%{category_ids: category_ids})
+
     Repo.all(query)
     |> Repo.preload(:categories)
   end
-
-
-
 
   @doc """
   Gets a single transaction.
@@ -281,9 +283,85 @@ defmodule PersonalFinance.Finance do
   end
 
   def process_categories(transaction) do
+    categories = TransactionsCategorization.get_categories_matching(transaction)
+    internal_process_categories(transaction, categories)
+  end
+  defp internal_process_categories(transaction, []) do
     transaction
-    |> Transaction.assign_categories(TransactionsCategorization.get_categories_matching(transaction))
-    |> then(&Transaction.changeset(&1, %{}, &1.categories))
+  end
+
+  defp internal_process_categories(transaction, categories) do
+    transaction
+    |> Transaction.changeset_update_categories(categories)
     |> Repo.update()
+  end
+
+  @spec bulk_update_transactions_categories([String.t()], [PersonalFinance.Finance.Category.t()]) ::
+          {:ok, [Transaction.t()]} | {:error, any()}
+  def bulk_update_transactions_categories(transaction_ids, categories) do
+    # Transaction
+    # |> Transaction.by_ids(transaction_ids)
+    # |> Repo.all()
+    # |> Repo.preload(:categories)
+    # |> Enum.map(fn transaction ->
+    #   transaction
+    #   |> Transaction.changeset_update_categories(categories)
+    #   |> Repo.update()
+    # end)
+
+    transactions =
+      Transaction
+      |> Transaction.by_ids(transaction_ids)
+      |> Repo.all()
+      |> Repo.preload(:categories)
+
+    multi =
+      Enum.reduce(transactions, Ecto.Multi.new(), fn transaction, multi ->
+        changeset =
+          transaction
+          |> Transaction.changeset_update_categories(categories)
+
+        Ecto.Multi.update(multi, {:transaction, transaction.id}, changeset)
+      end)
+
+    case Repo.transaction(multi) do
+      {:ok, result} ->
+        updated_transactions = result |> Map.values()
+        {:ok, updated_transactions}
+
+      {:error, _operation, changeset, _changes} ->
+        {:error, changeset}
+    end
+    # |> dbg()
+
+    # Ecto.Multi.new()
+    # |> Ecto.Multi.run(:fetch_transactions, fn repo, _changes ->
+    #   transactions =
+    #     Transaction
+    #     |> Transaction.by_ids(transaction_ids)
+    #     |> repo.all()
+    #     |> repo.preload(:categories)
+
+    #   {:ok, transactions}
+    # end)
+    # |> Ecto.Multi.run(:update_categories, fn repo, %{fetch_transactions: transactions} ->
+    #   updated_transactions =
+    #     Enum.map(transactions, fn transaction ->
+    #       transaction
+    #       |> Transaction.assign_categories(categories)
+    #       |> then(&Transaction.changeset(&1, %{}, &1.categories))
+    #       |> repo.update()
+    #     end)
+
+    #   # Check if all updates were successful
+    #   if Enum.all?(updated_transactions, &match?({:ok, _}, &1)) do
+    #     {:ok, updated_transactions}
+    #   else
+    #     {:error, :update_failed}
+    #   end
+    # end)
+    # |> Repo.transaction()
+
+    # :ok
   end
 end

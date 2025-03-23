@@ -6,6 +6,8 @@ defmodule PersonalFinance.Finance.Transaction do
 
   @type t :: %__MODULE__{}
 
+  @required_fields [:date, :amount, :description, :unique_id, :source]
+
   @primary_key {:id, UUIDv7, autogenerate: true}
   schema "transactions" do
     field :date, :date
@@ -28,23 +30,36 @@ defmodule PersonalFinance.Finance.Transaction do
   def changeset(transaction, attrs, categories \\ []) do
     transaction
     |> cast(attrs, [:date, :amount, :description, :unique_id, :source, :skip])
-    |> validate_required([:date, :amount, :description, :unique_id, :source])
+    |> validate_required(@required_fields)
     |> unique_constraint(:unique_id)
     |> put_assoc(:categories, categories)
   end
 
-  def assign_categories(transaction, categories) do
-    %PersonalFinance.Finance.Transaction{transaction | categories: merge_categories(transaction.categories, categories)}
+  def changeset_update_categories(transaction, []) do
+    transaction
+    |> cast(%{}, @required_fields)
+    |> put_assoc(:categories, transaction.categories)
+  end
+
+  def changeset_update_categories(transaction, categories) do
+    transaction
+    |> cast(%{}, @required_fields)
+    |> put_assoc(:categories, categories)
   end
 
   def assign_categories(transaction, []) do
     transaction
   end
 
+  def assign_categories(transaction, categories) do
+    %PersonalFinance.Finance.Transaction{transaction | categories: merge_categories(transaction.categories, categories)}
+  end
+
+
   @spec merge_categories([PersonalFinance.Finance.Category.t()], [PersonalFinance.Finance.Category.t()]) ::
           [PersonalFinance.Finance.Category.t()]
   defp merge_categories(existing_categories, new_categories) do
-    Enum.uniq(existing_categories ++ new_categories) |> dbg()
+    Enum.uniq(existing_categories ++ new_categories)
   end
 
   @spec assign_unique_id(PersonalFinance.Finance.Transaction.t()) ::
@@ -101,17 +116,23 @@ defmodule PersonalFinance.Finance.Transaction do
   def by_source(query, %{source: source}) do
     Query.from(t in query, where: t.source == ^source)
   end
-  def by_category(query, %{category_id: nil}), do: query
-  def by_category(query, %{category_id: ""}) do
+  def by_category(query, %{category_ids: nil}), do: query
+  def by_category(query, %{category_ids: [""]}) do
     Query.from(t in query,
       left_join: c in assoc(t, :categories),
       where: is_nil(c.id)
     )
   end
-  def by_category(query, %{category_id: category_id}) do
+  def by_category(query, %{category_ids: category_ids}) do
     Query.from(t in query,
       join: c in assoc(t, :categories),
-      where: c.id == ^category_id
+      where: c.id in ^category_ids
+    )
+  end
+
+  def by_ids(query, transaction_ids) do
+    Query.from(t in query,
+      where: t.id in ^transaction_ids
     )
   end
 end

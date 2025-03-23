@@ -1,4 +1,5 @@
 defmodule PersonalFinanceWeb.AccountsLive.FormComponent do
+alias PersonalFinance.Finance
   use PersonalFinanceWeb, :live_component
 
   alias PersonalFinance.ExternalAccounts
@@ -49,6 +50,7 @@ defmodule PersonalFinanceWeb.AccountsLive.FormComponent do
   def handle_event("save", %{"accounts" => accounts_params}, socket) do
     save_accounts(socket, socket.assigns.action, accounts_params)
   end
+
 
   defp save_accounts(socket, :edit, accounts_params) do
     case ExternalAccounts.update_accounts(socket.assigns.accounts, accounts_params) do

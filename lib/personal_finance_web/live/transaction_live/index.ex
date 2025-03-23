@@ -23,7 +23,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
       month_year: "",
       skipped_included: "",
       source: "",
-      category: ""
+      categories: [""]
     }
 
     transactions = Finance.list_transactions(filters)
@@ -39,6 +39,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
      |> assign(:months, months)
      |> assign(:sources, ["widiba", "intesa", "paypal", "satispay"])
      |> assign(:categories, Finance.list_categories())
+     |> assign(:selected_transactions, [])
      |> stream(:transactions, transactions)}
   end
 
@@ -68,6 +69,16 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     |> assign(:transaction, %Transaction{})
   end
 
+  defp apply_action(socket, :bulk_categorization, _params) do
+    categories = Finance.list_categories()
+
+    socket
+    |> assign(:page_title, "Bulk Categorization")
+    |> assign(:categories, categories)
+    |> assign(:selected_transactions, socket.assigns.selected_transactions || [])
+    |> assign(:selected_categories, [])
+  end
+
   defp apply_action(socket, :index, _params) do
     socket
     |> assign(:page_title, "Listing Transactions")
@@ -90,21 +101,23 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     {:noreply, stream_delete(socket, :transactions, transaction)}
   end
 
-
-
   @impl true
   def handle_event(
         "filter",
-        %{"skipped_included" => skipped_included, "month_year" => month_year, "source" => source, "category" => category} = f,
+        %{
+          "skipped_included" => skipped_included,
+          "month_year" => month_year,
+          "source" => source,
+          "category" => category
+        },
         socket
       ) do
     filters = %{
       month_year: month_year || "",
       skipped_included: parse_skip_included(skipped_included),
       source: source || "",
-      category: parse_category_filter(category)
+      categories: parse_category_filter(category)
     }
-
 
     transactions = Finance.list_transactions(filters)
 
@@ -112,26 +125,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
      socket
      |> stream(:transactions, [], reset: true)
      |> add_transactions_stream(transactions)}
-
-  end
-
-
-  defp parse_category_filter(nil), do: nil
-  defp parse_category_filter(""), do: nil
-  defp parse_category_filter("uncategorized"), do: ""
-  defp parse_category_filter(category_id), do: category_id
-
-  defp parse_skip_included("included"), do: false
-  defp parse_skip_included("skipped"), do: true
-  defp parse_skip_included(""), do: ""
-
-  defp add_transactions_stream(socket, []) do
-    socket
-  end
-  defp add_transactions_stream(socket, transactions) do
-    Enum.reduce(transactions, socket, fn transaction, acc_socket ->
-      stream_insert(acc_socket, :transactions, transaction)
-    end)
   end
 
   @impl true
@@ -184,5 +177,50 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     new_categories = Enum.reject(categories, fn c -> c.id == category_id end)
 
     {:noreply, assign(socket, :selected_categories, new_categories)}
+  end
+
+  @impl true
+  def handle_event("toggle_select_transaction", %{"id" => id}, socket) do
+    selected_transactions = Map.get(socket.assigns, :selected_transactions, [])
+    IO.inspect(socket.assigns, label: "socket assigns")
+
+    if id in selected_transactions do
+      selected_transactions = List.delete(selected_transactions, id)
+      {:noreply, assign(socket, :selected_transactions, selected_transactions)}
+    else
+      selected_transactions = [id | selected_transactions]
+      {:noreply, assign(socket, :selected_transactions, selected_transactions)}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_selected", _, socket) do
+    socket.assigns.selected_transactions
+    |> dbg()
+    |> Enum.each(fn id ->
+      IO.inspect(id, label: "Selected transaction")
+    end)
+
+    {:noreply, socket |> assign(:selected_transactions, [])}
+  end
+
+  defp parse_category_filter(nil), do: nil
+  defp parse_category_filter(""), do: nil
+  defp parse_category_filter("uncategorized"), do: []
+  defp parse_category_filter("categorized"), do: Finance.list_categories() |> Enum.map(& &1.id)
+  defp parse_category_filter(category_id), do: [category_id]
+
+  defp parse_skip_included("included"), do: false
+  defp parse_skip_included("skipped"), do: true
+  defp parse_skip_included(""), do: ""
+
+  defp add_transactions_stream(socket, []) do
+    socket
+  end
+
+  defp add_transactions_stream(socket, transactions) do
+    Enum.reduce(transactions, socket, fn transaction, acc_socket ->
+      stream_insert(acc_socket, :transactions, transaction)
+    end)
   end
 end

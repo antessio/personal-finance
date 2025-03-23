@@ -7,6 +7,9 @@
     <.link phx-click={JS.push("reprocess_categories")}>
       <.button>Reprocess Categories</.button>
     </.link>
+    <.link patch={~p"/transactions/bulk_categorization"}>
+      <.button>Bulk Categorization</.button>
+    </.link>
   </:actions>
   <form phx-change="filter" class="mb-4 flex gap-4 items-center">
     <!-- Month-Year Filter -->
@@ -42,16 +45,25 @@
     <select name="category" class="border rounded p-2">
       <option value="">-</option>
       <option value="uncategorized">Uncategorized</option>
-      <option :for={category <- @categories} value={category.id} selected={@filters.category == category.id}> {category.name} </option>
+      <option value="categorized">Categorized</option>
+      <option
+        :for={category <- @categories}
+        value={category.id}
+        selected={Enum.any?(@filters.categories, & &1 == category.id)}
+      >
+        {category.name}
+      </option>
     </select>
   </form>
 </.header>
 
-<.table
-  id="transactions"
-  rows={@streams.transactions}
-  row_click={fn {_id, transaction} -> JS.navigate(~p"/transactions/#{transaction}") end}
->
+<.table id="transactions" rows={@streams.transactions}>
+  <:col :let={{_id, transaction}} label="">
+    <input type="checkbox" name="selected_transactions[]"
+    value={transaction.id} phx-click="toggle_select_transaction" 
+    phx-value-id={transaction.id} />
+    
+  </:col>
   <:col :let={{_id, transaction}} label="Date">
     <div class="w-24">{transaction.date}</div>
   </:col>
@@ -85,16 +97,15 @@
   </:col>
 
   <:action :let={{_id, transaction}}>
-    <div class="sr-only">
-      <.link navigate={~p"/transactions/#{transaction}"}>Show</.link>
-    </div>
+    <.link navigate={~p"/transactions/#{transaction}"}>Show</.link>
+  </:action>
+  <:action :let={{_id, transaction}}>
     <.link patch={~p"/transactions/#{transaction}/edit"}>Edit</.link>
   </:action>
   <:action :let={{id, transaction}}>
     <.link
       phx-click={JS.push("delete", value: %{id: transaction.id}) |> hide("##{id}")}
-      data-confirm="Are you sure?"
-    >
+      data-confirm="Are you sure?">
       Delete
     </.link>
   </:action>
@@ -108,7 +119,21 @@
     </.link>
   </:action>
 </.table>
-
+<.modal
+:if={@live_action in [:bulk_categorization]}
+id="bulk-categorization-modal"
+show
+on_cancel={JS.patch(~p"/transactions")}>
+  <.live_component
+    title={@page_title}
+    id="bulk-categorization"
+    module={PersonalFinanceWeb.TransactionLive.FormBulkTransactionCategorization}
+    selected_transactions={@selected_transactions}
+    categories={@categories}
+    selected_categories={@selected_categories}
+    patch={~p"/transactions"}
+  />
+</.modal>
 <.modal
   :if={@live_action in [:new, :edit]}
   id="transaction-modal"

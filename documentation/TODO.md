@@ -12,7 +12,7 @@
 - [x] Filter by month
 - [x] Filter skipped
 - [x] Filter by source
-- [ ] Filter uncategorised
+- [x] Filter uncategorised
 - [ ] Assign categories in batch
 
 ## Bugs
@@ -20,6 +20,9 @@
 - [ ] Live view not redirected after upload
 - [ ] Categorization on insert doesn't work
 - [x] Categorization should merge if there is already one
+- [x] Update category doesn't work
+- [ ] Updating multiple categories doesn't work
+- [ ] Live view not redirected after updating categories (see patch passed as parameters)
 
 ## Enhancements
 - [ ] Async flow

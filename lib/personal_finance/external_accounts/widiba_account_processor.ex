@@ -43,45 +43,6 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
   def process_account(%Accounts{source_type: "widiba"}), do: {:error, "Invalid account status"}
   def process_account(_), do: :skip
 
-  @spec parse_line(Map.t(), (Transaction.t() -> Transaction.t())) :: Transaction.t()
-  defp parse_line(
-         %{
-           "CAUSALE" => causale,
-           "DATA CONT." => data_cont,
-           "DATA VAL." => _data_val,
-           "IMPORTO (€)(€)" => importo,
-           "DESCRIZIONE" => descrizione
-         },
-         transaction_categorization
-       ) do
-    # convert string to date in the format dd/mm/yyyy
-    date =
-      case extract_date_time(descrizione) do
-        {:ok, date} ->
-          date
-
-        {:error, _} ->
-          data_cont
-          |> Timex.parse("%d/%m/%Y", :strftime)
-          |> DateTime.new(0, 0, 0)
-      end
-
-    # convert string to float
-    amount =
-      importo
-      |> String.replace(".", "")
-      |> String.replace(",", ".")
-      |> String.to_float()
-
-    %Transaction{
-      date: date,
-      amount: amount,
-      description: causale <> " " <> descrizione,
-      source: "widiba"
-    }
-    |> transaction_categorization.()
-  end
-
   @spec extract_date_time(String.t()) :: {:ok, DateTime} | {:error, String.t()}
   defp extract_date_time(string) do
     case Regex.run(@regex, string) do
