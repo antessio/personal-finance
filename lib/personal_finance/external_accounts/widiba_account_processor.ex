@@ -44,6 +44,7 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
   def process_account(_), do: :skip
 
   @spec extract_date_time(String.t()) :: {:ok, DateTime} | {:error, String.t()}
+  defp extract_date_time(nil), do: {:error, "No description"}
   defp extract_date_time(string) do
     case Regex.run(@regex, string) do
       [_, date, time] ->
@@ -76,7 +77,7 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
            _whatever,
            settlement_date,
            _another_date,
-           _reason,
+           reason,
            description,
            _whatever_2,
            amount
@@ -94,8 +95,9 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
     %Transaction{
       date: transaction_date,
       amount: amount,
-      description: description,
-      source: "widiba"
+      description: description || reason,
+      source: "widiba",
+      categories: []
     }
     |> transaction_categorization.()
   end

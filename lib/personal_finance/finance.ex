@@ -109,7 +109,7 @@ defmodule PersonalFinance.Finance do
   def get_macro_categories() do
     [
       %MacroCategory{type: :income, name: "Income"},
-      %MacroCategory{type: :expense, name: "Expense"},
+      %MacroCategory{type: :expense, name: "Expense Var."},
       %MacroCategory{type: :bills, name: "Bills"},
       %MacroCategory{type: :savings, name: "Savings"},
       %MacroCategory{type: :subscriptions, name: "Subscriptions"},

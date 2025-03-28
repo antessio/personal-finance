@@ -1,5 +1,6 @@
 defmodule PersonalFinance.Finance.Transaction do
   import Ecto.Query, warn: false
+  alias Ecto.Adapter.Transaction
   alias Ecto.Query
   use Ecto.Schema
   import Ecto.Changeset
@@ -53,6 +54,10 @@ defmodule PersonalFinance.Finance.Transaction do
 
   def assign_categories(transaction, categories) do
     %PersonalFinance.Finance.Transaction{transaction | categories: merge_categories(transaction.categories, categories)}
+  end
+
+  def assign_categories(%__MODULE__{categories: nil} = transaction, categories) do
+    %PersonalFinance.Finance.Transaction{transaction | categories: merge_categories([], categories)}
   end
 
 
@@ -117,7 +122,7 @@ defmodule PersonalFinance.Finance.Transaction do
     Query.from(t in query, where: t.source == ^source)
   end
   def by_category(query, %{category_ids: nil}), do: query
-  def by_category(query, %{category_ids: [""]}) do
+  def by_category(query, %{category_ids: category_ids}) when category_ids == [] or category_ids == [""] do
     Query.from(t in query,
       left_join: c in assoc(t, :categories),
       where: is_nil(c.id)

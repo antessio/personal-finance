@@ -27,7 +27,9 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-
+    total_amount = transactions
+    |> Enum.map(& &1.amount)
+    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
     months =
       Enum.to_list(Date.utc_today().year()..@years_start)
       |> Enum.map(&concatenated_months/1)
@@ -40,6 +42,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
      |> assign(:sources, ["widiba", "intesa", "paypal", "satispay"])
      |> assign(:categories, Finance.list_categories())
      |> assign(:selected_transactions, [])
+     |> assign(:total_amount, total_amount)
      |> stream(:transactions, transactions)}
   end
 
@@ -120,10 +123,13 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-
+    total_amount = transactions
+    |> Enum.map(& &1.amount)
+    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
     {:noreply,
      socket
      |> stream(:transactions, [], reset: true)
+     |> assign(:total_amount, total_amount)
      |> add_transactions_stream(transactions)}
   end
 

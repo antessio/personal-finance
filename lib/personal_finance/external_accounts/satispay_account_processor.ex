@@ -63,7 +63,8 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
       date: date,
       amount: amount,
       description: name <> " " <> kind,
-      source: "satispay"
+      source: "satispay",
+      categories: []
     }
     |> transaction_categorization.()
   end

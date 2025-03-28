@@ -14,6 +14,7 @@
 - [x] Filter by source
 - [x] Filter uncategorised
 - [ ] Assign categories in batch
+- [ ] Categorization strategies: regex, date, source (like a rule engine)
 
 ## Bugs
 - [ ] Live view not updated after processing account

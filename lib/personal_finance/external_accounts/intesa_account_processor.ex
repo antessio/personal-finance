@@ -60,7 +60,8 @@ defmodule PersonalFinance.ExternalAccounts.IntesaAccountProcessor do
       date: transaction_date,
       amount: amount,
       description: operation <> " " <> details,
-      source: "intesa"
+      source: "intesa",
+      categories: []
     }
     |> transaction_categorization.()
   end

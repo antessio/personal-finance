@@ -74,7 +74,8 @@ defmodule PersonalFinance.ExternalAccounts.PayPalAccountProcessor do
       date: date,
       amount: amount,
       description: name,
-      source: "paypal"
+      source: "paypal",
+      categories: []
     }
     |> transaction_categorization.()
   end
