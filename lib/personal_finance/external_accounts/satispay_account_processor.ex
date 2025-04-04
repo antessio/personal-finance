@@ -27,15 +27,48 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
      |> Stream.map(& &1)
      |> CSV.decode!(headers: true, separator: ?,, trim: true)
      |> Stream.filter(&(&1["kind"] != "Ricarica Satispay"))
-     |> Enum.map(&parse_line(&1, transaction_categorization))}
+     |> Enum.map(&parse_line(&1, transaction_categorization))
+     |> Enum.reject(&is_nil/1)
+    }
   end
 
   def process_account(%Accounts{source_type: "satispay"}), do: {:error, "Invalid account status"}
   def process_account(_), do: :skip
 
-  # id,name,state,kind,date,amount,currency,extra info
+  @spec parse_line(Map.t(), (Transaction.t() -> Transaction.t())) ::
+          Transaction.t() | nil
+  defp parse_line(
+         %{
+           "Data" => date,
+           "Importo" => amount_str,
+           "ID (Comunicalo all’assistenza clienti in caso di problemi)" => _id,
+           "Informazioni aggiuntive (il servizio clienti potrebbe richiederle)" => _extra_info,
+           "Nome" => name,
+           "Stato" => _state,
+           "Tipologia" => kind
+         },
+         transaction_categorization
+       ) do
+    # convert string to date in the format dd/mm/yyyy
+    date = convert_date!(date, "%d %b %Y %H:%M:%S")
 
-  @spec parse_line(Map.t(), (Transaction.t() -> Transaction.t())) :: Transaction.t()
+    # convert string to float
+    amount =
+      amount_str
+      |> String.trim()
+      |> String.replace(",", ".")
+      |> String.to_float()
+
+    %Transaction{
+      date: date,
+      amount: amount,
+      description: name <> " " <> kind,
+      source: "satispay",
+      categories: []
+    }
+    |> transaction_categorization.()
+  end
+
   defp parse_line(
          %{
            "id" => _id,
@@ -69,13 +102,17 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
     |> transaction_categorization.()
   end
 
-  defp convert_date!(date) do
+  defp parse_line(_row, _transaction_categorization) do
+    nil
+  end
+
+  defp convert_date!(date, format \\ "%d %b %Y. %H:%M:%S") do
     # 30 set 2024. 00:35:42
 
     date
     |> translate_month()
     |> fix_days()
-    |>  Timex.parse("%d %b %Y. %H:%M:%S", :strftime)
+    |> Timex.parse(format, :strftime)
     |> case do
       {:ok, date} -> date
       _ -> raise "Failed to parse date: #{date}"
@@ -85,8 +122,9 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
   @spec fix_days(String.t()) :: String.t()
   defp fix_days(date_str) do
     # take first two characters
-    date_split = date_str
-    |> String.split(" ")
+    date_split =
+      date_str
+      |> String.split(" ")
 
     [days | rest] = date_split
 
@@ -97,7 +135,6 @@ defmodule PersonalFinance.ExternalAccounts.SatispayAccountProcessor do
 
     [days | rest]
     |> Enum.join(" ")
-
   end
 
   @spec translate_month(String.t()) :: String.t()

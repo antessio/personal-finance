@@ -15,6 +15,7 @@
 - [x] Filter uncategorised
 - [ ] Assign categories in batch
 - [ ] Categorization strategies: regex, date, source (like a rule engine)
+- [ ] Categorization only on selected
 
 ## Bugs
 - [ ] Live view not updated after processing account
