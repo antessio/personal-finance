@@ -205,7 +205,7 @@ defmodule PersonalFinance.Finance do
 
         %Transaction{}
         |> Transaction.changeset(attrs, categories)
-        |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1))
+        |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1,  on_conflict: :nothing, conflict_target: :unique_id))
       end)
 
     case Repo.transaction(multi) do

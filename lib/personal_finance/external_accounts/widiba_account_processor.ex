@@ -21,23 +21,27 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
       }) do
     transaction_categorization = TransactionsCategorization.categorize_transactions()
 
-    transactions = case Xlsxir.multi_extract(file_path) do
-      {:error, error} ->
-        # File.rm!(tmp_file)
-        {:error, error}
+    transactions =
+      case Xlsxir.multi_extract(file_path) do
+        {:error, error} ->
+          # File.rm!(tmp_file)
+          {:error, error}
 
-      [ok: table_id] ->
-        [rows: row_count, cols: _cols_count, cells: _cells_count, name: _sheet_name] =
-          Xlsxir.get_info(table_id)
+        [ok: table_id] ->
+          [rows: row_count, cols: _cols_count, cells: _cells_count, name: _sheet_name] =
+            Xlsxir.get_info(table_id)
 
-        Enum.to_list(@skip_rows..row_count)
-        |> Enum.map(&Xlsxir.get_row(table_id, &1))
-        |> Enum.filter(&(!skip_row(&1)))
-        |> Enum.map(&parse_row(&1, transaction_categorization))
-    end
+          Enum.to_list(@skip_rows..(row_count + 10))
+          |> Enum.map(&Xlsxir.get_row(table_id, &1))
+          |> Enum.filter(&(!skip_row(&1)))
+          |> Enum.map(&parse_row(&1, transaction_categorization))
+
+          # Xlsxir.get_list(table_id)
+          # |> Enum.filter(&(!skip_row(&1)))
+          # |> Enum.map(&parse_row(&1, transaction_categorization))
+      end
 
     {:ok, transactions}
-
   end
 
   def process_account(%Accounts{source_type: "widiba"}), do: {:error, "Invalid account status"}
@@ -45,6 +49,7 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
 
   @spec extract_date_time(String.t()) :: {:ok, DateTime} | {:error, String.t()}
   defp extract_date_time(nil), do: {:error, "No description"}
+
   defp extract_date_time(string) do
     case Regex.run(@regex, string) do
       [_, date, time] ->
@@ -60,6 +65,54 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
   defp skip_row([]) do
     true
   end
+
+  defp skip_row([nil, nil, nil, nil, nil, nil, "Movimenti Conto"]), do: true
+  defp skip_row([nil, nil, nil, nil, nil, nil, "Dati " <> _date]), do: true
+  defp skip_row([nil, "Conto", nil, "6000/957035"]), do: true
+  defp skip_row([nil, "Di", nil, "D'Alessio Antonio"]), do: true
+
+  defp skip_row([
+         nil,
+         "IBAN",
+         nil,
+         "IT44S0344214239000095703546",
+         "Periodo",
+         nil,
+         "Da: " <> _date
+       ]),
+       do: true
+
+  defp skip_row([
+         nil,
+         "Saldo disponibile (€)",
+         nil,
+         _amount,
+         "Movimenti",
+         nil,
+         "Tutti i movimenti"
+       ]),
+       do: true
+
+  defp skip_row([
+         nil,
+         "Movimenti non contabilizzati (€)",
+         nil,
+         _amount,
+         "Categoria My Money",
+         nil,
+         "Tutte le categorie"
+       ]),
+       do: true
+
+  defp skip_row([nil, "Saldo contabile (€)", nil, _amount, "Causale", nil, "Tutte le causali"]),
+    do: true
+
+  defp skip_row([nil, "Saldo iniziale (€)", nil, _amount, "Importo (€)", nil, "Tutti gli importi"]),
+       do: true
+
+  defp skip_row([nil, "Saldo finale (€)", nil, _amount, nil, nil, nil]), do: true
+
+  defp skip_row([nil, nil, nil, nil, nil, nil, _amount]), do: true
 
   defp skip_row(row) do
     Enum.all?(row, &is_nil/1)
@@ -89,7 +142,8 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
         {:ok, date} ->
           date
 
-        {:error, _} -> settlement_date
+        {:error, _} ->
+          settlement_date
       end
 
     %Transaction{
@@ -99,6 +153,7 @@ defmodule PersonalFinance.ExternalAccounts.WidibaAccountProcessor do
       source: "widiba",
       categories: []
     }
+    |> dbg()
     |> transaction_categorization.()
   end
 end
