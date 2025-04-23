@@ -38,3 +38,5 @@ personal_finance-*.tar
 npm-debug.log
 /assets/node_modules/
 
+.app.env
+.db.env
