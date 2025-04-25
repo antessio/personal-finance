@@ -10,6 +10,13 @@
     <.link patch={~p"/transactions/bulk_categorization"}>
       <.button>Bulk Categorization</.button>
     </.link>
+        <!-- Select/Deselect All Buttons -->
+    <.link phx-click="select_all">
+      <.button type="button">Select All</.button>
+    </.link>
+    <.link phx-click="deselect_all">
+      <.button type="button">Deselect All</.button>
+    </.link>
   </:actions>
   <form phx-change="filter" class="mb-4 flex gap-4 items-center">
     <!-- Month-Year Filter -->

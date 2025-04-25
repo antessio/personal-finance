@@ -27,9 +27,12 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-    total_amount = transactions
-    |> Enum.map(& &1.amount)
-    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+    total_amount =
+      transactions
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
     months =
       Enum.to_list(Date.utc_today().year()..@years_start)
       |> Enum.map(&concatenated_months/1)
@@ -123,9 +126,12 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-    total_amount = transactions
-    |> Enum.map(& &1.amount)
-    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+    total_amount =
+      transactions
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
     {:noreply,
      socket
      |> stream(:transactions, [], reset: true)
@@ -208,6 +214,21 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     end)
 
     {:noreply, socket |> assign(:selected_transactions, [])}
+  end
+
+  @impl true
+  def handle_event("select_all", _params, socket) do
+    # Assuming you keep the visible rows in socket.assigns.rows
+    all_ids =
+      socket.assigns.rows
+      |> Enum.map(fn {_idx, txn} -> txn.id end)
+
+    {:noreply, assign(socket, :selected_transactions, all_ids)}
+  end
+
+  @impl true
+  def handle_event("deselect_all", _params, socket) do
+    {:noreply, assign(socket, :selected_transactions, [])}
   end
 
   defp parse_category_filter(nil), do: nil
