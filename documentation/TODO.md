@@ -13,7 +13,7 @@
 - [x] Filter skipped
 - [x] Filter by source
 - [x] Filter uncategorised
-- [ ] Assign categories in batch
+- [x] Assign categories in batch
 - [ ] Categorization strategies: regex, date, source (like a rule engine)
 - [ ] Categorization only on selected
 
