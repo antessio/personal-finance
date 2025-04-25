@@ -9,6 +9,8 @@ services:
       - .app.env
     depends_on:
       - postgres
+    profiles:
+      - prod
   postgres:
     image: postgres:12
     container_name: db
@@ -22,6 +24,9 @@ services:
       personal_finance_network:
         aliases:
           - db
+    profiles:
+      - db
+      - prod
 
 networks:
   personal_finance_network:
