@@ -115,7 +115,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
           "month_year" => month_year,
           "source" => source,
           "category" => category
-        },
+        } = f,
         socket
       ) do
     filters = %{
@@ -134,6 +134,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
 
     {:noreply,
      socket
+     |> stream(:filters, f)
      |> stream(:transactions, [], reset: true)
      |> assign(:total_amount, total_amount)
      |> add_transactions_stream(transactions)}
@@ -148,9 +149,14 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
 
   @impl true
   def handle_event("reprocess_categories", _, socket) do
+
+
+
     transactions =
-      Finance.list_transactions()
-      |> Enum.map(&Finance.process_categories(&1))
+      socket.assigns.filter
+      |> Finance.list_transactions()
+      |> dbg()
+      # |> Enum.map(&Finance.process_categories(&1))
 
     processed_transactions =
       Enum.filter(transactions, fn
@@ -194,7 +200,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   @impl true
   def handle_event("toggle_select_transaction", %{"id" => id}, socket) do
     selected_transactions = Map.get(socket.assigns, :selected_transactions, [])
-    IO.inspect(socket.assigns, label: "socket assigns")
 
     if id in selected_transactions do
       selected_transactions = List.delete(selected_transactions, id)
@@ -203,32 +208,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
       selected_transactions = [id | selected_transactions]
       {:noreply, assign(socket, :selected_transactions, selected_transactions)}
     end
-  end
-
-  @impl true
-  def handle_event("delete_selected", _, socket) do
-    socket.assigns.selected_transactions
-    |> dbg()
-    |> Enum.each(fn id ->
-      IO.inspect(id, label: "Selected transaction")
-    end)
-
-    {:noreply, socket |> assign(:selected_transactions, [])}
-  end
-
-  @impl true
-  def handle_event("select_all", _params, socket) do
-    # Assuming you keep the visible rows in socket.assigns.rows
-    all_ids =
-      socket.assigns.rows
-      |> Enum.map(fn {_idx, txn} -> txn.id end)
-
-    {:noreply, assign(socket, :selected_transactions, all_ids)}
-  end
-
-  @impl true
-  def handle_event("deselect_all", _params, socket) do
-    {:noreply, assign(socket, :selected_transactions, [])}
   end
 
   defp parse_category_filter(nil), do: nil

@@ -16,6 +16,8 @@
 - [x] Assign categories in batch
 - [ ] Categorization strategies: regex, date, source (like a rule engine)
 - [ ] Categorization only on selected
+- [ ] Manual insert transaction
+- [ ] Forcasted expences: based on category they can be moved to the badget when they are planned
 
 ## Bugs
 - [ ] Live view not updated after processing account

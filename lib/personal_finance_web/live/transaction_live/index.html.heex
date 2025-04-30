@@ -1,25 +1,10 @@
 <.header>
   Listing Transactions
-  <:actions>
-    <.link patch={~p"/transactions/new"}>
-      <.button>New Transaction</.button>
-    </.link>
-    <.link phx-click={JS.push("reprocess_categories")}>
-      <.button>Reprocess Categories</.button>
-    </.link>
-    <.link patch={~p"/transactions/bulk_categorization"}>
-      <.button>Bulk Categorization</.button>
-    </.link>
-        <!-- Select/Deselect All Buttons -->
-    <.link phx-click="select_all">
-      <.button type="button">Select All</.button>
-    </.link>
-    <.link phx-click="deselect_all">
-      <.button type="button">Deselect All</.button>
-    </.link>
-  </:actions>
-  <form phx-change="filter" class="mb-4 flex gap-4 items-center">
-    <!-- Month-Year Filter -->
+</.header>
+
+<div class="bg-white shadow rounded-lg p-4 mb-6">
+  <h3 class="text-lg font-semibold text-gray-800 mb-3">Filters</h3>
+  <form phx-change="filter" class="mb-4 flex gap-4 items-center">    
     <select name="month_year" class="border rounded p-2">
       <option value="">-</option>
       <option
@@ -31,7 +16,6 @@
       </option>
     </select>
     
-<!-- Skipped/Included Filter -->
     <select name="skipped_included" class="border rounded p-2">
       <option value="">-</option>
       <option value="included" selected={@filters.skipped_included == "included"}>
@@ -40,7 +24,6 @@
       <option value="skipped" selected={@filters.skipped_included == "skipped"}>Skipped</option>
     </select>
     
-<!-- Source Filter -->
     <select name="source" class="border rounded p-2">
       <option value="">-</option>
       <option :for={source <- @sources} value={source} selected={@filters.source == source}>
@@ -48,7 +31,6 @@
       </option>
     </select>
     
-<!-- Category Filter -->
     <select name="category" class="border rounded p-2">
       <option value="">-</option>
       <option value="uncategorized">Uncategorized</option>
@@ -62,7 +44,29 @@
       </option>
     </select>
   </form>
-</.header>
+  </div>
+
+
+<div class="w-full flex flex-wrap items-center justify-start gap-3 mb-6 bg-white p-4 shadow rounded-lg">
+  <.link patch={~p"/transactions/new"}>
+    <.button title="New transaction" class="p-2 bg-blue-600 text-white hover:bg-blue-500">
+      <i class="fas fa-plus fa-lg"></i>
+    </.button>
+  </.link>
+
+  <.link phx-click={JS.push("reprocess_categories")}>
+    <.button title="Reprocess categories" class="p-2 bg-indigo-600 text-white hover:bg-indigo-500">
+      <i class="fas fa-sync-alt fa-lg"></i>
+    </.button>
+  </.link>
+
+  <.link patch={~p"/transactions/bulk_categorization"}>
+    <.button title="Bulk categorization" class="p-2 bg-green-600 text-white hover:bg-green-500">
+      <i class="fas fa-tasks fa-lg"></i>
+    </.button>
+  </.link>
+</div>
+
 
 <div>
   <p>
