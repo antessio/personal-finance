@@ -105,7 +105,18 @@ defmodule PersonalFinanceWeb.UserAuth do
       if user_token = conn.cookies[@remember_me_cookie] do
         {user_token, put_session(conn, :user_token, user_token)}
       else
-        {nil, conn}
+        # Try to get token from Authorization header
+        case Plug.Conn.get_req_header(conn, "authorization") do
+          ["Bearer " <> token] ->
+            case Base.url_decode64(token, padding: false) do
+              {:ok, decoded_token} ->
+                {decoded_token, put_session(conn, :user_token, decoded_token)}
+              :error ->
+                {nil, conn}
+            end
+          _ ->
+            {nil, conn}
+        end
       end
     end
   end

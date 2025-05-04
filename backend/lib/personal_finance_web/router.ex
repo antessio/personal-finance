@@ -16,6 +16,7 @@ defmodule PersonalFinanceWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug :fetch_current_user
   end
 
   pipeline :api_protected do
