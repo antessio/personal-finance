@@ -43,3 +43,31 @@ npm-debug.log
 
 # Ignore embedded git repositories
 /deps/heroicons/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.vercel/
+frontend/.env*
+frontend/out/
+frontend/dist/
+frontend/build/
+frontend/coverage/
+frontend/.turbo/
+frontend/.cache/
+frontend/.docusaurus/
+frontend/.yarn/
+frontend/.pnp.*
+frontend/.DS_Store
+frontend/Thumbs.db
+frontend/.idea/
+frontend/.vscode/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.eslintcache
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
