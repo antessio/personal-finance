@@ -1,7 +1,7 @@
 # define postgres
 services:
   app:
-    build: .
+    build: backend
     image: personal_finance
     ports:
       - "4000:4000"
@@ -9,6 +9,17 @@ services:
       - .app.env
     depends_on:
       - postgres
+    profiles:
+      - prod
+  frontend:
+    build: frontend
+    image: personal_finance_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://app:4000
+    depends_on:
+      - app
     profiles:
       - prod
   postgres:
