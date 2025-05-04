@@ -149,6 +149,7 @@ defmodule PersonalFinance.Finance do
     Repo.all(query)
     |> Repo.preload(:categories)
   end
+  def list_transactions(%{}), do: list_transactions()
 
   @doc """
   Gets a single transaction.

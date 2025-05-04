@@ -27,9 +27,12 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-    total_amount = transactions
-    |> Enum.map(& &1.amount)
-    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+    total_amount =
+      transactions
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
     months =
       Enum.to_list(Date.utc_today().year()..@years_start)
       |> Enum.map(&concatenated_months/1)
@@ -112,7 +115,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
           "month_year" => month_year,
           "source" => source,
           "category" => category
-        },
+        } = f,
         socket
       ) do
     filters = %{
@@ -123,9 +126,12 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     }
 
     transactions = Finance.list_transactions(filters)
-    total_amount = transactions
-    |> Enum.map(& &1.amount)
-    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+    total_amount =
+      transactions
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
     {:noreply,
      socket
      |> stream(:transactions, [], reset: true)
@@ -143,8 +149,14 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   @impl true
   def handle_event("reprocess_categories", _, socket) do
     transactions =
-      Finance.list_transactions()
-      |> Enum.map(&Finance.process_categories(&1))
+      socket.assigns.filters
+      |> dbg()
+      |> convert_to_filters()
+      |> Finance.list_transactions()
+
+    # |> Enum.map(&Finance.process_categories(&1))
+
+    IO.inspect("Found #{transactions |> Enum.count()}")
 
     processed_transactions =
       Enum.filter(transactions, fn
@@ -188,7 +200,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   @impl true
   def handle_event("toggle_select_transaction", %{"id" => id}, socket) do
     selected_transactions = Map.get(socket.assigns, :selected_transactions, [])
-    IO.inspect(socket.assigns, label: "socket assigns")
 
     if id in selected_transactions do
       selected_transactions = List.delete(selected_transactions, id)
@@ -202,7 +213,6 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
   @impl true
   def handle_event("delete_selected", _, socket) do
     socket.assigns.selected_transactions
-    |> dbg()
     |> Enum.each(fn id ->
       IO.inspect(id, label: "Selected transaction")
     end)
@@ -229,4 +239,22 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
       stream_insert(acc_socket, :transactions, transaction)
     end)
   end
+
+  defp convert_to_filters(
+         %{
+           "skipped_included" => skipped_included,
+           "month_year" => month_year,
+           "source" => source,
+           "category" => category
+         }
+       ) do
+    %{
+      month_year: month_year || "",
+      skipped_included: parse_skip_included(skipped_included),
+      source: source || "",
+      categories: parse_category_filter(category)
+    }
+  end
+
+  defp convert_to_filters(_), do: %{}
 end
