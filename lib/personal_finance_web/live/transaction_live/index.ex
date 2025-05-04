@@ -152,12 +152,7 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
 
 
 
-    transactions =
-      socket.assigns.filter
-      |> Finance.list_transactions()
-      |> dbg()
-      # |> Enum.map(&Finance.process_categories(&1))
-
+    transactions = Finance.list_transactions() |> Enum.map(&Finance.process_categories(&1))
     processed_transactions =
       Enum.filter(transactions, fn
         {:ok, _transaction} -> true
@@ -210,6 +205,17 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
     end
   end
 
+
+  @impl true
+  def handle_event("delete_selected", _, socket) do
+    socket.assigns.selected_transactions
+    |> Enum.each(fn id ->
+      IO.inspect(id, label: "Selected transaction")
+    end)
+
+    {:noreply, socket |> assign(:selected_transactions, [])}
+  end
+
   defp parse_category_filter(nil), do: nil
   defp parse_category_filter(""), do: nil
   defp parse_category_filter("uncategorized"), do: []
@@ -229,4 +235,22 @@ defmodule PersonalFinanceWeb.TransactionLive.Index do
       stream_insert(acc_socket, :transactions, transaction)
     end)
   end
+
+  defp convert_to_filters(
+         %{
+           "skipped_included" => skipped_included,
+           "month_year" => month_year,
+           "source" => source,
+           "category" => category
+         }
+       ) do
+    %{
+      month_year: month_year || "",
+      skipped_included: parse_skip_included(skipped_included),
+      source: source || "",
+      categories: parse_category_filter(category)
+    }
+  end
+
+  defp convert_to_filters(_), do: %{}
 end
