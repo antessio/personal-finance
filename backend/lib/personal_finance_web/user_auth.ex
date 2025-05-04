@@ -5,6 +5,7 @@ defmodule PersonalFinanceWeb.UserAuth do
   import Phoenix.Controller
 
   alias PersonalFinance.Accounts
+  alias PersonalFinanceWeb.Router.Helpers, as: Routes
 
   # Make the remember me cookie valid for 60 days.
   # If you want bump or reduce this value, also change
@@ -31,7 +32,8 @@ defmodule PersonalFinanceWeb.UserAuth do
 
     conn
     |> renew_session()
-    |> put_token_in_session(token)
+    |> put_session(:user_token, token)
+    |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
     |> maybe_write_remember_me_cookie(token, params)
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
@@ -47,8 +49,8 @@ defmodule PersonalFinanceWeb.UserAuth do
   # This function renews the session ID and erases the whole
   # session to avoid fixation attacks. If there is any data
   # in the session you may want to preserve after log in/log out,
-  # you must explicitly fetch the session data before clearing
-  # and then immediately set it after clearing, for example:
+  # you should explicitly fetch the session data before clearing
+  # and then set it after clearing, for example:
   #
   #     defp renew_session(conn) do
   #       preferred_locale = get_session(conn, :preferred_locale)
@@ -60,8 +62,6 @@ defmodule PersonalFinanceWeb.UserAuth do
   #     end
   #
   defp renew_session(conn) do
-    delete_csrf_token()
-
     conn
     |> configure_session(renew: true)
     |> clear_session()
@@ -74,7 +74,7 @@ defmodule PersonalFinanceWeb.UserAuth do
   """
   def log_out_user(conn) do
     user_token = get_session(conn, :user_token)
-    user_token && Accounts.delete_user_session_token(user_token)
+    user_token && Accounts.delete_session_token(user_token)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
       PersonalFinanceWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
@@ -83,7 +83,7 @@ defmodule PersonalFinanceWeb.UserAuth do
     conn
     |> renew_session()
     |> delete_resp_cookie(@remember_me_cookie)
-    |> redirect(to: ~p"/")
+    |> redirect(to: "/")
   end
 
   @doc """
@@ -97,13 +97,13 @@ defmodule PersonalFinanceWeb.UserAuth do
   end
 
   defp ensure_user_token(conn) do
-    if token = get_session(conn, :user_token) do
-      {token, conn}
+    if user_token = get_session(conn, :user_token) do
+      {user_token, conn}
     else
       conn = fetch_cookies(conn, signed: [@remember_me_cookie])
 
-      if token = conn.cookies[@remember_me_cookie] do
-        {token, put_token_in_session(conn, token)}
+      if user_token = conn.cookies[@remember_me_cookie] do
+        {user_token, put_session(conn, :user_token, user_token)}
       else
         {nil, conn}
       end
@@ -206,24 +206,12 @@ defmodule PersonalFinanceWeb.UserAuth do
       conn
     else
       conn
-      |> put_flash(:error, "You must log in to access this page.")
-      |> maybe_store_return_to()
-      |> redirect(to: ~p"/users/log_in")
+      |> put_status(:unauthorized)
+      |> put_view(json: PersonalFinanceWeb.ErrorJSON)
+      |> render(:"401")
       |> halt()
     end
   end
 
-  defp put_token_in_session(conn, token) do
-    conn
-    |> put_session(:user_token, token)
-    |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
-  end
-
-  defp maybe_store_return_to(%{method: "GET"} = conn) do
-    put_session(conn, :user_return_to, current_path(conn))
-  end
-
-  defp maybe_store_return_to(conn), do: conn
-
-  defp signed_in_path(_conn), do: ~p"/"
+  defp signed_in_path(_conn), do: "/"
 end

@@ -39,4 +39,15 @@ defmodule PersonalFinanceWeb.UserSessionController do
     |> put_flash(:info, "Logged out successfully.")
     |> UserAuth.log_out_user()
   end
+
+  def create(conn, %{"user" => %{"email" => email, "password" => password}}) do
+    if user = Accounts.get_user_by_email_and_password(email, password) do
+      UserAuth.log_in_user(conn, user)
+    else
+      conn
+      |> put_status(:unauthorized)
+      |> put_view(json: PersonalFinanceWeb.ErrorJSON)
+      |> render(:"401")
+    end
+  end
 end

@@ -90,7 +90,7 @@ defmodule PersonalFinance.Accounts do
 
   """
   def change_user_registration(%User{} = user, attrs \\ %{}) do
-    User.registration_changeset(user, attrs, hash_password: false, validate_email: false)
+    User.registration_changeset(user, attrs, hash_password: false)
   end
 
   ## Settings
@@ -105,7 +105,7 @@ defmodule PersonalFinance.Accounts do
 
   """
   def change_user_email(user, attrs \\ %{}) do
-    User.email_changeset(user, attrs, validate_email: false)
+    User.email_changeset(user, attrs)
   end
 
   @doc """
@@ -154,15 +154,15 @@ defmodule PersonalFinance.Accounts do
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, changeset)
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, [context]))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, [context]))
   end
 
-  @doc ~S"""
+  @doc """
   Delivers the update email instructions to the given user.
 
   ## Examples
 
-      iex> deliver_user_update_email_instructions(user, current_email, &url(~p"/users/settings/confirm_email/#{&1}"))
+      iex> deliver_user_update_email_instructions(user, "user@example.com", &build_url/1)
       {:ok, %{to: ..., body: ...}}
 
   """
@@ -207,7 +207,7 @@ defmodule PersonalFinance.Accounts do
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, changeset)
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, :all))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, :all))
     |> Repo.transaction()
     |> case do
       {:ok, %{user: user}} -> {:ok, user}
@@ -237,22 +237,22 @@ defmodule PersonalFinance.Accounts do
   @doc """
   Deletes the signed token with the given context.
   """
-  def delete_user_session_token(token) do
-    Repo.delete_all(UserToken.by_token_and_context_query(token, "session"))
+  def delete_session_token(token) do
+    Repo.delete_all(UserToken.token_and_context_query(token, "session"))
     :ok
   end
 
   ## Confirmation
 
-  @doc ~S"""
+  @doc """
   Delivers the confirmation email instructions to the given user.
 
   ## Examples
 
-      iex> deliver_user_confirmation_instructions(user, &url(~p"/users/confirm/#{&1}"))
+      iex> deliver_user_confirmation_instructions(user, &build_url/1)
       {:ok, %{to: ..., body: ...}}
 
-      iex> deliver_user_confirmation_instructions(confirmed_user, &url(~p"/users/confirm/#{&1}"))
+      iex> deliver_user_confirmation_instructions(confirmed_user, &build_url/1)
       {:error, :already_confirmed}
 
   """
@@ -286,17 +286,17 @@ defmodule PersonalFinance.Accounts do
   defp confirm_user_multi(user) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.confirm_changeset(user))
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, ["confirm"]))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, ["confirm"]))
   end
 
   ## Reset password
 
-  @doc ~S"""
+  @doc """
   Delivers the reset password email to the given user.
 
   ## Examples
 
-      iex> deliver_user_reset_password_instructions(user, &url(~p"/users/reset_password/#{&1}"))
+      iex> deliver_user_reset_password_instructions(user, &build_url/1)
       {:ok, %{to: ..., body: ...}}
 
   """
@@ -343,7 +343,7 @@ defmodule PersonalFinance.Accounts do
   def reset_user_password(user, attrs) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.password_changeset(user, attrs))
-    |> Ecto.Multi.delete_all(:tokens, UserToken.by_user_and_contexts_query(user, :all))
+    |> Ecto.Multi.delete_all(:tokens, UserToken.user_and_contexts_query(user, :all))
     |> Repo.transaction()
     |> case do
       {:ok, %{user: user}} -> {:ok, user}

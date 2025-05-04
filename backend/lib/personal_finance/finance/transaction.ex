@@ -17,6 +17,7 @@ defmodule PersonalFinance.Finance.Transaction do
     field :unique_id, :string
     field :source, :string
     field :skip, :boolean, default: false
+    belongs_to :user, PersonalFinance.Accounts.User
 
     many_to_many :categories, PersonalFinance.Finance.Category,
       join_through: "transactions_categories",
@@ -30,8 +31,8 @@ defmodule PersonalFinance.Finance.Transaction do
   @doc false
   def changeset(transaction, attrs, categories \\ []) do
     transaction
-    |> cast(attrs, [:date, :amount, :description, :unique_id, :source, :skip])
-    |> validate_required(@required_fields)
+    |> cast(attrs, [:date, :amount, :description, :unique_id, :source, :skip, :user_id])
+    |> validate_required([:date, :amount, :description, :source, :user_id])
     |> unique_constraint(:unique_id)
     |> put_assoc(:categories, categories)
   end

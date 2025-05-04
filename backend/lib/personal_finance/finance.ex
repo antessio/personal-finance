@@ -167,56 +167,57 @@ defmodule PersonalFinance.Finance do
   """
   def get_transaction!(id), do: Repo.get!(Transaction, id) |> Repo.preload(:categories)
 
-  @spec create_transaction(map()) :: {:ok, %Transaction{}} | {:error, %Ecto.Changeset{}}
-  def create_transaction(attrs \\ %{}) do
-    categories =
-      attrs
-      |> Map.get("categories", [])
-      |> Enum.map(& &1.id)
-      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
+  @doc """
+  Returns the list of transactions for a user.
 
-    unique_id = Transaction.get_unique_id(attrs)
-    attrs = Map.put(attrs, :unique_id, unique_id)
+  ## Examples
 
-    %Transaction{}
-    |> Transaction.changeset(attrs, categories)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:unique_id])
+      iex> list_user_transactions(user)
+      [%Transaction{}, ...]
+
+  """
+  def list_user_transactions(user) do
+    Transaction
+    |> where([t], t.user_id == ^user.id)
+    |> Repo.all()
   end
 
-  @spec create_transactions([map()]) :: [{:ok, %Transaction{}}] | [{:error, %Ecto.Changeset{}}]
-  def create_transactions(attrs_list \\ []) do
-    categories_by_id =
-      attrs_list
-      |> Enum.flat_map(&Map.get(&1, "categories", []))
-      |> Enum.uniq_by(& &1.id)
-      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
-      |> Enum.group_by(& &1.id)
+  @doc """
+  Gets a single transaction for a user.
 
-    multi =
-      Enum.reduce(attrs_list, Multi.new(), fn attrs, multi ->
-        unique_id = Transaction.get_unique_id(attrs)
-        attrs = Map.put(attrs, :unique_id, unique_id)
+  Raises `Ecto.NoResultsError` if the Transaction does not exist.
 
-        categories =
-          attrs
-          |> Map.get("categories", [])
-          |> Enum.map(& &1.id)
-          |> Enum.map(&Map.get(categories_by_id, &1, []))
-          |> List.flatten()
+  ## Examples
 
-        %Transaction{}
-        |> Transaction.changeset(attrs, categories)
-        |> then(&Multi.insert(multi, Ecto.UUID.generate(), &1,  on_conflict: :nothing, conflict_target: :unique_id))
-      end)
+      iex> get_user_transaction!(user, 123)
+      %Transaction{}
 
-    case Repo.transaction(multi) do
-      {:ok, result} ->
-        transactions = result |> Map.values()
-        {:ok, transactions}
+      iex> get_user_transaction!(user, 456)
+      ** (Ecto.NoResultsError)
 
-      {:error, _operation, changeset, _changes} ->
-        {:error, changeset}
-    end
+  """
+  def get_user_transaction!(user, id) do
+    Transaction
+    |> where([t], t.user_id == ^user.id)
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a transaction.
+
+  ## Examples
+
+      iex> create_transaction(%{field: value})
+      {:ok, %Transaction{}}
+
+      iex> create_transaction(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_transaction(attrs \\ %{}) do
+    %Transaction{}
+    |> Transaction.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
@@ -232,15 +233,8 @@ defmodule PersonalFinance.Finance do
 
   """
   def update_transaction(%Transaction{} = transaction, attrs) do
-    categories =
-      attrs
-      |> Map.get("categories", [])
-      |> Enum.map(& &1.id)
-      |> then(&Repo.all(from category in Category, where: category.id in ^&1))
-
     transaction
-    |> Transaction.assign_unique_id()
-    |> Transaction.changeset(attrs, categories)
+    |> Transaction.changeset(attrs)
     |> Repo.update()
   end
 

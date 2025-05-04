@@ -17,6 +17,12 @@ defmodule PersonalFinanceWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_protected do
+    plug :accepts, ["json"]
+    plug :fetch_current_user
+    plug :require_authenticated_user
+  end
+
   scope "/", PersonalFinanceWeb do
     pipe_through :browser
 
@@ -24,9 +30,20 @@ defmodule PersonalFinanceWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", PersonalFinanceWeb do
-  #   pipe_through :api
-  # end
+  scope "/api", PersonalFinanceWeb do
+    pipe_through :api
+
+    post "/users/register", UserRegistrationController, :create
+    post "/users/log_in", UserSessionController, :create
+    post "/users/reset_password", UserForgotPasswordController, :create
+    put "/users/reset_password/:token", UserResetPasswordController, :update
+  end
+
+  scope "/api", PersonalFinanceWeb do
+    pipe_through :api_protected
+
+    resources "/transactions", TransactionController, except: [:new, :edit]
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:personal_finance, :dev_routes) do
@@ -107,8 +124,6 @@ defmodule PersonalFinanceWeb.Router do
       on_mount: [{PersonalFinanceWeb.UserAuth, :mount_current_user}] do
       live "/users/confirm/:token", UserConfirmationLive, :edit
       live "/users/confirm", UserConfirmationInstructionsLive, :new
-
-
     end
   end
 end
