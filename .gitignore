@@ -40,3 +40,6 @@ npm-debug.log
 
 .app.env
 .db.env
+
+# Ignore embedded git repositories
+/deps/heroicons/

@@ -1,0 +1,8 @@
+<xades:SignedSignatureProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#">
+	<xades:SigningTime>2001-10-26T21:32:52+02:00</xades:SigningTime>
+	<xades:SignaturePolicyIdentifier>
+		<xades:SignaturePolicyImplied xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xades:SPUserNoticeType">
+			<xades:ExplicitText>Advanced electronic signature</xades:ExplicitText>
+		</xades:SignaturePolicyImplied>
+	</xades:SignaturePolicyIdentifier>
+</xades:SignedSignatureProperties>
