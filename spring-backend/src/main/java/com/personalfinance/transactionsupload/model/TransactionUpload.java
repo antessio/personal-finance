@@ -1,5 +1,6 @@
-package com.personalfinance.user.model;
+package com.personalfinance.transactionsupload.model;
 
+import com.personalfinance.user.model.User;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
@@ -10,21 +11,24 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "users")
+@Table(name = "accounts")
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class TransactionUpload {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
+    @Column(name = "source_type")
+    private String sourceType;
 
-    @Column(name = "hashed_password", nullable = false)
-    private String hashedPassword;
+    @Column(name = "file_path")
+    private String filePath;
 
-    @Column(name = "confirmed_at")
-    private LocalDateTime confirmedAt;
+    private TransactionUploadStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @CreatedDate
     @Column(name = "inserted_at", nullable = false, updatable = false)
@@ -33,20 +37,4 @@ public class User {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-
-    @PrePersist
-    protected void onCreate() {
-        insertedAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    public boolean isConfirmed() {
-        return confirmedAt != null;
-    }
 } 

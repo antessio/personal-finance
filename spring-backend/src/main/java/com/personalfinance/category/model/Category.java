@@ -1,5 +1,6 @@
 package com.personalfinance.category.model;
 
+import com.personalfinance.transaction.model.Transaction;
 import com.personalfinance.user.model.User;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -21,15 +22,12 @@ public class Category {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private String color;
+    @Column(name = "macro_category", nullable = false)
+    private MacroCategoryEnum macroCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private List<Transaction> transactions;
 
     @CreatedDate
     @Column(name = "inserted_at", nullable = false, updatable = false)

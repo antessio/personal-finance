@@ -21,20 +21,5 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser());
     }
 
-    @PutMapping("/me")
-    public ResponseEntity<UserDTO> updateCurrentUser(@Valid @RequestBody UserDTO userDTO) {
-        return ResponseEntity.ok(userService.updateCurrentUser(userDTO));
-    }
 
-    @PostMapping("/confirm")
-    public ResponseEntity<Void> confirmEmail(@RequestParam String token) {
-        userService.confirmEmail(token);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/resend-confirmation")
-    public ResponseEntity<Void> resendConfirmationEmail() {
-        userService.resendConfirmationEmail();
-        return ResponseEntity.ok().build();
-    }
 } 

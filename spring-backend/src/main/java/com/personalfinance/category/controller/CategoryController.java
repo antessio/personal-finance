@@ -1,9 +1,13 @@
 package com.personalfinance.category.controller;
 
 import com.personalfinance.category.dto.CategoryDTO;
+import com.personalfinance.category.dto.CreateCategoryDTO;
 import com.personalfinance.category.service.CategoryService;
+import com.personalfinance.user.model.User;
+import com.personalfinance.user.persistence.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,36 +17,50 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final UserRepository userRepository;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, UserRepository userRepository) {
         this.categoryService = categoryService;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
-    public ResponseEntity<List<CategoryDTO>> getAllCategories() {
-        return ResponseEntity.ok(categoryService.getAllCategories());
+    public ResponseEntity<List<CategoryDTO>> getCategories() {
+        Long userId = getAuthenticatedUserId();
+        return ResponseEntity.ok(categoryService.getCategoriesByUser(userId));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CategoryDTO> getCategory(@PathVariable Long id) {
-        return ResponseEntity.ok(categoryService.getCategory(id));
+        Long userId = getAuthenticatedUserId();
+        return ResponseEntity.ok(categoryService.getCategory(id, userId));
     }
 
     @PostMapping
-    public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
-        return ResponseEntity.ok(categoryService.createCategory(categoryDTO));
+    public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CreateCategoryDTO createCategoryDTO) {
+        Long userId = getAuthenticatedUserId();
+        return ResponseEntity.ok(categoryService.createCategory(createCategoryDTO, userId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CategoryDTO> updateCategory(
             @PathVariable Long id,
             @Valid @RequestBody CategoryDTO categoryDTO) {
-        return ResponseEntity.ok(categoryService.updateCategory(id, categoryDTO));
+        Long userId = getAuthenticatedUserId();
+        return ResponseEntity.ok(categoryService.updateCategory(id, categoryDTO, userId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        categoryService.deleteCategory(id);
+        Long userId = getAuthenticatedUserId();
+        categoryService.deleteCategory(id, userId);
         return ResponseEntity.ok().build();
+    }
+
+    private Long getAuthenticatedUserId() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getId();
     }
 } 

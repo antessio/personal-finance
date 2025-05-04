@@ -6,10 +6,8 @@ import com.personalfinance.user.model.User;
 import java.util.Optional;
 
 public interface UserService {
-    UserDTO registerUser(String email, String password, String firstName, String lastName);
+    UserDTO registerUser(String email, String password);
     Optional<User> authenticateUser(String email, String password);
-    void confirmUser(String token);
-    void requestPasswordReset(String email);
-    void resetPassword(String token, String newPassword);
     UserDTO getCurrentUser();
-} 
+
+}

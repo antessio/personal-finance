@@ -1,14 +1,15 @@
 package com.personalfinance.transaction.service;
 
+import com.personalfinance.transaction.dto.CreateTransactionDTO;
 import com.personalfinance.transaction.dto.TransactionDTO;
-import java.util.List;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 public interface TransactionService {
-    TransactionDTO createTransaction(TransactionDTO transactionDTO);
-    TransactionDTO updateTransaction(Long id, TransactionDTO transactionDTO);
-    void deleteTransaction(Long id);
-    TransactionDTO getTransaction(Long id);
-    List<TransactionDTO> getTransactionsByUser();
-    List<TransactionDTO> getTransactionsByCategory(Long categoryId);
-    List<TransactionDTO> getTransactionsByExternalAccount(Long accountId);
+    TransactionDTO createTransaction(CreateTransactionDTO createTransactionDTO, Long userId);
+    TransactionDTO updateTransaction(TransactionDTO transactionDTO, Long userId);
+    void deleteTransaction(UUID id, Long userId);
+    TransactionDTO getTransaction(UUID id, Long userId);
+    List<TransactionDTO> getTransactionsByUser(Long userId, LocalDate startDate, LocalDate endDate, Boolean skip, Long categoryId);
 } 

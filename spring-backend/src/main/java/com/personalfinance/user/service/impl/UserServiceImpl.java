@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,20 +24,19 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+
     @Override
     @Transactional
-    public UserDTO registerUser(String email, String password, String firstName, String lastName) {
+    public UserDTO registerUser(String email, String password) {
         if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Email already exists");
         }
 
         User user = new User();
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setConfirmationToken(UUID.randomUUID().toString());
-        user.setConfirmed(false);
+        user.setHashedPassword(passwordEncoder.encode(password));
+        // temporary
+        user.setConfirmedAt(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
         return convertToDTO(savedUser);
@@ -45,42 +45,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> authenticateUser(String email, String password) {
         return userRepository.findByEmail(email)
-                .filter(user -> passwordEncoder.matches(password, user.getPassword()))
+                .filter(user -> passwordEncoder.matches(password, user.getHashedPassword()))
                 .filter(User::isConfirmed);
     }
-
-    @Override
-    @Transactional
-    public void confirmUser(String token) {
-        User user = userRepository.findByConfirmationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid confirmation token"));
-        
-        user.setConfirmed(true);
-        user.setConfirmationToken(null);
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        user.setResetPasswordToken(UUID.randomUUID().toString());
-        userRepository.save(user);
-    }
-
-    @Override
-    @Transactional
-    public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByResetPasswordToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid reset token"));
-        
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetPasswordToken(null);
-        userRepository.save(user);
-    }
-
     @Override
     public UserDTO getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -89,12 +56,11 @@ public class UserServiceImpl implements UserService {
         return convertToDTO(user);
     }
 
+
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
         dto.setConfirmed(user.isConfirmed());
         return dto;
     }

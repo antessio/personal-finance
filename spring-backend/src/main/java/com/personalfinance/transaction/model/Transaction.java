@@ -1,6 +1,5 @@
 package com.personalfinance.transaction.model;
 
-import com.personalfinance.transactionsupload.model.TransactionUpload;
 import com.personalfinance.category.model.Category;
 import com.personalfinance.user.model.User;
 import jakarta.persistence.*;
@@ -10,45 +9,54 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Data
 @Entity
+@Table(name = "transactions")
 @EntityListeners(AuditingEntityListener.class)
 public class Transaction {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(columnDefinition = "uuid")
+    private UUID id;
 
-    @Column(nullable = false)
-    private String description;
+    @Column(name = "date")
+    private LocalDate date;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(precision = 19, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false)
-    private LocalDateTime date;
+    private String description;
 
-    @Column(nullable = false)
-    private String type; // "income" or "expense"
+    @Column(name = "unique_id")
+    private String uniqueId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private Category category;
+    private String source;
 
-    @ManyToOne
-    @JoinColumn(name = "transaction_upload_id")
-    private TransactionUpload transactionUpload;
+    @Column(name = "skip")
+    private Boolean skip;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
+    
+    @ManyToMany
+    @JoinTable(
+        name = "transactions_categories",
+        joinColumns = @JoinColumn(name = "transaction_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
 
     @CreatedDate
     @Column(name = "inserted_at", nullable = false, updatable = false)
     private LocalDateTime insertedAt;
 
     @LastModifiedDate
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 } 

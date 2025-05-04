@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public class CategoryDTO {
     private Long id;
     private String name;
-    private String color;
+    private String macroCategory;
     private LocalDateTime insertedAt;
     private LocalDateTime updatedAt;
 } 

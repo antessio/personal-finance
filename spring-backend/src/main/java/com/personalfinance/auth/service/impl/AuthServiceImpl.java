@@ -49,9 +49,8 @@ public class AuthServiceImpl implements AuthService {
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setEmail(user.getEmail());
-        response.setFirstName(user.getFirstName());
-        response.setLastName(user.getLastName());
-        response.setConfirmed(user.isConfirmed());
+
+        response.setConfirmed(user.getConfirmedAt() != null);
 
         return response;
     }
