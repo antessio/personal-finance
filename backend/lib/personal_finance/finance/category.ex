@@ -2,10 +2,14 @@ defmodule PersonalFinance.Finance.Category do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @primary_key {:id, UUIDv7, autogenerate: true}
+  @type t :: %__MODULE__{}
+
+  @primary_key {:id, :id, autogenerate: true}
   schema "categories" do
     field :name, :string
-    field :type, Ecto.Enum, values: [:income, :expense, :bills, :savings, :subscriptions, :debts]
+    field :macro_category, Ecto.Enum, values: PersonalFinance.Finance.MacroCategory.allowed_types()
+    field :emoji, :string
+    field :matchers, {:array, :string}
     belongs_to :user, PersonalFinance.Accounts.User
 
     many_to_many :transactions, PersonalFinance.Finance.Transaction,
@@ -19,12 +23,12 @@ defmodule PersonalFinance.Finance.Category do
   @doc false
   def changeset(category, attrs) do
     category
-    |> cast(attrs, [:name, :type, :user_id])
-    |> validate_required([:name, :type])
+    |> cast(attrs, [:name, :macro_category, :emoji, :matchers, :user_id])
+    |> validate_required([:name, :macro_category, :emoji, :matchers])
   end
 
   def from_map(attrs) do
     %PersonalFinance.Finance.Category{}
-    |> cast(attrs, [:name, :type, :user_id])
+    |> cast(attrs, [:name, :macro_category, :emoji, :matchers, :user_id])
   end
 end

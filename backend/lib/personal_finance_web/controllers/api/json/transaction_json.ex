@@ -1,16 +1,10 @@
-defmodule PersonalFinanceWeb.TransactionJSON do
+defmodule PersonalFinanceWeb.API.TransactionJSON do
   alias PersonalFinance.Finance.Transaction
 
-  @doc """
-  Renders a list of transactions.
-  """
   def index(%{transactions: transactions}) do
     %{data: for(transaction <- transactions, do: data(transaction))}
   end
 
-  @doc """
-  Renders a single transaction.
-  """
   def show(%{transaction: transaction}) do
     %{data: data(transaction)}
   end
@@ -18,11 +12,11 @@ defmodule PersonalFinanceWeb.TransactionJSON do
   defp data(%Transaction{} = transaction) do
     %{
       id: transaction.id,
-      date: transaction.date,
       amount: transaction.amount,
+      date: transaction.date,
       description: transaction.description,
-      source: transaction.source,
       skip: transaction.skip,
+      source: transaction.source,
       user_id: transaction.user_id
     }
   end

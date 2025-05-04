@@ -15,10 +15,12 @@ defmodule PersonalFinanceWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_session
   end
 
   pipeline :api_protected do
     plug :accepts, ["json"]
+    plug :fetch_session
     plug :fetch_current_user
     plug :require_authenticated_user
   end
@@ -30,18 +32,19 @@ defmodule PersonalFinanceWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  scope "/api", PersonalFinanceWeb do
+  scope "/api", PersonalFinanceWeb.API do
     pipe_through :api
 
-    post "/users/register", UserRegistrationController, :create
-    post "/users/log_in", UserSessionController, :create
-    post "/users/reset_password", UserForgotPasswordController, :create
-    put "/users/reset_password/:token", UserResetPasswordController, :update
+    post "/users/register", AuthController, :register
+    post "/users/log_in", AuthController, :login
+    post "/users/reset_password", PasswordController, :forgot
+    put "/users/reset_password/:token", PasswordController, :reset
   end
 
-  scope "/api", PersonalFinanceWeb do
+  scope "/api", PersonalFinanceWeb.API do
     pipe_through :api_protected
 
+    get "/users/me", UserController, :me
     resources "/transactions", TransactionController, except: [:new, :edit]
   end
 
