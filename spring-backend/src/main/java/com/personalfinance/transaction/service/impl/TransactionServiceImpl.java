@@ -1,7 +1,7 @@
 package com.personalfinance.transaction.service.impl;
 
-import com.personalfinance.account.model.ExternalAccount;
-import com.personalfinance.account.persistence.ExternalAccountRepository;
+import com.personalfinance.transactionsupload.model.ExternalAccount;
+import com.personalfinance.transactionsupload.persistence.ExternalAccountRepository;
 import com.personalfinance.category.model.Category;
 import com.personalfinance.category.persistence.CategoryRepository;
 import com.personalfinance.transaction.dto.TransactionDTO;

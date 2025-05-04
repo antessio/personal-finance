@@ -1,6 +1,6 @@
 package com.personalfinance.transaction.persistence;
 
-import com.personalfinance.account.model.ExternalAccount;
+import com.personalfinance.transactionsupload.model.ExternalAccount;
 import com.personalfinance.category.model.Category;
 import com.personalfinance.transaction.model.Transaction;
 import com.personalfinance.user.model.User;

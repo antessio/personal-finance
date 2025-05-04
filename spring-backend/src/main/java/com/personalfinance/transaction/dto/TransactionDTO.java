@@ -14,8 +14,8 @@ public class TransactionDTO {
     private Long categoryId;
     private String categoryName;
     private String categoryColor;
-    private Long externalAccountId;
-    private String externalAccountName;
+    private Long transactionUploadId;
+    private String transactionUploadName;
     private LocalDateTime insertedAt;
     private LocalDateTime updatedAt;
 } 

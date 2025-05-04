@@ -1,6 +1,6 @@
 package com.personalfinance.transaction.model;
 
-import com.personalfinance.account.model.ExternalAccount;
+import com.personalfinance.transactionsupload.model.TransactionUpload;
 import com.personalfinance.category.model.Category;
 import com.personalfinance.user.model.User;
 import jakarta.persistence.*;
@@ -36,9 +36,9 @@ public class Transaction {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "external_account_id", nullable = false)
-    private ExternalAccount externalAccount;
+    @ManyToOne
+    @JoinColumn(name = "transaction_upload_id")
+    private TransactionUpload transactionUpload;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
