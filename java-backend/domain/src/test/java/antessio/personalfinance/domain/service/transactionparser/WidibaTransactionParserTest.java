@@ -2,8 +2,6 @@ package antessio.personalfinance.domain.service.transactionparser;
 
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
 import antessio.personalfinance.domain.model.TransactionImport;
-import antessio.personalfinance.domain.model.TransactionImportId;
-import antessio.personalfinance.domain.model.TransactionUploadStatus;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,12 +9,10 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static antessio.personalfinance.domain.service.transactionparser.ParserTestUtils.assertTransactionsEquals;
 
 class WidibaTransactionParserTest {
 
@@ -26,22 +22,12 @@ class WidibaTransactionParserTest {
         WidibaTransactionParser parser = new WidibaTransactionParser();
         String resourcePath = "src/test/resources/widiba_test.xlsx";
         Path path = Paths.get(resourcePath).toAbsolutePath();
-        TransactionImport transactionImport = new TransactionImport(
-                new TransactionImportId(10L),
-                "widiba",
-                path.toString(),
-                TransactionUploadStatus.PENDING,
-                "testUser",
-                LocalDateTime.now(),
-                null);
+        TransactionImport transactionImport = ParserTestUtils.createTestTransactionImport("widiba", path.toString());
 
         // Act
         List<CreateTransactionDTO> transactions = parser.parse(transactionImport);
 
         // Assert
-        assertNotNull(transactions);
-        assertFalse(transactions.isEmpty());
-
         LocalDate expectedDate = LocalDate.of(2023, 8, 8);
         List<CreateTransactionDTO> expectedTransactions = Arrays.asList(
                 new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-90.0"), "Test 1 Pagamento Circuito Internazionale", "widiba"),
@@ -51,9 +37,9 @@ class WidibaTransactionParserTest {
                 new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("200.0"), "Test 5 Addebito Diretto Sdd", "widiba"),
                 new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-48.26"), "Test 6 Addebito Diretto Sdd", "widiba")
         );
-        assertThat(transactions)
-                .containsAll(expectedTransactions);
+        assertTransactionsEquals(transactions, expectedTransactions);
     }
+
 
 
 
