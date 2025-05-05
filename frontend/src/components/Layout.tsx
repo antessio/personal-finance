@@ -27,6 +27,8 @@ import {
   Category as CategoryIcon,
   Logout as LogoutIcon,
   Home as HomeIcon,
+  AccountBalance as AccountBalanceIcon,
+  PieChart as PieChartIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -64,6 +66,7 @@ export default function Layout({ children }: LayoutProps) {
     { text: 'Dashboard', icon: <HomeIcon />, path: '/' },
     { text: 'Transactions', icon: <ListIcon />, path: '/transactions' },
     { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
+    { text: 'Budgets', icon: <AccountBalanceIcon />, path: '/budgets' },
     { text: 'Upload', icon: <UploadIcon />, path: '/upload' },
   ];
 

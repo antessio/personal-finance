@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
@@ -9,8 +9,8 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   });
 
   // Transaction methods
-  async getTransactions(filters: TransactionFilters): Promise<Transaction[]> {
-    const response = await this.api.get<Transaction[]>('/transactions', { params: filters });
+  async getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>> {
+    const response = await this.api.get<PaginatedResponse<Transaction>>('/transactions', { params: filters });
     return response.data;
   }
 
@@ -48,6 +48,26 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     await this.api.delete(`/categories/${id}`);
   }
 
+  // Budget methods
+  async getBudgets(year: string): Promise<Budget[]> {
+    const response = await this.api.get<Budget[]>(`/budgets?year=${year}`);
+    return response.data;
+  }
+
+  async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
+    const response = await this.api.post<Budget>('/budgets', budget);
+    return response.data;
+  }
+
+  async updateBudget(id: string, budget: Partial<Budget>): Promise<Budget> {
+    const response = await this.api.patch<Budget>(`/budgets/${id}`, budget);
+    return response.data;
+  }
+
+  async deleteBudget(id: string): Promise<void> {
+    await this.api.delete(`/budgets/${id}`);
+  }
+
   // Auth methods
   async login(email: string, password: string): Promise<{ user: { id: string; name: string; email: string } }> {
     const response = await this.api.post('/auth/login', { email, password });
@@ -65,5 +85,26 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   async getCurrentUser(): Promise<{ id: string; name: string; email: string }> {
     const response = await this.api.get('/auth/me');
     return response.data;
+  }
+
+  // Upload methods
+  async getUploads(): Promise<UploadFile[]> {
+    const response = await this.api.get<UploadFile[]>('/uploads');
+    return response.data;
+  }
+
+  async uploadFile(file: { file: File; account: string }): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file.file);
+    formData.append('account', file.account);
+    await this.api.post('/uploads', formData);
+  }
+
+  async processUpload(id: string): Promise<void> {
+    await this.api.post(`/uploads/${id}/process`);
+  }
+
+  async deleteUpload(id: string): Promise<void> {
+    await this.api.delete(`/uploads/${id}`);
   }
 } 

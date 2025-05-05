@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -10,7 +10,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   Checkbox,
   FormControl,
   InputLabel,
@@ -21,6 +20,11 @@ import {
   Typography,
   Chip,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,13 +36,17 @@ import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export default function TransactionsPage() {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState<string[]>([]);
-  const [filters, setFilters] = useState<TransactionFilters>({});
+  const [filters, setFilters] = useState<TransactionFilters>({
+    limit: 20,
+  });
+  const [openBulkUpdateModal, setOpenBulkUpdateModal] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: transactions = [], isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
+  const { data: paginatedData, isLoading: isLoadingTransactions } = useQuery({
     queryKey: ['transactions', filters],
     queryFn: () => service.getTransactions(filters),
   });
@@ -48,8 +56,21 @@ export default function TransactionsPage() {
     queryFn: () => service.getCategories(),
   });
 
+  // Update allTransactions when new data is fetched
+  useEffect(() => {
+    if (paginatedData) {
+      if (filters.cursor) {
+        // Append new transactions when loading more
+        setAllTransactions(prev => [...prev, ...paginatedData.data]);
+      } else {
+        // Replace transactions when filters change
+        setAllTransactions(paginatedData.data);
+      }
+    }
+  }, [paginatedData]);
+
   // Get unique accounts from transactions
-  const accounts = Array.from(new Set(transactions.map(t => t.account))).sort();
+  const accounts = Array.from(new Set(allTransactions.map(t => t.account))).sort();
 
   // Add special categories
   const allCategories = [
@@ -58,11 +79,18 @@ export default function TransactionsPage() {
     ...categories
   ];
 
+  // Calculate the sum of displayed transactions
+  const totalAmount = allTransactions.reduce(
+    (sum, transaction) => sum + transaction.amount, 
+    0
+  );
+
   const bulkUpdateMutation = useMutation({
     mutationFn: service.bulkUpdateTransactions,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelected([]);
+      setOpenBulkUpdateModal(false);
     },
   });
 
@@ -76,7 +104,7 @@ export default function TransactionsPage() {
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      setSelected(transactions.map((t: Transaction) => t.id));
+      setSelected(allTransactions.map((t: Transaction) => t.id));
     } else {
       setSelected([]);
     }
@@ -102,13 +130,15 @@ export default function TransactionsPage() {
     setSelected(newSelected);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+  const handleLoadMore = () => {
+    if (paginatedData?.nextCursor && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setFilters(prev => ({
+        ...prev,
+        cursor: paginatedData.nextCursor
+      }));
+      setIsLoadingMore(false);
+    }
   };
 
   const handleBulkUpdate = (updates: Partial<Transaction>) => {
@@ -117,6 +147,21 @@ export default function TransactionsPage() {
 
   const handleCategorize = () => {
     categorizeMutation.mutate(selected);
+  };
+
+  const handleOpenBulkUpdateModal = () => {
+    setOpenBulkUpdateModal(true);
+  };
+
+  const handleCloseBulkUpdateModal = () => {
+    setOpenBulkUpdateModal(false);
+    setSelectedCategoryId('');
+  };
+
+  const handleSubmitBulkUpdate = () => {
+    if (selectedCategoryId) {
+      handleBulkUpdate({ categoryId: selectedCategoryId });
+    }
   };
 
   const isSelected = (id: string) => selected.indexOf(id) !== -1;
@@ -133,7 +178,7 @@ export default function TransactionsPage() {
             views={['year', 'month']}
             value={filters.month ? new Date(filters.month) : null}
             onChange={(date: Date | null) =>
-              setFilters({ ...filters, month: date?.toISOString().split('T')[0] })
+              setFilters({ ...filters, month: date?.toISOString().split('T')[0], cursor: undefined })
             }
           />
           <FormControl sx={{ minWidth: 120 }}>
@@ -145,6 +190,7 @@ export default function TransactionsPage() {
                 setFilters({
                   ...filters,
                   included: e.target.value === '' ? undefined : e.target.value === 'true',
+                  cursor: undefined
                 })
               }
             >
@@ -159,7 +205,7 @@ export default function TransactionsPage() {
               value={filters.account ?? ''}
               label="Account"
               onChange={(e) =>
-                setFilters({ ...filters, account: e.target.value || undefined })
+                setFilters({ ...filters, account: e.target.value || undefined, cursor: undefined })
               }
             >
               <MenuItem value="">All</MenuItem>
@@ -176,7 +222,7 @@ export default function TransactionsPage() {
               value={filters.categoryId ?? ''}
               label="Category"
               onChange={(e) =>
-                setFilters({ ...filters, categoryId: e.target.value || undefined })
+                setFilters({ ...filters, categoryId: e.target.value || undefined, cursor: undefined })
               }
             >
               <MenuItem value="">All</MenuItem>
@@ -224,37 +270,75 @@ export default function TransactionsPage() {
               variant="contained"
               color="success"
               onClick={handleCategorize}
+              sx={{ mr: 1 }}
             >
               Categorize Selected
+            </Button>
+            <Button
+              variant="contained"
+              color="info"
+              onClick={handleOpenBulkUpdateModal}
+            >
+              Bulk Update Selected
             </Button>
           </Box>
         )}
       </Box>
       <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            {allTransactions.length} transactions showing
+          </Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            Total: <span style={{ color: totalAmount < 0 ? 'red' : 'green' }}>€{totalAmount.toLocaleString()}</span>
+          </Typography>
+        </Box>
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: 'grey.100' }}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selected.length > 0 && selected.length < allTransactions.length}
+                    checked={allTransactions.length > 0 && selected.length === allTransactions.length}
+                    onChange={handleSelectAllClick}
+                  />
+                </TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Amount</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Account</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((transaction, idx) => {
+              {allTransactions.map((transaction, idx) => {
                 const category = mockCategories.find((cat: Category) => cat.id === transaction.categoryId);
+                const isItemSelected = isSelected(transaction.id);
+                
                 return (
                   <TableRow
                     key={transaction.id}
                     hover
+                    onClick={() => handleClick(transaction.id)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
+                    selected={isItemSelected}
                     sx={{
                       transition: 'background 0.2s',
                       bgcolor: idx % 2 === 0 ? 'white' : 'grey.50',
                       borderBottom: '1px solid #f0f0f0',
+                      cursor: 'pointer',
                     }}
                   >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isItemSelected}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={() => handleClick(transaction.id)}
+                      />
+                    </TableCell>
                     <TableCell sx={{ color: 'grey.600', fontSize: 13, fontWeight: 500 }}>{transaction.date}</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>{transaction.description}</TableCell>
                     <TableCell sx={{ p: 0 }}>
@@ -296,22 +380,75 @@ export default function TransactionsPage() {
                         <Chip label={transaction.categoryId} size="small" />
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={transaction.included ? "Included" : "Excluded"}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: transaction.included ? 'success.lighter' : 'error.lighter',
+                          color: transaction.included ? 'success.main' : 'error.main',
+                          border: `1px solid ${transaction.included ? '#43a047' : '#d32f2f'}`,
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
                 );
               })}
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={transactions.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
+        
+        {paginatedData?.hasMore && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              startIcon={isLoadingMore ? <CircularProgress size={20} /> : null}
+            >
+              {isLoadingMore ? 'Loading...' : 'Load More'}
+            </Button>
+          </Box>
+        )}
       </Paper>
+
+      {/* Bulk Update Modal */}
+      <Dialog open={openBulkUpdateModal} onClose={handleCloseBulkUpdateModal} maxWidth="sm" fullWidth>
+        <DialogTitle>Update {selected.length} Transaction{selected.length !== 1 ? 's' : ''}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={selectedCategoryId}
+                label="Category"
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {categories.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name} ({category.macroCategory})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBulkUpdateModal}>Cancel</Button>
+          <Button 
+            onClick={handleSubmitBulkUpdate} 
+            variant="contained" 
+            color="primary"
+            disabled={!selectedCategoryId}
+          >
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
-} 
+}
