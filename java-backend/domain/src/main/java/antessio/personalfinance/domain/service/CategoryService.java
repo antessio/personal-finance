@@ -2,6 +2,7 @@ package antessio.personalfinance.domain.service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import antessio.personalfinance.domain.dto.CategoryDTO;
@@ -47,6 +48,15 @@ public class CategoryService {
                 .map(this::toDTO)
                 .toList();
     }
+
+    public Optional<CategoryId> findMatchingCategoryId(String userId, String description) {
+        return categoryRepository.findAllByUser(userId, 500)
+                .stream()
+                .filter(c -> c.matches(description))
+                .map(Category::getId)
+                .findFirst();
+    }
+
 
     private CategoryDTO toDTO(Category category) {
         return new CategoryDTO(
