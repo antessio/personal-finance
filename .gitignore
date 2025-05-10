@@ -74,7 +74,9 @@ frontend/.env.production.local
 
 
 */target/**
+**/target/**
 */.idea/**
+**/.idea/**
 */.vscode/**
 */.DS_Store
 */Thumbs.db

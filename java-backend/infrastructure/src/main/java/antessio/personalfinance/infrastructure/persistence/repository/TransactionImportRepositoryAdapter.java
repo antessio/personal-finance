@@ -49,8 +49,8 @@ public class TransactionImportRepositoryAdapter implements TransactionImportRepo
     public List<TransactionImport> findAllByUser(String userId, int limit, TransactionImportId startingAfterId) {
         return Optional.ofNullable(startingAfterId)
                 .map(TransactionImportId::id)
-                .map(cursor -> transactionImportSpringDataRepository.findByUserOwnerAndIdGreaterThanAndLimit(userId, cursor, limit))
-                .orElseGet(()-> transactionImportSpringDataRepository.findByUserOwnerAndLimit(userId, limit))
+                .map(cursor -> transactionImportSpringDataRepository.findByUserOwnerAfterIdWithLimit(userId, cursor, limit))
+                .orElseGet(()-> transactionImportSpringDataRepository.findByUserOwnerWithLimit(userId, limit))
                 .stream()
                 .map(TransactionImportRepositoryAdapter::toDomain)
                 .toList();

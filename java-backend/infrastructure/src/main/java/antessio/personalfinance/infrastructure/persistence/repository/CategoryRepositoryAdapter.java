@@ -2,6 +2,7 @@ package antessio.personalfinance.infrastructure.persistence.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -84,6 +85,15 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
                                            .stream()
                                            .map(CategoryRepositoryAdapter::toDomain)
                                            .toList();
+    }
+
+    @Override
+    public List<Category> findByIdsAndUser(List<CategoryId> categoryIds, String userOwner) {
+        return categorySpringDataRepository.findAllById(categoryIds.stream().map(CategoryId::id).toList())
+                .stream()
+                .filter(c -> c.getUserOwner().equals(userOwner))
+                .map(CategoryRepositoryAdapter::toDomain)
+                .toList();
     }
 
     private static Category toDomain(CategoryEntity entity) {

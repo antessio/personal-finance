@@ -1,15 +1,20 @@
 package antessio.personalfinance.infrastructure.web.controller;
 
-import antessio.personalfinance.domain.model.Category;
+import antessio.personalfinance.domain.dto.CategoryDTO;
+import antessio.personalfinance.domain.dto.CreateCategoryDTO;
+import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.service.CategoryService;
-import antessio.personalfinance.infrastructure.persistence.mapper.CategoryMapper;
-import antessio.personalfinance.infrastructure.persistence.repository.CategorySpringDataRepository;
+import antessio.personalfinance.infrastructure.security.persistence.User;
+import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
+import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -17,28 +22,34 @@ import java.util.stream.Collectors;
 public class CategoryController {
 
     private final CategoryService categoryService;
-    private final CategorySpringDataRepository categorySpringDataRepository;
-    private final CategoryMapper categoryMapper;
 
     @GetMapping
-    public ResponseEntity<List<Category>> getCategories(@RequestParam String userOwner) {
+    public ResponseEntity<PaginatedResult<CategoryDTO>> getCategories(
+            @RequestParam("limit") Integer limit,
+            @RequestParam("cursor") Long cursor
+    ) {
+        User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        limit = Optional.ofNullable(limit).orElse(20);
+        List<CategoryDTO> results = categoryService.getAllCategories(user.getUsername(), limit,
+                Optional.ofNullable(cursor).map(CategoryId::new).orElse(null));
         return ResponseEntity.ok(
-                categorySpringDataRepository.findByUserOwner(userOwner)
-                                            .stream()
-                                            .map(categoryMapper::toDomain)
-                                            .collect(Collectors.toList())
+                PaginatedResult.from(results, limit)
         );
     }
 
     @PostMapping
-    public ResponseEntity<Category> createCategory(@RequestBody Category category) {
+    public ResponseEntity<CategoryDTO> createCategory(@RequestBody CreateCategoryDTO category) {
         return ResponseEntity.ok(categoryService.createCategory(category));
     }
 
     @PutMapping("/{id}/matchers")
-    public ResponseEntity<Category> updateMatchers(
+    public ResponseEntity<Void> updateMatchers(
             @PathVariable Long id,
             @RequestBody List<String> matchers) {
-        return ResponseEntity.ok(categoryService.updateCategoryMatchers(id, matchers););
+        categoryService.updateCategoryMatchers(new CategoryId(id), new HashSet<>(matchers));
+        return ResponseEntity.accepted().build();
     }
 } 

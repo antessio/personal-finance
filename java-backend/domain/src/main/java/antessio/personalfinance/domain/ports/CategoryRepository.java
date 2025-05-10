@@ -1,5 +1,6 @@
 package antessio.personalfinance.domain.ports;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,5 +21,5 @@ public interface CategoryRepository {
     List<Category> findAllByUser(String userId, int limit);
 
 
-
+    List<Category> findByIdsAndUser(List<CategoryId> categoryIds, String userOwner);
 }

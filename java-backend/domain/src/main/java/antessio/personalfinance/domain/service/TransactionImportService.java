@@ -66,6 +66,13 @@ public class TransactionImportService {
         transactionImportRepository.save(transactionImport);
     }
 
+    public List<TransactionImportDTO> findByUserOwner(String username, int limit, TransactionImportId startingFrom) {
+        return transactionImportRepository.findAllByUser(username,  limit, startingFrom)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     private TransactionImportDTO toDTO(TransactionImport savedTransactionImport) {
         return new TransactionImportDTO(
                 savedTransactionImport.getId(),
@@ -77,5 +84,4 @@ public class TransactionImportService {
                 savedTransactionImport.getUpdatedAt()
         );
     }
-
 }

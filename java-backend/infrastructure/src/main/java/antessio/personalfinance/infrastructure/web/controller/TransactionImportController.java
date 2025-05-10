@@ -1,46 +1,84 @@
 package antessio.personalfinance.infrastructure.web.controller;
 
+import antessio.personalfinance.domain.dto.CreateTransactionImportDTO;
+import antessio.personalfinance.domain.dto.TransactionImportDTO;
 import antessio.personalfinance.domain.model.TransactionImport;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import antessio.personalfinance.domain.service.TransactionImportService;
 import antessio.personalfinance.infrastructure.persistence.mapper.TransactionImportMapper;
-import antessio.personalfinance.infrastructure.persistence.repository.TransactionImportSpringDataRepository;
-import lombok.RequiredArgsConstructor;
+import antessio.personalfinance.infrastructure.security.persistence.User;
+import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
+import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transaction-imports")
-@RequiredArgsConstructor
 public class TransactionImportController {
 
     private final TransactionImportService transactionImportService;
-    private final TransactionImportSpringDataRepository transactionImportSpringDataRepository;
     private final TransactionImportMapper transactionImportMapper;
+    private @Value("${personal-finance.file.path}") String filePath;
+
+    public TransactionImportController(TransactionImportService transactionImportService,
+                                       TransactionImportMapper transactionImportMapper) {
+        this.transactionImportService = transactionImportService;
+        this.transactionImportMapper = transactionImportMapper;
+    }
 
     @GetMapping
-    public ResponseEntity<List<TransactionImport>> getTransactionImports(@RequestParam String userOwner) {
+    public ResponseEntity<PaginatedResult<TransactionImportDTO>> getTransactionImports(
+            @RequestParam("limit") Integer limit,
+            @RequestParam("cursor") Long cursor
+    ) {
+        User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        limit = Optional.ofNullable(limit).orElse(20);
+
+        List<TransactionImportDTO> results = transactionImportService.findByUserOwner(user.getUsername(),
+                limit + 1,
+                Optional.ofNullable(cursor).map(TransactionImportId::new).orElse(null));
         return ResponseEntity.ok(
-                transactionImportSpringDataRepository.findByUserOwner(userOwner)
-                                                     .stream()
-                                                     .map(transactionImportMapper::toDomain)
-                                                     .collect(Collectors.toList())
+                PaginatedResult.from(results, limit)
         );
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<TransactionImport> uploadFile(
+    public ResponseEntity<TransactionImportDTO> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam String sourceType,
-            @RequestParam String userOwner) {
-        return ResponseEntity.ok(transactionImportService.uploadFile(file, sourceType, userOwner));
+            @RequestParam String sourceType) {
+        User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            String uploadedFilePath = filePath + File.separator + file.getOriginalFilename();
+            file.transferTo(new File(uploadedFilePath).toPath());
+            TransactionImportDTO transactionImport = transactionImportService.createTransactionImport(new CreateTransactionImportDTO(
+                    user.getUsername(),
+                    sourceType,
+                    uploadedFilePath
+
+            ));
+            return ResponseEntity.ok(transactionImport);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping("/{id}/process")
-    public ResponseEntity<TransactionImport> processFile(@PathVariable String id) {
-        return ResponseEntity.ok(transactionImportService.processFile(id));
+    public ResponseEntity<TransactionImport> processFile(@PathVariable Long id) {
+        transactionImportService.processTransactionImport(new TransactionImportId(id));
+        return ResponseEntity.accepted().build();
     }
 } 

@@ -2,23 +2,22 @@
 package antessio.personalfinance.domain.ports;
 
 import java.time.YearMonth;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import antessio.personalfinance.domain.model.Category;
+import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
 
 public interface TransactionRepository {
     Optional<Transaction> findById(TransactionId id);
 
-    Transaction save(Transaction Transaction);
+    Transaction save(Transaction transaction);
     void saveAll(List<Transaction> transactions);
 
-    void delete(Transaction Transaction);
+    void delete(Transaction transaction);
 
-    void update(Transaction Transaction);
+    void update(Transaction transaction);
 
     void updateAll(List<Transaction> transactions);
 
@@ -27,7 +26,7 @@ public interface TransactionRepository {
                                               YearMonth yearMonth,
                                               Boolean skip,
                                               String source,
-                                              List<Category> categories,
+                                              List<CategoryId> categories,
                                               TransactionId startingAfterId);
 
 

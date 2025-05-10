@@ -15,9 +15,11 @@ import antessio.personalfinance.domain.service.CategoryService;
 import antessio.personalfinance.domain.service.TransactionImportService;
 import antessio.personalfinance.domain.service.TransactionService;
 import antessio.personalfinance.infrastructure.persistence.repository.CategoryRepositoryAdapter;
+import org.springframework.context.annotation.PropertySource;
 
 
 @Configuration
+@PropertySource("classpath:application.properties")
 public class PersonalFinanceConfiguration {
 
     @Bean
