@@ -11,7 +11,7 @@ import antessio.personalfinance.domain.model.TransactionUploadStatus;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
 
-class TransactionImportService {
+public class TransactionImportService {
 
     private final TransactionImportRepository transactionImportRepository;
     private final DateProvider dateProvider;
