@@ -2,7 +2,6 @@ package antessio.personalfinance.infrastructure.persistence.repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -33,6 +32,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
                 null,
                 category.getName(),
                 category.getMacroCategory(),
+                category.getEmoji(),
                 category.getUserOwner(),
                 category.getMatchers(),
                 category.getInsertedAt(),
@@ -47,6 +47,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
                 category.getId().id(),
                 category.getName(),
                 category.getMacroCategory(),
+                category.getEmoji(),
                 category.getUserOwner(),
                 category.getMatchers(),
                 category.getInsertedAt(),
@@ -60,6 +61,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
                 category.getId().id(),
                 category.getName(),
                 category.getMacroCategory(),
+                category.getEmoji(),
                 category.getUserOwner(),
                 category.getMatchers(),
                 category.getInsertedAt(),
@@ -101,6 +103,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
                 new CategoryId(entity.getId()),
                 entity.getName(),
                 entity.getMacroCategory(),
+                entity.getEmoji(),
                 entity.getUserOwner(),
                 entity.getMatchers(),
                 entity.getInsertedAt(),

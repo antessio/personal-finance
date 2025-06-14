@@ -15,6 +15,7 @@ public class Category {
     private CategoryId id;
     private String name;
     private MacroCategoryEnum macroCategory;
+    private String emoji;
     private String userOwner;
     private Set<String> matchers;
     private Instant insertedAt;

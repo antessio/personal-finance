@@ -5,6 +5,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import antessio.personalfinance.common.Id;
+import antessio.personalfinance.infrastructure.web.controller.common.IdSerializer;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -45,6 +48,11 @@ public class PersonalFinanceConfiguration {
                 return clock.instant();
             }
         };
+    }
+
+    @Bean
+    public Jackson2ObjectMapperBuilderCustomizer customizer() {
+        return builder -> builder.serializerByType(Id.class, new IdSerializer());
     }
 
     @Bean

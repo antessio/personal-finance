@@ -22,11 +22,11 @@ public class CategoryService {
     }
 
     public CategoryDTO createCategory(CreateCategoryDTO createCategoryDTO) {
-        return createCategory(createCategoryDTO.userId(), createCategoryDTO.name(), createCategoryDTO.macroCategory());
+        return createCategory(createCategoryDTO.userId(), createCategoryDTO.name(), createCategoryDTO.macroCategory(), createCategoryDTO.emoji());
     }
 
-    public CategoryDTO createCategory(String userId, String name, MacroCategoryEnum macroCategory) {
-        Category category = new Category(null, name, macroCategory, userId, null, Instant.now(), null);
+    public CategoryDTO createCategory(String userId, String name, MacroCategoryEnum macroCategory, String emoji) {
+        Category category = new Category(null, name, macroCategory, emoji, userId, null, Instant.now(), null);
         Category savedCategory = categoryRepository.save(category);
         return toDTO(savedCategory);
     }
@@ -78,6 +78,7 @@ public class CategoryService {
                 category.getId(),
                 category.getName(),
                 category.getMacroCategory(),
+                category.getEmoji(),
                 category.getUserOwner(),
                 category.getMatchers(),
                 category.getInsertedAt(),

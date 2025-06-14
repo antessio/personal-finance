@@ -29,6 +29,9 @@ public class CategoryEntity {
     @Column(name = "macro_category", nullable = false)
     private MacroCategoryEnum macroCategory;
 
+    @Column(name = "emoji")
+    private String emoji;
+
     @Column(name = "user_owner", nullable = false)
     private String userOwner;
 

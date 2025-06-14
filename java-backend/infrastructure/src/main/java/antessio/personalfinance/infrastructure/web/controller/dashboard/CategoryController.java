@@ -25,8 +25,8 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<PaginatedResult<CategoryDTO>> getCategories(
-            @RequestParam("limit") Integer limit,
-            @RequestParam("cursor") Long cursor
+            @RequestParam(value = "limit", defaultValue = "20") Integer limit,
+            @RequestParam(value = "cursor", required = false) Long cursor
     ) {
         User user = SecurityUtils.getAuthenticatedUser();
         if (user == null) {

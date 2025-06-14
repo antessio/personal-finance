@@ -1,0 +1,31 @@
+## Sign in
+POST http://localhost:8080/api/auth/sign_in
+Content-Type: application/json
+
+{
+  "username": "antessio7@gmail.com",
+  "password": "Password12345*",
+  "fullName": "Antonio"
+}
+
+
+### Login
+
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "antessio7@gmail.com",
+  "password": "Password12345*"
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+
+
+### Get categories
+
+GET http://localhost:8080/api/categories?limit=10
+Authorization: Bearer {{auth_token}}
+
+

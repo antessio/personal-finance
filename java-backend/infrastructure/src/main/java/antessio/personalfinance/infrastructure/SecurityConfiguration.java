@@ -69,6 +69,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/public/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/categories").authenticated()
                         .requestMatchers("/dashboard/**").authenticated()
                         .anyRequest().denyAll())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
