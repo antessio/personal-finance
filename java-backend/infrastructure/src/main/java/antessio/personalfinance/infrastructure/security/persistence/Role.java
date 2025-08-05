@@ -27,6 +27,22 @@ public class Role {
     private User user;
 
     @Column(nullable = false)
-    private String role;
+    private RoleType role;
+
+
+    public enum RoleType {
+        ADMIN("ADMIN"),
+        VIEWER("VIEWER");
+
+        private final String role;
+
+        RoleType(String role) {
+            this.role = role;
+        }
+
+        public String getRole() {
+            return role;
+        }
+    }
 
 }

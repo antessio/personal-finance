@@ -1,6 +1,7 @@
 package antessio.personalfinance.infrastructure.security.service;
 
 
+import antessio.personalfinance.infrastructure.security.persistence.Role;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.persistence.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -39,7 +40,7 @@ public class AuthenticationService {
 
     }
 
-    public void signIn(String username, String password, String fullName, boolean isVerified, Set<String> roles) {
+    public void signIn(String username, String password, String fullName, boolean isVerified, Set<Role.RoleType> roles) {
         Optional<User> maybeUser = userRepository.findByEmail(username);
         if (maybeUser.isPresent()) {
             throw new IllegalArgumentException("Invalid credentials");

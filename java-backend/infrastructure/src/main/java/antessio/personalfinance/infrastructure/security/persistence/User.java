@@ -57,7 +57,7 @@ public class User implements UserDetails {
         return this.roles.stream().map(Role::getRole).map(SimpleGrantedAuthority::new).toList();
     }
 
-    public void addRole(String role) {
+    public void addRole(Role.RoleType role) {
         this.roles.add(new Role(UUID.randomUUID(), this, role));
     }
 

@@ -1,4 +1,4 @@
-package antessio.personalfinance.infrastructure.web.controller;
+package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
 import antessio.personalfinance.domain.dto.TransactionDTO;
 import antessio.personalfinance.domain.dto.TransactionsQueryDTO;

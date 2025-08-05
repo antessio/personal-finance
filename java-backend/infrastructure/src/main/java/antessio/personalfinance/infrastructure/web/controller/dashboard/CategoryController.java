@@ -1,4 +1,4 @@
-package antessio.personalfinance.infrastructure.web.controller;
+package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
 import antessio.personalfinance.domain.dto.CategoryDTO;
 import antessio.personalfinance.domain.dto.CreateCategoryDTO;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/dashboard/api/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
