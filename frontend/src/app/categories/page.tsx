@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -19,6 +19,9 @@ import {
   TextField,
   IconButton,
   Chip,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,11 +38,26 @@ export default function CategoriesPage() {
     regexPatterns: [],
   });
   const queryClient = useQueryClient();
+  const [needWantMap, setNeedWantMap] = useState<{ [categoryId: string]: 'Need' | 'Want' }>({});
 
   const { data: categories = [], isLoading } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => service.getCategories(),
   });
+
+  // Initialize mapping for expense categories
+  useEffect(() => {
+    if (categories.length && Object.keys(needWantMap).length === 0) {
+      const initial: { [categoryId: string]: 'Need' | 'Want' } = {};
+      categories.forEach((cat) => {
+        if (cat.macroCategory.toUpperCase() === 'EXPENSE') {
+          initial[cat.id] = 'Need';
+        }
+      });
+      setNeedWantMap(initial);
+    }
+    // eslint-disable-next-line
+  }, [categories]);
 
   const createMutation = useMutation({
     mutationFn: service.createCategory,
@@ -108,6 +126,10 @@ export default function CategoriesPage() {
     }
   };
 
+  const handleNeedWantChange = (categoryId: string, value: 'Need' | 'Want') => {
+    setNeedWantMap((prev) => ({ ...prev, [categoryId]: value }));
+  };
+
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>
@@ -142,6 +164,18 @@ export default function CategoriesPage() {
                 {category.name}
               </Typography>
               <Chip label={category.macroCategory} color="primary" sx={{ mb: 2, fontWeight: 700, fontSize: 14 }} />
+              {/* Need/Want selector for EXPENSE categories */}
+              {category.macroCategory.toUpperCase() === 'EXPENSE' && (
+                <RadioGroup
+                  row
+                  value={needWantMap[category.id] || 'Need'}
+                  onChange={(e) => handleNeedWantChange(category.id, e.target.value as 'Need' | 'Want')}
+                  sx={{ mb: 1 }}
+                >
+                  <FormControlLabel value="Need" control={<Radio color="success" />} label="Need" />
+                  <FormControlLabel value="Want" control={<Radio color="warning" />} label="Want" />
+                </RadioGroup>
+              )}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                 {category.regexPatterns.map((pattern, idx) => (
                   <Chip key={idx} label={pattern} variant="outlined" color="primary" size="small" />

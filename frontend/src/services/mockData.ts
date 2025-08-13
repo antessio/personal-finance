@@ -1,4 +1,4 @@
-import { Transaction, Category, UploadFile } from '../types';
+import { Transaction, Category, UploadFile, Budget } from '../types';
 
 export const mockUsers = [
   {
@@ -21,79 +21,30 @@ export const mockUsers = [
   },
 ];
 
-export const mockCategories: Category[] = [
-  {
-    id: '1',
-    name: 'Groceries',
-    macroCategory: 'Food & Dining',
-    regexPatterns: [
-      '.*supermarket.*',
-      '.*grocery.*',
-      '.*food.*store.*',
-    ],
-  },
-  {
-    id: '2',
-    name: 'Restaurants',
-    macroCategory: 'Food & Dining',
-    regexPatterns: [
-      '.*restaurant.*',
-      '.*cafe.*',
-      '.*coffee.*shop.*',
-    ],
-  },
-  {
-    id: '3',
-    name: 'Transportation',
-    macroCategory: 'Transportation',
-    regexPatterns: [
-      '.*uber.*',
-      '.*lyft.*',
-      '.*taxi.*',
-      '.*public.*transport.*',
-    ],
-  },
-  {
-    id: '4',
-    name: 'Utilities',
-    macroCategory: 'Bills & Utilities',
-    regexPatterns: [
-      '.*electric.*',
-      '.*water.*',
-      '.*gas.*',
-      '.*internet.*',
-      '.*phone.*',
-    ],
-  },
-  {
-    id: '5',
-    name: 'Entertainment',
-    macroCategory: 'Entertainment',
-    regexPatterns: [
-      '.*netflix.*',
-      '.*spotify.*',
-      '.*movie.*',
-      '.*concert.*',
-    ],
-  },
-  {
-    id: '6',
-    name: 'Salary',
-    macroCategory: 'Income',
-    regexPatterns: ['.*salary.*', '.*payroll.*'],
-  },
-  {
-    id: '7',
-    name: 'Business',
-    macroCategory: 'Income',
-    regexPatterns: ['.*business.*income.*'],
-  },
-  {
-    id: '8',
-    name: 'Investment',
-    macroCategory: 'Income',
-    regexPatterns: ['.*investment.*', '.*dividend.*'],
-  },
+export const mockCategories = [
+  // INCOME
+  { id: 'cat-income-1', name: 'Salary', macroCategory: 'INCOME', regexPatterns: ['salary', 'stipendio'] },
+  { id: 'cat-income-2', name: 'Interest', macroCategory: 'INCOME', regexPatterns: ['interest', 'interessi'] },
+
+  // EXPENSE
+  { id: 'cat-expense-1', name: 'Groceries', macroCategory: 'EXPENSE', regexPatterns: ['grocery', 'supermercato'] },
+  { id: 'cat-expense-2', name: 'Dining Out', macroCategory: 'EXPENSE', regexPatterns: ['restaurant', 'ristorante'] },
+
+  // BILLS
+  { id: 'cat-bills-1', name: 'Electricity Bill', macroCategory: 'BILLS', regexPatterns: ['electricity', 'luce'] },
+  { id: 'cat-bills-2', name: 'Internet Bill', macroCategory: 'BILLS', regexPatterns: ['internet', 'fibra'] },
+
+  // SAVINGS
+  { id: 'cat-savings-1', name: 'Emergency Fund', macroCategory: 'SAVINGS', regexPatterns: ['emergency', 'fondo emergenza'] },
+  { id: 'cat-savings-2', name: 'Retirement', macroCategory: 'SAVINGS', regexPatterns: ['retirement', 'pensione'] },
+
+  // SUBSCRIPTIONS
+  { id: 'cat-subs-1', name: 'Netflix', macroCategory: 'SUBSCRIPTIONS', regexPatterns: ['netflix'] },
+  { id: 'cat-subs-2', name: 'Spotify', macroCategory: 'SUBSCRIPTIONS', regexPatterns: ['spotify'] },
+
+  // DEBTS
+  { id: 'cat-debts-1', name: 'Mortgage', macroCategory: 'DEBTS', regexPatterns: ['mortgage', 'mutuo'] },
+  { id: 'cat-debts-2', name: 'Credit Card', macroCategory: 'DEBTS', regexPatterns: ['credit card', 'carta di credito'] },
 ];
 
 export const mockTransactions: Transaction[] = [
@@ -103,7 +54,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Whole Foods Market',
     amount: -85.32,
     account: 'Chase Checking',
-    categoryId: '1',
+    categoryId: 'cat-expense-1',
     included: true,
   },
   {
@@ -112,7 +63,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Starbucks Coffee',
     amount: -4.95,
     account: 'Chase Checking',
-    categoryId: '2',
+    categoryId: 'cat-expense-2',
     included: true,
   },
   {
@@ -121,7 +72,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Uber Ride',
     amount: -15.50,
     account: 'Chase Checking',
-    categoryId: '3',
+    categoryId: 'cat-expense-2',
     included: true,
   },
   {
@@ -130,7 +81,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Electric Bill',
     amount: -120.00,
     account: 'Chase Checking',
-    categoryId: '4',
+    categoryId: 'cat-bills-1',
     included: true,
   },
   {
@@ -139,7 +90,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Netflix Subscription',
     amount: -14.99,
     account: 'Chase Checking',
-    categoryId: '5',
+    categoryId: 'cat-subs-1',
     included: true,
   },
   {
@@ -148,7 +99,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Trader Joe\'s',
     amount: -65.78,
     account: 'Chase Checking',
-    categoryId: '1',
+    categoryId: 'cat-expense-1',
     included: true,
   },
   {
@@ -157,7 +108,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Italian Restaurant',
     amount: -45.20,
     account: 'Chase Checking',
-    categoryId: '2',
+    categoryId: 'cat-expense-2',
     included: true,
   },
   {
@@ -166,7 +117,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Public Transport',
     amount: -2.75,
     account: 'Chase Checking',
-    categoryId: '3',
+    categoryId: 'cat-expense-2',
     included: true,
   },
   {
@@ -175,7 +126,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Internet Bill',
     amount: -79.99,
     account: 'Chase Checking',
-    categoryId: '4',
+    categoryId: 'cat-bills-2',
     included: true,
   },
   {
@@ -184,7 +135,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Spotify Premium',
     amount: -9.99,
     account: 'Chase Checking',
-    categoryId: '5',
+    categoryId: 'cat-subs-2',
     included: true,
   },
   {
@@ -193,7 +144,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Local Grocery Store',
     amount: -32.45,
     account: 'Chase Checking',
-    categoryId: '1',
+    categoryId: 'cat-expense-1',
     included: false,
   },
   {
@@ -202,7 +153,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Coffee Shop',
     amount: -3.50,
     account: 'Chase Checking',
-    categoryId: '2',
+    categoryId: 'cat-expense-2',
     included: false,
   },
   {
@@ -211,7 +162,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Lyft Ride',
     amount: -12.30,
     account: 'Chase Checking',
-    categoryId: '3',
+    categoryId: 'cat-expense-2',
     included: false,
   },
   {
@@ -220,7 +171,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Phone Bill',
     amount: -45.00,
     account: 'Chase Checking',
-    categoryId: '4',
+    categoryId: 'cat-bills-1',
     included: false,
   },
   {
@@ -229,7 +180,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Movie Theater',
     amount: -25.00,
     account: 'Chase Checking',
-    categoryId: '5',
+    categoryId: 'cat-subs-1',
     included: false,
   },
   {
@@ -238,7 +189,7 @@ export const mockTransactions: Transaction[] = [
     description: 'March Salary',
     amount: 3500.00,
     account: 'Chase Checking',
-    categoryId: '6',
+    categoryId: 'cat-income-1',
     included: true,
   },
   {
@@ -247,7 +198,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Freelance Business Income',
     amount: 1200.00,
     account: 'Chase Checking',
-    categoryId: '7',
+    categoryId: 'cat-income-2',
     included: true,
   },
   {
@@ -256,7 +207,7 @@ export const mockTransactions: Transaction[] = [
     description: 'Investment Dividend',
     amount: 250.00,
     account: 'Chase Savings',
-    categoryId: '8',
+    categoryId: 'cat-income-2',
     included: true,
   },
 ];
@@ -291,5 +242,81 @@ export const mockUploads: UploadFile[] = [
     account: 'Chase Savings',
     status: 'processing',
     uploadedAt: '2024-04-02T11:45:00Z',
+  },
+];
+
+export const mockBudgets: Budget[] = [
+  {
+    id: '1',
+    categoryId: '1', // Groceries
+    amount: 6000,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '2',
+    categoryId: '2', // Dining Out
+    amount: 2400,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '3',
+    categoryId: '3', // Transportation
+    amount: 300,
+    period: 'monthly',
+    month: '2024-01',
+    year: '2024',
+  },
+  {
+    id: '4',
+    categoryId: '4', // Entertainment
+    amount: 200,
+    period: 'monthly',
+    month: '2024-01',
+    year: '2024',
+  },
+  {
+    id: '5',
+    categoryId: '5', // Shopping
+    amount: 500,
+    period: 'monthly',
+    month: '2024-01',
+    year: '2024',
+  },
+  {
+    id: '6',
+    categoryId: '6', // Utilities
+    amount: 1800,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '7',
+    categoryId: '7', // Rent
+    amount: 12000,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '8',
+    categoryId: '8', // Healthcare
+    amount: 1200,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '9',
+    categoryId: '9', // Travel
+    amount: 3000,
+    period: 'annual',
+    year: '2024',
+  },
+  {
+    id: '10',
+    categoryId: '10', // Education
+    amount: 5000,
+    period: 'annual',
+    year: '2024',
   },
 ]; 

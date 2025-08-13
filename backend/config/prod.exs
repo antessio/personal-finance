@@ -19,3 +19,12 @@ config :logger, level: :info
 
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.
+
+config :logger, backends: [{LoggerFileBackend, :request_log}],
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
+
+config :logger, :request_log,
+  path: "logs/request.#{Mix.env}.log",
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]

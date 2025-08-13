@@ -4,6 +4,7 @@ export interface Transaction {
   description: string;
   amount: number;
   categoryId?: string;
+  category?: Category;
   account: string;
   included: boolean;
 }
@@ -15,11 +16,28 @@ export interface Category {
   regexPatterns: string[];
 }
 
+export interface Budget {
+  id: string;
+  categoryId: string;
+  amount: number;
+  period: 'monthly' | 'annual';
+  month?: string; // Format: 'YYYY-MM', required only for monthly budgets
+  year: string; // Format: 'YYYY'
+}
+
 export interface TransactionFilters {
   month?: string;
   included?: boolean;
   account?: string;
   categoryId?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  nextCursor?: string;
+  hasMore: boolean;
 }
 
 export interface BulkUpdatePayload {

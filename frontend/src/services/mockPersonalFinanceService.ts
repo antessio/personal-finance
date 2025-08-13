@@ -1,6 +1,6 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
-import { mockTransactions, mockCategories, mockUsers, mockUploads } from './mockData';
+import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
 const simulateDelay = () => new Promise(resolve => setTimeout(resolve, 500));
 
@@ -17,6 +17,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   private users: MockUser[];
   private currentUser: { id: string; name: string; email: string } | null;
   private uploads: UploadFile[];
+  private budgets: Budget[];
 
   constructor() {
     this.transactions = [...mockTransactions];
@@ -24,6 +25,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     this.users = [...mockUsers];
     this.currentUser = this.getStoredUser();
     this.uploads = [...mockUploads];
+    this.budgets = [...mockBudgets];
   }
 
   private getStoredUser() {
@@ -49,9 +51,11 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Transaction methods
-  async getTransactions(filters: TransactionFilters): Promise<Transaction[]> {
+  async getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>> {
     await simulateDelay();
-    return Promise.resolve(this.transactions.filter(transaction => {
+    
+    // Filter transactions based on criteria
+    let filteredTransactions = this.transactions.filter(transaction => {
       if (filters.month && !transaction.date.startsWith(filters.month)) {
         return false;
       }
@@ -65,7 +69,31 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
         return false;
       }
       return true;
-    }));
+    });
+
+    // Sort transactions by date (newest first)
+    filteredTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // Handle cursor-based pagination
+    const limit = filters.limit || 10;
+    let startIndex = 0;
+    
+    if (filters.cursor) {
+      const cursorIndex = filteredTransactions.findIndex(t => t.id === filters.cursor);
+      if (cursorIndex !== -1) {
+        startIndex = cursorIndex + 1;
+      }
+    }
+    
+    const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + limit);
+    const hasMore = startIndex + limit < filteredTransactions.length;
+    const nextCursor = hasMore ? paginatedTransactions[paginatedTransactions.length - 1].id : undefined;
+
+    return {
+      data: paginatedTransactions,
+      nextCursor,
+      hasMore
+    };
   }
 
   async uploadTransactions(file: File): Promise<void> {
@@ -207,5 +235,36 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     await simulateDelay();
     this.uploads = this.uploads.filter(u => u.id !== id);
     return Promise.resolve();
+  }
+
+  // Budget methods
+  async getBudgets(year: string): Promise<Budget[]> {
+    await simulateDelay();
+    return this.budgets.filter(budget => budget.year === year);
+  }
+
+  async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
+    await simulateDelay();
+    const newBudget: Budget = {
+      ...budget,
+      id: Math.random().toString(36).substr(2, 9),
+    };
+    this.budgets.push(newBudget);
+    return newBudget;
+  }
+
+  async updateBudget(id: string, budget: Partial<Budget>): Promise<Budget> {
+    await simulateDelay();
+    const index = this.budgets.findIndex(b => b.id === id);
+    if (index === -1) {
+      throw new Error('Budget not found');
+    }
+    this.budgets[index] = { ...this.budgets[index], ...budget };
+    return this.budgets[index];
+  }
+
+  async deleteBudget(id: string): Promise<void> {
+    await simulateDelay();
+    this.budgets = this.budgets.filter(budget => budget.id !== id);
   }
 } 

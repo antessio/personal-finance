@@ -71,3 +71,13 @@ frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+
+
+*/target/**
+**/target/**
+*/.idea/**
+**/.idea/**
+*/.vscode/**
+*/.DS_Store
+*/Thumbs.db
+*/.turbo/
