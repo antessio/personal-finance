@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import antessio.personalfinance.common.Id;
+import antessio.personalfinance.infrastructure.eventpublisher.SpringEventPublisher;
+import antessio.personalfinance.infrastructure.persistence.repository.AutomaticSkipSpringDataRepositoryAdapter;
 import antessio.personalfinance.infrastructure.web.controller.common.IdSerializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -56,18 +58,24 @@ public class PersonalFinanceConfiguration {
     }
 
     @Bean
-    public CategoryService categoryService(CategoryRepositoryAdapter categoryRepository){
-        return new CategoryService(categoryRepository);
+    public CategoryService categoryService(CategoryRepositoryAdapter categoryRepository, AutomaticSkipSpringDataRepositoryAdapter automaticSkipRepository) {
+        return new CategoryService(categoryRepository, automaticSkipRepository);
     }
 
     @Bean
-    public TransactionService transactionService(TransactionRepository transactionRepository, DateProvider dateProvider, CategoryService categoryService){
-        return new TransactionService(transactionRepository, dateProvider, categoryService);
+    public TransactionService transactionService(TransactionRepository transactionRepository,
+                                                 DateProvider dateProvider,
+                                                 CategoryService categoryService,
+                                                 SpringEventPublisher eventPublisher) {
+        return new TransactionService(transactionRepository, dateProvider, categoryService, eventPublisher);
     }
 
     @Bean
-    public TransactionImportService transactionImportService(TransactionImportRepository categoryRepository, DateProvider dateProvider, TransactionService transactionService){
-        return new TransactionImportService(categoryRepository, dateProvider, transactionService);
+    public TransactionImportService transactionImportService(TransactionImportRepository categoryRepository,
+                                                             DateProvider dateProvider,
+                                                             TransactionService transactionService,
+                                                             SpringEventPublisher eventPublisher) {
+        return new TransactionImportService(categoryRepository, dateProvider, transactionService, eventPublisher);
     }
 
 }

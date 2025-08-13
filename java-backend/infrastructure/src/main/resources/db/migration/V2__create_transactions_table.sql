@@ -9,6 +9,6 @@ CREATE TABLE transactions (
     user_owner VARCHAR(255) NOT NULL,
     category_id BIGINT,
     inserted_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NULL,
     FOREIGN KEY (category_id) REFERENCES categories(id)
 ); 

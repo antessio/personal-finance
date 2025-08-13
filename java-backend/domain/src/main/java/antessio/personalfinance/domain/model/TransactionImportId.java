@@ -1,5 +1,11 @@
 package antessio.personalfinance.domain.model;
 
-public record TransactionImportId(Long id) {
+import antessio.personalfinance.common.Id;
 
+public class TransactionImportId extends Id<Long> {
+
+    public TransactionImportId(Long id) {
+        super(id);
+    }
 }
+

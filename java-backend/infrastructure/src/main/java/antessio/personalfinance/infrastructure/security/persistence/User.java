@@ -54,7 +54,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.roles.stream().map(Role::getRole).map(SimpleGrantedAuthority::new).toList();
+        return this.roles.stream().map(Role::getRole).map(Role.RoleType::getRole).map(SimpleGrantedAuthority::new).toList();
     }
 
     public void addRole(Role.RoleType role) {

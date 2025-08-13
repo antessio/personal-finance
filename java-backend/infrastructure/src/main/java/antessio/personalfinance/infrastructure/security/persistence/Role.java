@@ -27,6 +27,7 @@ public class Role {
     private User user;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private RoleType role;
 
 

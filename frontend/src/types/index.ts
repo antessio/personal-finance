@@ -4,6 +4,7 @@ export interface Transaction {
   description: string;
   amount: number;
   categoryId?: string;
+  category?: Category;
   account: string;
   included: boolean;
 }

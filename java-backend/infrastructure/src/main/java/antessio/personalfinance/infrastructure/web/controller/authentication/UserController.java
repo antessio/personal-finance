@@ -2,8 +2,15 @@ package antessio.personalfinance.infrastructure.web.controller.authentication;
 
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import antessio.personalfinance.infrastructure.security.persistence.User;
+import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
+import antessio.personalfinance.infrastructure.web.controller.authentication.dto.UserDTO;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -21,11 +28,19 @@ public class UserController {
         this.authenticationService = authenticationService;
     }
 
-    // register user
-    // login user
+
+    @GetMapping("/api/users/me")
+    public ResponseEntity<UserDTO> getCurrentUser() {
+        User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(new UserDTO(user.getFullName(), user.getEmail(),
+                user.getRoles().stream().map(Role::getRole).map(Enum::name).collect(Collectors.toSet())));
+    }
 
     @PostMapping("/public/api/users/register")
-    public void registerUser(@RequestBody RegisterUserRequest registerUserRequest) {
+    public ResponseEntity<Void> registerUser(@RequestBody RegisterUserRequest registerUserRequest) {
         // Validate input
         if (registerUserRequest == null) {
             throw new IllegalArgumentException("RegisterUserDTO cannot be null");
@@ -37,17 +52,19 @@ public class UserController {
                 registerUserRequest.firstName() + " " + registerUserRequest.lastName(),
                 true, // Assuming isVerified is true for simplicity
                 Set.of(Role.RoleType.ADMIN)); // Default role for new users
+        return ResponseEntity.ok().build();
 
     }
 
     @PostMapping("/public/api/users/login")
-    public String loginUser(@RequestBody LoginUserRequest loginUserRequest) {
+    public ResponseEntity<String> loginUser(@RequestBody LoginUserRequest loginUserRequest) {
         // Validate input
         if (loginUserRequest == null) {
             throw new IllegalArgumentException("LoginUserDTO cannot be null");
         }
 
-        return authenticationService.authenticate(loginUserRequest.username(), loginUserRequest.password());
+        String userToken = authenticationService.authenticate(loginUserRequest.username(), loginUserRequest.password());
+        return ResponseEntity.ok(userToken);
     }
 
 

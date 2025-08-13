@@ -12,12 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/dashboard/api/categories")
+@RequestMapping("/api/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
@@ -33,7 +34,7 @@ public class CategoryController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         limit = Optional.ofNullable(limit).orElse(20);
-        List<CategoryDTO> results = categoryService.getAllCategories(user.getUsername(), limit,
+        List<CategoryDTO> results = categoryService.getAllCategories(user.getUsername(), limit + 1,
                 Optional.ofNullable(cursor).map(CategoryId::new).orElse(null));
         return ResponseEntity.ok(
                 PaginatedResult.from(results, limit)
@@ -42,14 +43,32 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@RequestBody CreateCategoryDTO category) {
-        return ResponseEntity.ok(categoryService.createCategory(category));
+         User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(categoryService.createCategory(user.getUsername(), category));
     }
 
     @PutMapping("/{id}/matchers")
     public ResponseEntity<Void> updateMatchers(
             @PathVariable Long id,
             @RequestBody List<String> matchers) {
-        categoryService.updateCategoryMatchers(new CategoryId(id), new HashSet<>(matchers));
+         User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        categoryService.updateCategoryMatchers(user.getUsername(), new CategoryId(id), new HashSet<>(matchers));
+        return ResponseEntity.accepted().build();
+    }
+    @PostMapping("/skip-matchers")
+    public ResponseEntity<Void> updateSkipMatchers(
+            @RequestBody List<String> skipMatchers) {
+         User user = SecurityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        categoryService.addAutomaticSkip(user.getUsername(), skipMatchers);
         return ResponseEntity.accepted().build();
     }
 } 

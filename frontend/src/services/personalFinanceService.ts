@@ -30,4 +30,8 @@ export interface PersonalFinanceService {
   logout(): Promise<void>;
   signup(userData: { email: string; password: string; name: string }): Promise<void>;
   getCurrentUser(): Promise<{ id: string; name: string; email: string }>;
+
+  // Token management (optional for implementations)
+  setToken?(token: string): void;
+  isAuthenticated?(): boolean;
 } 

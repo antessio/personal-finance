@@ -13,7 +13,7 @@ public interface TransactionRepository {
     Optional<Transaction> findById(TransactionId id);
 
     Transaction save(Transaction transaction);
-    void saveAll(List<Transaction> transactions);
+    List<Transaction> saveAll(List<Transaction> transactions);
 
     void delete(Transaction transaction);
 

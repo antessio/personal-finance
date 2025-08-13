@@ -5,7 +5,6 @@ import antessio.personalfinance.domain.dto.TransactionImportDTO;
 import antessio.personalfinance.domain.model.TransactionImport;
 import antessio.personalfinance.domain.model.TransactionImportId;
 import antessio.personalfinance.domain.service.TransactionImportService;
-import antessio.personalfinance.infrastructure.persistence.mapper.TransactionImportMapper;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
@@ -25,13 +24,10 @@ import java.util.Optional;
 public class TransactionImportController {
 
     private final TransactionImportService transactionImportService;
-    private final TransactionImportMapper transactionImportMapper;
     private @Value("${personal-finance.file.path}") String filePath;
 
-    public TransactionImportController(TransactionImportService transactionImportService,
-                                       TransactionImportMapper transactionImportMapper) {
+    public TransactionImportController(TransactionImportService transactionImportService) {
         this.transactionImportService = transactionImportService;
-        this.transactionImportMapper = transactionImportMapper;
     }
 
     @GetMapping

@@ -51,7 +51,7 @@ public class TransactionEntity {
     @Column(name = "inserted_at", nullable = false)
     private LocalDateTime insertedAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public TransactionId getTransactionId() {

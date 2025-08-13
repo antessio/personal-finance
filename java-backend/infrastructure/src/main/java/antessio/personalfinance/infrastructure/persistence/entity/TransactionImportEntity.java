@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TransactionImportEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
@@ -37,10 +38,10 @@ public class TransactionImportEntity {
     @Column(name = "inserted_at", nullable = false)
     private LocalDateTime insertedAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public TransactionImportId getTransactionImportId() {
         return new TransactionImportId(id);
     }
-} 
+}

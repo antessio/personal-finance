@@ -8,9 +8,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TransactionSpringDataRepository extends JpaRepository<TransactionEntity, String>, JpaSpecificationExecutor<TransactionEntity> {
+
+    Optional<TransactionEntity> findByUniqueId(String uniqueId);
 
     static Specification<TransactionEntity> userIs(String userOwner) {
         return (root, query, cb) ->
@@ -67,6 +70,9 @@ public interface TransactionSpringDataRepository extends JpaRepository<Transacti
         if (source != null) spec = spec.and(sourceIs(source));
         if (categoryIds != null && !categoryIds.isEmpty()) {
             spec = spec.and(categoryIn(categoryIds));
+        }else if(categoryIds != null) {
+            // If categoryIds is explicitly empty, we want to exclude transactions with any category
+            spec = spec.and((root, query, cb) -> cb.isNull(root.get("categoryId")));
         }
         if (startingAfter != null) {
             spec = spec.and(startingAfter(startingAfter));

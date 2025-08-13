@@ -1,14 +1,20 @@
 package antessio.personalfinance.domain.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import antessio.personalfinance.common.DateProvider;
 import antessio.personalfinance.domain.dto.CreateTransactionImportDTO;
 import antessio.personalfinance.domain.dto.TransactionImportDTO;
+import antessio.personalfinance.domain.events.TransactionImportCreated;
 import antessio.personalfinance.domain.model.TransactionImport;
 import antessio.personalfinance.domain.model.TransactionImportId;
 import antessio.personalfinance.domain.model.TransactionUploadStatus;
+import antessio.personalfinance.domain.ports.TransactionImportEventPublisher;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
+import antessio.personalfinance.domain.service.transactionparser.PayPalTransactionParser;
+import antessio.personalfinance.domain.service.transactionparser.SatispayOldTransactionParser;
+import antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
 
 public class TransactionImportService {
@@ -17,18 +23,21 @@ public class TransactionImportService {
     private final DateProvider dateProvider;
     private final TransactionService transactionService;
     private final List<TransactionParser> transactionParsers;
+    private final TransactionImportEventPublisher transactionImportEventPublisher;
 
     public TransactionImportService(
             TransactionImportRepository transactionImportRepository,
             DateProvider dateProvider,
-            TransactionService transactionService) {
+            TransactionService transactionService, TransactionImportEventPublisher transactionImportEventPublisher) {
         this.transactionImportRepository = transactionImportRepository;
         this.dateProvider = dateProvider;
         this.transactionService = transactionService;
+        this.transactionImportEventPublisher = transactionImportEventPublisher;
         this.transactionParsers = List.of(
                 new antessio.personalfinance.domain.service.transactionparser.WidibaTransactionParser(),
-                new antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser(),
-                new antessio.personalfinance.domain.service.transactionparser.IntesaTransactionParser()
+                new SatispayTransactionParser(),
+                new antessio.personalfinance.domain.service.transactionparser.IntesaTransactionParser(),
+                new PayPalTransactionParser()
         );
     }
 
@@ -43,6 +52,7 @@ public class TransactionImportService {
                 null
         );
         TransactionImport savedTransactionImport = transactionImportRepository.save(transactionImport);
+        transactionImportEventPublisher.publish(new TransactionImportCreated(savedTransactionImport.getId()));
         return toDTO(savedTransactionImport);
     }
 
@@ -83,5 +93,10 @@ public class TransactionImportService {
                 savedTransactionImport.getInsertedAt(),
                 savedTransactionImport.getUpdatedAt()
         );
+    }
+
+    public Optional<TransactionImportDTO> findById(TransactionImportId id) {
+        return transactionImportRepository.findById(id)
+                .map(this::toDTO);
     }
 }

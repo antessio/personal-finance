@@ -14,10 +14,31 @@ public class TransactionsQueryDTO {
     String userOwner;
     YearMonth month;
     CategoryId categoryId;
+    Boolean uncategorized;
     Boolean skip;
     String source;
     int limit;
     TransactionId cursor;
+
+    public TransactionsQueryDTO(String userOwner, YearMonth month, CategoryId categoryId, Boolean uncategorized, Boolean skip, String source, int limit, TransactionId cursor) {
+        if (userOwner == null) {
+            throw new IllegalArgumentException("User owner cannot be null");
+        }
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Limit must be greater than 0");
+        }
+        if(uncategorized != null && categoryId != null) {
+            throw new IllegalArgumentException("Cannot specify both uncategorized and categoryId");
+        }
+        this.userOwner = userOwner;
+        this.month = month;
+        this.categoryId = categoryId;
+        this.uncategorized = uncategorized;
+        this.skip = skip;
+        this.source = source;
+        this.limit = limit;
+        this.cursor = cursor;
+    }
 
     public Optional<YearMonth> getMonth() {
         return Optional.ofNullable(month);
@@ -37,6 +58,10 @@ public class TransactionsQueryDTO {
 
     public Optional<String> getSource() {
         return Optional.ofNullable(source);
+    }
+
+    public Optional<Boolean> getUncategorized() {
+        return Optional.ofNullable(uncategorized);
     }
 
 }

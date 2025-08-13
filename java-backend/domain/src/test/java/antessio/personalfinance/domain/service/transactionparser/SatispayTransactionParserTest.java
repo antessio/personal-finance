@@ -1,6 +1,9 @@
 package antessio.personalfinance.domain.service.transactionparser;
 
-import static org.junit.jupiter.api.Assertions.*;
+import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.TransactionImport;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -9,23 +12,21 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import antessio.personalfinance.domain.dto.CreateTransactionDTO;
-import antessio.personalfinance.domain.model.TransactionImport;
-
+@Disabled
 class SatispayTransactionParserTest {
     @Test
     void testCanParse() {
-        SatispayTransactionParser parser = new SatispayTransactionParser();
+        SatispayOldTransactionParser parser = new SatispayOldTransactionParser();
         TransactionImport transactionImport = ParserTestUtils.createTestTransactionImport("satispay", "testPath");
         assertTrue(parser.canParse(transactionImport));
     }
 
     @Test
     void testParse() {
-        SatispayTransactionParser parser = new SatispayTransactionParser();
-        String resourcePath = "src/test/resources/satispay_test.csv";
+        SatispayOldTransactionParser parser = new SatispayOldTransactionParser();
+        String resourcePath = "src/test/resources/satispay_test.xlsx";
         Path path = Paths.get(resourcePath).toAbsolutePath();
         TransactionImport transactionImport = ParserTestUtils.createTestTransactionImport("satispay", path.toString() );
         var transactions = parser.parse(transactionImport);

@@ -1,5 +1,14 @@
 package antessio.personalfinance.domain.service.transactionparser;
 
+import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.TransactionImport;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -12,15 +21,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-import antessio.personalfinance.domain.dto.CreateTransactionDTO;
-import antessio.personalfinance.domain.model.TransactionImport;
-
 public class WidibaTransactionParser implements TransactionParser {
+    private final Logger logger = LoggerFactory.getLogger(WidibaTransactionParser.class.getName());
 
     @Override
     public boolean canParse(TransactionImport transactionImport) {
@@ -72,6 +74,7 @@ public class WidibaTransactionParser implements TransactionParser {
 
             return Optional.of(new CreateTransactionDTO(userOwner, transactionDate, BigDecimal.valueOf(amount), description + " " + reason, "widiba"));
         } catch (Exception e) {
+            logger.error("Error parsing row {}", row.getRowNum(), e);
             return Optional.empty(); // Ignora righe non valide
         }
     }

@@ -1,7 +1,9 @@
 package antessio.personalfinance.infrastructure.persistence.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -28,8 +30,8 @@ public class TransactionImportRepositoryAdapter implements TransactionImportRepo
 
 
     @Override
-    public TransactionImport save(TransactionImport TransactionImport) {
-        TransactionImportEntity transactionImportEntity = transactionImportSpringDataRepository.save(toEntity(null, TransactionImport));
+    public TransactionImport save(TransactionImport transactionImport) {
+        TransactionImportEntity transactionImportEntity = transactionImportSpringDataRepository.save(toEntity(null, transactionImport));
         return toDomain(transactionImportEntity);
     }
 
