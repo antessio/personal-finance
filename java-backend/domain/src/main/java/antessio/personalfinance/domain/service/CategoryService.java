@@ -13,8 +13,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class CategoryService {
+    private final static int BATCH_SIZE = 20;
 
     private final CategoryRepository categoryRepository;
     private final AutomaticSkipRepository automaticSkipRepository;
@@ -75,7 +77,14 @@ public class CategoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
         return toDTO(category);
     }
+    public Stream<CategoryDTO> getAllCategories(String userOwner) {
+        List<CategoryDTO> seed = this.getAllCategories(userOwner, BATCH_SIZE, null);
 
+        return Stream.iterate(seed,
+                        categories -> !categories.isEmpty(),
+                        categories -> this.getAllCategories(userOwner, BATCH_SIZE, categories.getLast().getId()))
+                .flatMap(List::stream);
+    }
     public List<CategoryDTO> getAllCategories(String userId, int limit, CategoryId cursor) {
         return categoryRepository.findAllByUser(userId, limit, cursor)
                 .stream()
