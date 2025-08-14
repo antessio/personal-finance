@@ -33,6 +33,9 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
+    @Value("${security.authentication.enabled:true}")
+    private boolean authenticationEnabled;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource(@Value("${security.allowedOrigins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -65,21 +68,25 @@ public class SecurityConfiguration {
             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .cors(withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/me").authenticated()
-                        .requestMatchers("/api/categories/**").authenticated()
-                        .requestMatchers("/api/transactions/**").authenticated()
-                        .requestMatchers("/api/transaction-imports/**").authenticated()
-                        .requestMatchers("/dashboard/**").authenticated()
-                        .anyRequest().denyAll())
+                .csrf(AbstractHttpConfigurer::disable);
+
+        if (authenticationEnabled) {
+            http.authorizeHttpRequests(authz -> authz
+                    .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/public/**").permitAll()
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/users/me").authenticated()
+                    .requestMatchers("/api/categories/**").authenticated()
+                    .requestMatchers("/api/transactions/**").authenticated()
+                    .requestMatchers("/api/transaction-imports/**").authenticated()
+                    .requestMatchers("/dashboard/**").authenticated()
+                    .anyRequest().denyAll())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+        } else {
+            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+        }
         return http.build();
     }
 

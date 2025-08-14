@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -23,13 +22,14 @@ import java.util.Optional;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     public ResponseEntity<PaginatedResult<CategoryDTO>> getCategories(
             @RequestParam(value = "limit", defaultValue = "20") Integer limit,
             @RequestParam(value = "cursor", required = false) Long cursor
     ) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -43,7 +43,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@RequestBody CreateCategoryDTO category) {
-         User user = SecurityUtils.getAuthenticatedUser();
+         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -54,7 +54,7 @@ public class CategoryController {
     public ResponseEntity<Void> updateMatchers(
             @PathVariable Long id,
             @RequestBody List<String> matchers) {
-         User user = SecurityUtils.getAuthenticatedUser();
+         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -64,7 +64,7 @@ public class CategoryController {
     @PostMapping("/skip-matchers")
     public ResponseEntity<Void> updateSkipMatchers(
             @RequestBody List<String> skipMatchers) {
-         User user = SecurityUtils.getAuthenticatedUser();
+         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

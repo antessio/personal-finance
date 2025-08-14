@@ -13,7 +13,6 @@ import antessio.personalfinance.domain.model.TransactionUploadStatus;
 import antessio.personalfinance.domain.ports.TransactionImportEventPublisher;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
 import antessio.personalfinance.domain.service.transactionparser.PayPalTransactionParser;
-import antessio.personalfinance.domain.service.transactionparser.SatispayOldTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
 

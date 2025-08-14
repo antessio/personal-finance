@@ -27,6 +27,7 @@ import java.util.Optional;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final SecurityUtils securityUtils;
 
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionDTO>> getTransactions(
@@ -37,7 +38,7 @@ public class TransactionController {
             @RequestParam(required = false) Boolean skip,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Boolean uncategorized) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -65,7 +66,7 @@ public class TransactionController {
 
     @PostMapping("/{id}/skip")
     public ResponseEntity<Void> skipTransaction(@PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -75,7 +76,7 @@ public class TransactionController {
 
     @PostMapping("/{id}/include")
     public ResponseEntity<Void> includeTransaction(@PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -86,7 +87,7 @@ public class TransactionController {
     @PostMapping("/{id}/processCategory")
     public ResponseEntity<Void> processCategory(
             @PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -96,7 +97,7 @@ public class TransactionController {
 
     @PostMapping("/processCategoriesAll")
     public ResponseEntity<Void> processCategoriesAll() {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -108,7 +109,7 @@ public class TransactionController {
     public ResponseEntity<Void> assignCategory(
             @PathVariable String id,
             @RequestParam Long categoryId) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -119,7 +120,7 @@ public class TransactionController {
     @GetMapping("/export/transactions")
     public ResponseEntity<String> exportTransactions(
             @RequestParam() String yearMonth) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -143,7 +144,7 @@ public class TransactionController {
     @GetMapping("/export/savings")
     public ResponseEntity<String> exportSavings(
             @RequestParam() String yearMonth) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

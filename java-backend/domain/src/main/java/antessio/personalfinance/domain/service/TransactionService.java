@@ -173,7 +173,7 @@ public class TransactionService {
                 createTransactionDTO.date(),
                 createTransactionDTO.amount(),
                 createTransactionDTO.description(),
-                generateUniqueId(createTransactionDTO.date().toString(), createTransactionDTO.amount().doubleValue(), createTransactionDTO.description()),
+                generateUniqueId(createTransactionDTO.date().toString(), createTransactionDTO.amount().doubleValue(), createTransactionDTO.description(), createTransactionDTO.userOwner()),
                 createTransactionDTO.source(),
                 false,
                 createTransactionDTO.userOwner(),
@@ -190,9 +190,9 @@ public class TransactionService {
     }
 
 
-    private String generateUniqueId(String date, double amount, String description) {
+    private String generateUniqueId(String date, double amount, String description, String userOwner) {
         try {
-            String uniqueString = date + "-" + amount + "-" + description;
+            String uniqueString = date + "-" + amount + "-" + description + "-" + userOwner;
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(uniqueString.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
