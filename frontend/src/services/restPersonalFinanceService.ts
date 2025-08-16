@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { CategoryRest, TransactionRest, UploadFilRest } from './rest/types';
+import { isAuthEnabled } from '../config/auth';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
   private api: AxiosInstance;
@@ -15,9 +16,11 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     // Add request interceptor to include auth token
     this.api.interceptors.request.use(
       (config) => {
-        const token = this.getAuthToken();
-        if (token) {
-          //config.headers.Authorization = `Bearer ${token}`;
+        if (isAuthEnabled()) {
+          const token = this.getAuthToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
         }
         return config;
       },
@@ -30,7 +33,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        if (isAuthEnabled() && error.response?.status === 401) {
           // Clear token and redirect to login
           this.clearAuthToken();
           if (typeof window !== 'undefined') {
@@ -43,7 +46,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   private getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
+    if (!isAuthEnabled() || typeof window === 'undefined') return null;
 
     // Try to get token from localStorage first
     const storedToken = localStorage.getItem('auth-token');
@@ -56,7 +59,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   private setAuthToken(token: string): void {
-    if (typeof window === 'undefined') return;
+    if (!isAuthEnabled() || typeof window === 'undefined') return;
 
     // Store in localStorage
     localStorage.setItem('auth-token', token);
@@ -66,7 +69,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   private clearAuthToken(): void {
-    if (typeof window === 'undefined') return;
+    if (!isAuthEnabled() || typeof window === 'undefined') return;
 
     // Clear from localStorage
     localStorage.removeItem('auth-token');
@@ -77,11 +80,14 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   // Public method to manually set token if needed
   public setToken(token: string): void {
-    this.setAuthToken(token);
+    if (isAuthEnabled()) {
+      this.setAuthToken(token);
+    }
   }
 
   // Public method to check if user is authenticated
   public isAuthenticated(): boolean {
+    if (!isAuthEnabled()) return true; // Always authenticated when auth is disabled
     return !!this.getAuthToken();
   }
 
@@ -115,7 +121,15 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     if (filters.month) params.targetDate = filters.month;
     if (filters.included !== undefined) params.skip = !filters.included;
     if (filters.account) params.source = filters.account.toLowerCase();
-    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.categoryId){
+      if (filters.categoryId == "uncategorized"){
+        params.uncategorized = true;
+      }else if(filters.categoryId == "categorized"){
+        params.uncategorized = false;
+      }else{
+        params.categoryId = filters.categoryId;
+      }
+    } 
     if (filters.limit) params.limit = filters.limit;
     if (filters.cursor) params.cursor = filters.cursor;
     return params;
@@ -128,7 +142,23 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void> {
-    await this.api.patch('/transactions/bulk-update', payload);
+    console.log("Bulk updating transactions with payload:", payload);
+    try {
+      const requestData = {
+        transactionIds: payload.transactionIds,
+        categoryId: payload.updates.categoryId,
+        skip: payload.updates.included != undefined ? !payload.updates.included : undefined,
+      };
+    
+      if(!this.api){
+        throw new Error("API instance is not initialized");
+      }
+      const response = await this.api.patch('/api/transactions/bulk-update', requestData);
+      
+    } catch (error) {
+      console.error("Bulk update error:", error);
+      throw error;
+    }
   }
 
   async categorizeTransactions(transactionIds: string[]): Promise<void> {
@@ -137,7 +167,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   // Category methods
   async getCategories(): Promise<Category[]> {
-    const response = await this.api.get<PaginatedResponse<CategoryRest>>('/api/categories');
+    const response = await this.api.get<PaginatedResponse<CategoryRest>>('/api/categories', {params: {limit: 2000}});
     return response.data.data.map(category => ({
       id: category.id,
       name: category.name,

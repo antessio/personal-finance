@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { isAuthEnabled } from './config/auth';
 
 export function middleware(request: NextRequest) {
+
+  // Check if authentication is disabled
+  if (!isAuthEnabled()) {
+    return NextResponse.next();
+  }
+
   // In middleware, we can't access sessionStorage directly
   // Instead, we'll use a cookie to store the auth state
   const isAuthenticated = request.cookies.has('auth-token');

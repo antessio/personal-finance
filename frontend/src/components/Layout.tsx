@@ -31,6 +31,7 @@ import {
   PieChart as PieChartIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { isAuthEnabled } from '../config/auth';
 
 const drawerWidth = 240;
 
@@ -112,25 +113,29 @@ export default function Layout({ children }: LayoutProps) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Personal Expenses
           </Typography>
-          <Button
-            color="inherit"
-            onClick={handleMenuOpen}
-            startIcon={<Avatar sx={{ width: 24, height: 24 }}>{user?.name?.[0]}</Avatar>}
-          >
-            {user?.name}
-          </Button>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Logout</ListItemText>
-            </MenuItem>
-          </Menu>
+          {isAuthEnabled() && (
+            <>
+              <Button
+                color="inherit"
+                onClick={handleMenuOpen}
+                startIcon={<Avatar sx={{ width: 24, height: 24 }}>{user?.name?.[0]}</Avatar>}
+              >
+                {user?.name}
+              </Button>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+              >
+                <MenuItem onClick={handleLogout}>
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Logout</ListItemText>
+                </MenuItem>
+              </Menu>
+            </>
+          )}
         </Toolbar>
       </AppBar>
       <Box
