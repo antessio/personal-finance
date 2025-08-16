@@ -191,7 +191,7 @@ private Transaction updateTransactionAndGetEvents(String userOwner, Transaction
     Optional<CategoryId> maybeMatchingCategory = categoryService.findMatchingCategory(userOwner, t.getDescription())
             .map(Category::getId);
     if (maybeMatchingCategory.isEmpty() && t.getCategoryId() == null && !t.isSkipped()) {
-z        assignCategoryFromSimilarTransaction(t, events);
+        assignCategoryFromSimilarTransaction(t, events);
     }
     return maybeMatchingCategory
             .map(categoryId -> {

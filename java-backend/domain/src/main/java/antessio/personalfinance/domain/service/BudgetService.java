@@ -10,7 +10,6 @@ import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.MonthlyBudget;
 import antessio.personalfinance.domain.ports.BudgetRepository;
 
-import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,7 @@ public class BudgetService {
                 .flatMap(categoryId -> getYearMonths(year)
                         .map(yearMonth -> getMonthlyBudget(categoryId, yearMonth, monthlyBudgets)
                                 .orElseGet(() -> getDefaultBudget(categoryId, defaultBudgets)
-                                        .orElseGet(() -> new BudgetDTO(categoryId, BigDecimal.ZERO)))))
+                                        .orElse(null))))
                 .toList();
     }
 
@@ -66,7 +65,7 @@ public class BudgetService {
                 .map(catId -> getYearMonths(year)
                         .map(yearMonth -> getMonthlyBudget(catId, yearMonth, monthlyBudgets)
                                 .orElseGet(() -> getDefaultBudget(catId, defaultBudgets)
-                                        .orElseGet(() -> new BudgetDTO(catId, BigDecimal.ZERO))))
+                                        .orElse(null)))
                         .toList())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or does not belong to user"));
     }
@@ -84,7 +83,7 @@ public class BudgetService {
                 .map(CategoryDTO::getId)
                 .map(categoryId -> getMonthlyBudget(categoryId, yearMonth, monthlyBudgets)
                         .orElseGet(() -> getDefaultBudget(categoryId, defaultBudgets)
-                                .orElseGet(() -> new BudgetDTO(categoryId, BigDecimal.ZERO))))
+                                .orElse(null)))
                 .toList();
     }
 
@@ -95,20 +94,20 @@ public class BudgetService {
                 .map(CategoryDTO::getId)
                 .map(catId -> getMonthlyBudget(catId, yearMonth, monthlyBudgets)
                         .orElseGet(() -> getDefaultBudget(catId, defaultBudgets)
-                                .orElseGet(() -> new BudgetDTO(catId, BigDecimal.ZERO))))
+                                .orElse(null)))
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or does not belong to user"));
     }
 
 
     private static Optional<BudgetDTO> getDefaultBudget(CategoryId categoryId, Map<CategoryId, Budget> defaultBudgets) {
         return Optional.ofNullable(defaultBudgets.get(categoryId))
-                .map(defaultBudget -> new BudgetDTO(defaultBudget.getCategoryId(), defaultBudget.getAmount()));
+                .map(defaultBudget -> new BudgetDTO(defaultBudget.getId(), defaultBudget.getCategoryId(), defaultBudget.getAmount()));
     }
 
     private static Optional<BudgetDTO> getMonthlyBudget(CategoryId categoryId, YearMonth yearMonth, Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets) {
         return Optional.ofNullable(monthlyBudgets.get(categoryId))
                 .map(monthMap -> monthMap.get(yearMonth))
-                .map(monthlyBudget -> new BudgetDTO(monthlyBudget.getCategoryId(), monthlyBudget.getAmount()));
+                .map(monthlyBudget -> new BudgetDTO(monthlyBudget.getId(), monthlyBudget.getCategoryId(), monthlyBudget.getAmount()));
     }
 
     private static Stream<YearMonth> getYearMonths(int year) {
