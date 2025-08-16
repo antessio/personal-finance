@@ -13,7 +13,7 @@ public interface TransactionImportSpringDataRepository extends JpaRepository<Tra
 
   @Query(value = """
       SELECT *
-        FROM transaction_import_entity t
+        FROM transaction_imports t
        WHERE t.user_owner = :userOwner
       """,
       nativeQuery = true)
@@ -23,9 +23,9 @@ public interface TransactionImportSpringDataRepository extends JpaRepository<Tra
 
   @Query(value = """
       SELECT *
-        FROM transaction_import_entity t
+        FROM transaction_imports t
        WHERE t.user_owner = :userOwner
-       ORDER BY t.id
+       ORDER BY t.id DESC
        LIMIT :limit
       """,
       nativeQuery = true)
@@ -36,10 +36,10 @@ public interface TransactionImportSpringDataRepository extends JpaRepository<Tra
 
   @Query(value = """
       SELECT *
-        FROM transaction_import_entity t
+        FROM transaction_imports t
        WHERE t.user_owner      = :userOwner
          AND t.id              > :startingAfterId
-       ORDER BY t.id
+       ORDER BY t.id DESC
        LIMIT :limit
       """,
       nativeQuery = true)

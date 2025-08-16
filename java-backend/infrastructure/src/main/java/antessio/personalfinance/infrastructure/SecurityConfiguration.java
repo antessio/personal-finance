@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -40,21 +41,14 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource(@Value("${security.allowedOrigins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Set allowed origins
+        // Gestione CORS: consenti tutti i metodi e headers, e imposta allowed origins
         configuration.setAllowedOrigins(Optional.ofNullable(allowedOrigins)
-                                                .filter(Predicate.not(String::isBlank))
-                                                .map(s -> s.split(","))
-                                                .map(List::of)
-                                                .orElseGet(List::of));
-
-        // Allow credentials if needed
-        configuration.setAllowCredentials(true);
-
-        // Set allowed methods (e.g., GET, POST, etc.)
+                .filter(Predicate.not(String::isBlank))
+                .map(s -> Arrays.asList(s.split(",")))
+                .orElse(List.of("http://localhost:3000")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Set allowed headers
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

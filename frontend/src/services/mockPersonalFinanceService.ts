@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
@@ -31,19 +31,16 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   private getStoredUser() {
     if (typeof window === 'undefined') return null;
     const stored = sessionStorage.getItem('currentUser');
-    console.log("Getting stored user:", stored);
     return stored ? JSON.parse(stored) : null;
   }
 
   private setStoredUser(user: { id: string; name: string; email: string } | null) {
     if (typeof window === 'undefined') return;
     if (user) {
-      console.log("Setting stored user:", user);
       sessionStorage.setItem('currentUser', JSON.stringify(user));
       // Set auth-token cookie
       document.cookie = 'auth-token=1; path=/';
     } else {
-      console.log("Removing stored user");
       sessionStorage.removeItem('currentUser');
       // Remove auth-token cookie
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -99,7 +96,6 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   async uploadTransactions(file: File): Promise<void> {
     await simulateDelay();
     // Simulate file processing
-    console.log('File uploaded:', file.name);
     return Promise.resolve();
   }
 
@@ -117,7 +113,6 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   async categorizeTransactions(transactionIds: string[]): Promise<void> {
     await simulateDelay();
     // Simulate categorization logic
-    console.log('Categorizing transactions:', transactionIds);
     return Promise.resolve();
   }
 
@@ -156,21 +151,17 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   // Auth methods
   async login(email: string, password: string): Promise<{ user: { id: string; name: string; email: string } }> {
     await simulateDelay();
-    console.log("Login attempt:", email);
     const user = this.users.find(u => u.email === email && u.password === password);
     if (!user) {
-      console.log("Login failed: invalid credentials");
       return Promise.reject(new Error('Invalid credentials'));
     }
     this.currentUser = { id: user.id, name: user.name, email: user.email };
     this.setStoredUser(this.currentUser);
-    console.log("Login successful:", this.currentUser);
     return Promise.resolve({ user: this.currentUser });
   }
 
   async logout(): Promise<void> {
     await simulateDelay();
-    console.log("Logout");
     this.currentUser = null;
     this.setStoredUser(null);
     return Promise.resolve();
@@ -191,9 +182,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
 
   async getCurrentUser(): Promise<{ id: string; name: string; email: string }> {
     await simulateDelay();
-    console.log("Getting current user:", this.currentUser);
     if (!this.currentUser) {
-      console.log("No current user found");
       return Promise.reject(new Error('Not authenticated'));
     }
     return Promise.resolve(this.currentUser);
@@ -266,5 +255,29 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   async deleteBudget(id: string): Promise<void> {
     await simulateDelay();
     this.budgets = this.budgets.filter(budget => budget.id !== id);
+  }
+
+  async getAccounts(): Promise<Account[]> {
+    await simulateDelay();
+    const accounts: Account[] = [
+        {
+          id: "widiba",
+          name: "Widiba"
+        },
+        {
+          id: "intesa",
+          name: "Intesa",
+        },
+        {
+          id: "satispay",
+          name: "Satispay",
+        },
+        {
+          id: "paypal",
+          name: "PayPal"
+        }
+    ]
+    return accounts;
+      
   }
 } 

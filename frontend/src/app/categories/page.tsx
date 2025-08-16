@@ -44,7 +44,6 @@ export default function CategoriesPage() {
     queryKey: ['categories'],
     queryFn: () => service.getCategories(),
   });
-
   // Initialize mapping for expense categories
   useEffect(() => {
     if (categories.length && Object.keys(needWantMap).length === 0) {
@@ -129,7 +128,6 @@ export default function CategoriesPage() {
   const handleNeedWantChange = (categoryId: string, value: 'Need' | 'Want') => {
     setNeedWantMap((prev) => ({ ...prev, [categoryId]: value }));
   };
-
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>

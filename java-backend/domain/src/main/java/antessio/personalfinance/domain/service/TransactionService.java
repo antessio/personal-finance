@@ -179,7 +179,8 @@ public class TransactionService {
                 createTransactionDTO.userOwner(),
                 null,
                 dateProvider.getLocalDateTimeNow(),
-                null
+                null,
+                createTransactionDTO.transactionImportId()
         );
     }
 

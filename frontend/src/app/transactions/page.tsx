@@ -51,6 +51,10 @@ export default function TransactionsPage() {
     queryFn: () => service.getTransactions(filters),
   });
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => service.getAccounts(),
+  });
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => service.getCategories(),
@@ -69,8 +73,6 @@ export default function TransactionsPage() {
     }
   }, [paginatedData]);
 
-  // Get unique accounts from transactions
-  const accounts = Array.from(new Set(allTransactions.map(t => t.account))).sort();
 
   // Add special categories
   const allCategories = [
@@ -78,6 +80,8 @@ export default function TransactionsPage() {
     { id: 'categorized', name: 'Categorized', macroCategory: 'Special' },
     ...categories
   ];
+
+
 
   // Calculate the sum of displayed transactions
   const totalAmount = allTransactions.reduce(
@@ -210,8 +214,8 @@ export default function TransactionsPage() {
             >
               <MenuItem value="">All</MenuItem>
               {accounts.map((account) => (
-                <MenuItem key={account} value={account}>
-                  {account}
+                <MenuItem key={account.id} value={account.id}>
+                  {account.name}
                 </MenuItem>
               ))}
             </Select>
@@ -314,7 +318,7 @@ export default function TransactionsPage() {
             </TableHead>
             <TableBody>
               {allTransactions.map((transaction, idx) => {
-                const category = mockCategories.find((cat: Category) => cat.id === transaction.categoryId);
+                const category = transaction.category
                 const isItemSelected = isSelected(transaction.id);
                 
                 return (

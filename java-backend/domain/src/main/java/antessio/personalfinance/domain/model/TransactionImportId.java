@@ -7,5 +7,7 @@ public class TransactionImportId extends Id<Long> {
     public TransactionImportId(Long id) {
         super(id);
     }
+
+
 }
 

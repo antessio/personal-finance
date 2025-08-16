@@ -1,7 +1,6 @@
 package antessio.personalfinance.infrastructure.persistence.entity;
 
 import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -53,6 +52,9 @@ public class TransactionEntity {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "transaction_import_id")
+    private Long transactionImportId;
 
     public TransactionId getTransactionId() {
         return TransactionId.fromString(id);

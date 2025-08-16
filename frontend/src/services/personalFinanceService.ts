@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account } from '../types';
 
 export interface PersonalFinanceService {
   // Transaction methods
@@ -34,4 +34,6 @@ export interface PersonalFinanceService {
   // Token management (optional for implementations)
   setToken?(token: string): void;
   isAuthenticated?(): boolean;
+
+  getAccounts(): Promise<Account[]>;
 } 

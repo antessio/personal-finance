@@ -42,11 +42,12 @@ export default function UploadPage() {
   const queryClient = useQueryClient();
 
   // Get unique accounts from transactions
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => service.getTransactions({}),
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => service.getAccounts(),
   });
-  const accounts = Array.from(new Set(transactions.map(t => t.account))).sort();
+
+  
 
   // Get uploaded files
   const { data: uploads = [], isLoading } = useQuery<UploadFile[]>({
@@ -112,7 +113,7 @@ export default function UploadPage() {
   const getStatusIcon = (status: UploadFile['status']) => {
     switch (status) {
       case 'pending': return <InfoIcon />;
-      case 'processing': return <LinearProgress size={20} />;
+      case 'processing': return <LinearProgress value={20} />;
       case 'completed': return <CloudUploadIcon />;
       case 'error': return <InfoIcon />;
       default: return null;
@@ -143,8 +144,8 @@ export default function UploadPage() {
                   onChange={(e) => setSelectedAccount(e.target.value)}
                 >
                   {accounts.map((account) => (
-                    <MenuItem key={account} value={account}>
-                      {account}
+                    <MenuItem key={account.id} value={account.name}>
+                      {account.name}
                     </MenuItem>
                   ))}
                 </Select>

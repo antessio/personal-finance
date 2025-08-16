@@ -4,6 +4,7 @@ import antessio.personalfinance.domain.exceptions.TransactionDuplicatedException
 import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import antessio.personalfinance.domain.ports.TransactionRepository;
 import antessio.personalfinance.infrastructure.persistence.entity.TransactionEntity;
 import org.slf4j.Logger;
@@ -142,7 +143,8 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 transactionEntity.getUserOwner(),
                 transactionEntity.getCategoryId(),
                 transactionEntity.getInsertedAt(),
-                transactionEntity.getUpdatedAt()
+                transactionEntity.getUpdatedAt(),
+                new TransactionImportId(transactionEntity.getTransactionImportId())
         );
     }
 
@@ -158,7 +160,8 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 transaction.getUserOwner(),
                 Optional.ofNullable(transaction.getCategoryId()).map(CategoryId::id).orElse(null),
                 transaction.getInsertedAt(),
-                transaction.getUpdatedAt()
+                transaction.getUpdatedAt(),
+                transaction.getTransactionImportId().id()
         );
     }
 }

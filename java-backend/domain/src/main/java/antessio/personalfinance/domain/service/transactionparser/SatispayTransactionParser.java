@@ -1,7 +1,9 @@
 package antessio.personalfinance.domain.service.transactionparser;
 
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.AccountType;
 import antessio.personalfinance.domain.model.TransactionImport;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -17,7 +19,7 @@ import java.util.Optional;
 
 public class SatispayTransactionParser implements TransactionParser {
 
-    public static final String SOURCE = "satispay";
+    public static final String SOURCE = AccountType.SATISPAY.name();
 
     @Override
     public boolean canParse(TransactionImport transactionImport) {
@@ -27,13 +29,13 @@ public class SatispayTransactionParser implements TransactionParser {
     @Override
     public List<CreateTransactionDTO> parse(TransactionImport transactionImport) {
         try {
-            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner());
+            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner(), transactionImport.getId());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner) throws IOException {
+    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner, TransactionImportId id) throws IOException {
         List<CreateTransactionDTO> transactions = new ArrayList<>();
         try (
                 FileInputStream fis = new FileInputStream(filePath);
@@ -45,7 +47,7 @@ public class SatispayTransactionParser implements TransactionParser {
             for (int i = 0; i <= rowCount; i++) {
                 Row row = sheet.getRow(i);
                 if (row != null ) {
-                    parseRow(row, userOwner)
+                    parseRow(row, userOwner, id)
                             .ifPresent(transactions::add);
                 }
             }
@@ -53,8 +55,7 @@ public class SatispayTransactionParser implements TransactionParser {
         return transactions;
     }
 
-
-    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner) {
+    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner, TransactionImportId id) {
         try {
 
             LocalDate transactionDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
@@ -69,7 +70,8 @@ public class SatispayTransactionParser implements TransactionParser {
                     transactionDate,
                     BigDecimal.valueOf(amount),
                     description,
-                    SOURCE
+                    SOURCE,
+                    id
             ));
         } catch (Exception e) {
             return Optional.empty();

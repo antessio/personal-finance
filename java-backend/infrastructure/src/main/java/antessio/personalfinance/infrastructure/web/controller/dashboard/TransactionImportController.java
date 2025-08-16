@@ -34,8 +34,8 @@ public class TransactionImportController {
 
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionImportDTO>> getTransactionImports(
-            @RequestParam("limit") Integer limit,
-            @RequestParam("cursor") Long cursor
+            @RequestParam(value = "limit", defaultValue = "20") Integer limit,
+            @RequestParam(value = "cursor", required = false) Long cursor
     ) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {

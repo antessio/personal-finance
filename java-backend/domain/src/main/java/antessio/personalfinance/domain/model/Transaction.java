@@ -33,6 +33,8 @@ public class Transaction {
 
     private LocalDateTime updatedAt;
 
+    private TransactionImportId transactionImportId;
+
     public void skip(){
         this.skip = true;
         updated();

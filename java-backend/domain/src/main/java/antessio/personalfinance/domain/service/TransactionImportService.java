@@ -72,7 +72,7 @@ public class TransactionImportService {
                     transactionImport.success();
 
                 }, transactionImport::fail);
-        transactionImportRepository.save(transactionImport);
+        transactionImportRepository.update(transactionImport);
     }
 
     public List<TransactionImportDTO> findByUserOwner(String username, int limit, TransactionImportId startingFrom) {

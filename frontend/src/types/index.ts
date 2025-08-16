@@ -54,3 +54,8 @@ export interface UploadFile {
   processedAt?: string;
   errorMessage?: string;
 } 
+
+export interface Account{
+  id: string;
+  name: string;
+}

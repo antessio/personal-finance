@@ -37,14 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkAuth = async () => {
       try {
-        console.log("Starting auth check...");
         const response = await service.getCurrentUser();
         if (mounted) {
-          console.log("Auth check response:", response);
+          
           setUser(response);
         }
       } catch (error) {
-        console.log("Auth check error:", error);
         if (mounted) {
           setUser(null);
         }
@@ -65,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await service.login(email, password);
-      console.log("Login response:", response);
       setUser(response.user);
       router.push('/');
     } catch (error) {
