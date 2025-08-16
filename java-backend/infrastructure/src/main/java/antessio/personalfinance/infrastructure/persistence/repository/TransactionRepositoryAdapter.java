@@ -1,12 +1,10 @@
 package antessio.personalfinance.infrastructure.persistence.repository;
 
 import antessio.personalfinance.domain.exceptions.TransactionDuplicatedException;
-import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.Transaction;
-import antessio.personalfinance.domain.model.TransactionId;
-import antessio.personalfinance.domain.model.TransactionImportId;
+import antessio.personalfinance.domain.model.*;
 import antessio.personalfinance.domain.ports.TransactionRepository;
 import antessio.personalfinance.infrastructure.persistence.entity.TransactionEntity;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -78,7 +76,7 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
 
     @Override
     public void update(Transaction transaction) {
-         try {
+        try {
             transactionSpringDataRepository.save(toEntity(transaction));
         } catch (DataIntegrityViolationException e) {
             throw new TransactionDuplicatedException("Transaction with uniqueId %s already exists".formatted(transaction.getUniqueId()), e);
@@ -129,6 +127,16 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 ).stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<Pair<TransactionId, Float>> findSimilarTransactionIds(String userOwner, TransactionId uniqueId, String description) {
+        return transactionSpringDataRepository.findSimilarTransactionsRaw(userOwner, description, List.of(uniqueId.getId().toString()))
+                .stream()
+                .map(row -> Pair.of(TransactionId.fromString((String) row[0]), (Float) row[1]))
+                .toList();
+
+
     }
 
     private Transaction toDomain(TransactionEntity transactionEntity) {

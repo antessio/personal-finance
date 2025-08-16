@@ -48,6 +48,10 @@ public class Transaction {
         updated();
     }
 
+    public boolean isSkipped() {
+        return skip != null && skip;
+    }
+
     private void updated() {
         this.updatedAt = LocalDateTime.now();
     }

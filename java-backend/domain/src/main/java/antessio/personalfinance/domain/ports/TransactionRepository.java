@@ -8,6 +8,7 @@ import java.util.Optional;
 import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
+import org.apache.commons.lang3.tuple.Pair;
 
 public interface TransactionRepository {
     Optional<Transaction> findById(TransactionId id);
@@ -32,4 +33,5 @@ public interface TransactionRepository {
 
     List<Transaction> findByIds(List<TransactionId> transactionIds);
 
+    List<Pair<TransactionId, Float>> findSimilarTransactionIds(String userOwner, TransactionId id, String description);
 }

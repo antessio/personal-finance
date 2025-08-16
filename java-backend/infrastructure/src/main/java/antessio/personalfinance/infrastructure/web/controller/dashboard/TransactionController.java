@@ -1,15 +1,13 @@
 package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
-import antessio.personalfinance.domain.dto.SavingsExportDTO;
-import antessio.personalfinance.domain.dto.TransactionDTO;
-import antessio.personalfinance.domain.dto.TransactionExportDTO;
-import antessio.personalfinance.domain.dto.TransactionsQueryDTO;
+import antessio.personalfinance.domain.dto.*;
 import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.TransactionId;
 import antessio.personalfinance.domain.service.TransactionService;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
+import antessio.personalfinance.infrastructure.web.controller.dto.TransactionBulkUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -20,6 +18,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -105,6 +104,23 @@ public class TransactionController {
         return ResponseEntity.accepted().build();
     }
 
+    @PatchMapping("/bulk-update")
+    public ResponseEntity<Void> bulkUpdateTransactions(
+            @RequestBody TransactionBulkUpdateRequestDTO bulkUpdateRequestDTO) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        transactionService.bulkUpdate(
+                new TransactionBulkUpdateDTO(
+                        Stream.of(bulkUpdateRequestDTO.transactionIds()).map(TransactionId::fromString).toList(),
+                        new CategoryId(bulkUpdateRequestDTO.categoryId()),
+                        bulkUpdateRequestDTO.skip()),
+                user.getUsername());
+
+        return ResponseEntity.accepted().build();
+    }
+
     @PutMapping("/{id}/category")
     public ResponseEntity<Void> assignCategory(
             @PathVariable String id,
@@ -130,17 +146,18 @@ public class TransactionController {
         csv.append("date,type,macro_category,category,currency,amount,description\n");
         for (TransactionExportDTO t : transactions) {
             csv.append(t.getDate()).append(",")
-               .append(t.getType()).append(",")
-               .append(t.getMacroCategory()).append(",")
-               .append(t.getCategory()).append(",")
-               .append(t.getCurrency()).append(",")
-               .append(t.getAmount()).append(",")
-               .append(t.getDescription().replaceAll("[\r\n]", " ")).append("\n");
+                    .append(t.getType()).append(",")
+                    .append(t.getMacroCategory()).append(",")
+                    .append(t.getCategory()).append(",")
+                    .append(t.getCurrency()).append(",")
+                    .append(t.getAmount()).append(",")
+                    .append(t.getDescription().replaceAll("[\r\n]", " ")).append("\n");
         }
         return ResponseEntity.ok()
                 .header("Content-Type", "text/csv")
                 .body(csv.toString());
     }
+
     @GetMapping("/export/savings")
     public ResponseEntity<String> exportSavings(
             @RequestParam() String yearMonth) {
@@ -154,10 +171,10 @@ public class TransactionController {
         csv.append("date,category,currency,amount\n");
         for (SavingsExportDTO t : transactions) {
             csv.append(t.getDate()).append(",")
-               .append(t.getCategory()).append(",")
-               .append(t.getCurrency()).append(",")
-               .append(t.getAmount()).append(",")
-               .append("\n");
+                    .append(t.getCategory()).append(",")
+                    .append(t.getCurrency()).append(",")
+                    .append(t.getAmount()).append(",")
+                    .append("\n");
         }
         return ResponseEntity.ok()
                 .header("Content-Type", "text/csv")

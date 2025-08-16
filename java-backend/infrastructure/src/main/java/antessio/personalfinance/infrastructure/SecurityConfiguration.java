@@ -46,7 +46,7 @@ public class SecurityConfiguration {
                 .filter(Predicate.not(String::isBlank))
                 .map(s -> Arrays.asList(s.split(",")))
                 .orElse(List.of("http://localhost:3000")));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
 

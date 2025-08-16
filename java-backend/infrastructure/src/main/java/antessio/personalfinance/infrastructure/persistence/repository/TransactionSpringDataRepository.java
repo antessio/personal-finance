@@ -4,6 +4,8 @@ import antessio.personalfinance.infrastructure.persistence.entity.TransactionEnt
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -70,7 +72,7 @@ public interface TransactionSpringDataRepository extends JpaRepository<Transacti
         if (source != null) spec = spec.and(sourceIs(source));
         if (categoryIds != null && !categoryIds.isEmpty()) {
             spec = spec.and(categoryIn(categoryIds));
-        }else if(categoryIds != null) {
+        } else if (categoryIds != null) {
             // If categoryIds is explicitly empty, we want to exclude transactions with any category
             spec = spec.and((root, query, cb) -> cb.isNull(root.get("categoryId")));
         }
@@ -80,4 +82,21 @@ public interface TransactionSpringDataRepository extends JpaRepository<Transacti
 
         return spec;
     }
+
+    @Query(
+            value = "SELECT t.id, similarity(description, :desc) AS sim " +
+                    "FROM transactions t " +
+                    "WHERE user_owner = :userOwner " +
+                    "AND id NOT IN (:excludedIds) " +
+                    "AND skip = false " +
+                    "AND category_id IS NOT NULL " +
+                    "ORDER BY sim DESC " +
+                    "LIMIT 100",
+            nativeQuery = true
+    )
+    List<Object[]> findSimilarTransactionsRaw(
+            @Param("userOwner") String userOwner,
+            @Param("desc") String description,
+            @Param("excludedIds") List<String> excludedIds
+    );
 }
