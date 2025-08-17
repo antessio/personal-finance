@@ -15,4 +15,15 @@ public class Budget {
     private Integer year;
     private Integer month;
 
+
+    public BudgetType getBudgetType(){
+        if (year!= null && month != null) {
+            return BudgetType.MONTHLY;
+        } else if (year != null) {
+            return BudgetType.YEARLY;
+        } else {
+            return BudgetType.DEFAULT;
+        }
+    }
+
 }

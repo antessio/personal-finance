@@ -261,9 +261,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       id: budget.id,
       categoryId: budget.categoryId,
       amount: budget.amount,
-      year: year,
-      period: 'annual',
+      year: (budget.year || year )+ '',
+      month: (budget.month || '') + '',
+      period: this.convertBudgetType(budget.type),
     }));
+  }
+  convertBudgetType(type: 'DEFAULT' | 'YEARLY' | 'MONTHLY'): 'annual' | 'monthly' | 'default' {
+    switch (type) {
+      case 'YEARLY':
+        return 'annual';
+      case 'MONTHLY':
+        return 'monthly';
+      default:
+        return 'default'; // Default to annual for DEFAULT type
+    }
   }
 
   async getIncomeBudget(year: string): Promise<number> {

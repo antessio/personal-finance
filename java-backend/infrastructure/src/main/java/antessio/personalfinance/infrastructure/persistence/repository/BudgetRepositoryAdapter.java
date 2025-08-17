@@ -3,7 +3,6 @@ package antessio.personalfinance.infrastructure.persistence.repository;
 import antessio.personalfinance.domain.model.Budget;
 import antessio.personalfinance.domain.model.BudgetId;
 import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.MonthlyBudget;
 import antessio.personalfinance.domain.ports.BudgetRepository;
 import antessio.personalfinance.infrastructure.persistence.entity.BudgetEntity;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,7 @@ public class BudgetRepositoryAdapter implements BudgetRepository {
 
 
     @Override
-    public Map<CategoryId, Budget> getDefaultBudgets(String userOwner) {
+    public Map<CategoryId, Budget> getDefaultBudget(String userOwner) {
         return this.budgetSpringDataRepository.findAllByUser(userOwner, Integer.MAX_VALUE)
                 .stream()
                 .collect(Collectors.toMap(
@@ -42,7 +41,7 @@ public class BudgetRepositoryAdapter implements BudgetRepository {
     }
 
     @Override
-    public Map<CategoryId, Budget> getDefaultBudgets(String userOwner, int year) {
+    public Map<CategoryId, Budget> getAnnualBudgets(String userOwner, int year) {
         return this.budgetSpringDataRepository.findAllByUserAndYearAndMonthNull(userOwner, year, Integer.MAX_VALUE)
                 .stream()
                 .collect(Collectors.toMap(
@@ -60,35 +59,22 @@ public class BudgetRepositoryAdapter implements BudgetRepository {
     }
 
     @Override
-    public Map<CategoryId, Map<YearMonth, MonthlyBudget>> getMonthlyBudgets(String userOwner, int year) {
+    public Map<CategoryId, Map<YearMonth, Budget>> getMonthlyBudgets(String userOwner, int year) {
         return budgetSpringDataRepository.findAllByUserAndYear(userOwner, year, Integer.MAX_VALUE)
                 .stream()
                 .collect(Collectors.groupingBy(
                         BudgetEntity::getCategoryIdObj,
                         Collectors.toMap(
                                 budgetEntity -> YearMonth.of(budgetEntity.getYear(), budgetEntity.getMonth()),
-                                budgetEntity -> new MonthlyBudget(
+                                budgetEntity -> new Budget(
                                         budgetEntity.getBudgetId(),
                                         budgetEntity.getCategoryIdObj(),
                                         budgetEntity.getAmount(),
-                                        YearMonth.of(budgetEntity.getYear(), budgetEntity.getMonth()),
-                                        budgetEntity.getUserOwner()
+                                        budgetEntity.getUserOwner(),
+                                        budgetEntity.getYear(),
+                                        budgetEntity.getMonth()
                                 )
                         )));
-    }
-
-    @Override
-    public void create(MonthlyBudget monthlyBudget) {
-        BudgetEntity budgetEntity = new BudgetEntity(
-                monthlyBudget.getId().getId().toString(),
-                monthlyBudget.getCategoryId().getId(),
-                monthlyBudget.getAmount(),
-                monthlyBudget.getUserOwner(),
-                monthlyBudget.getYearMonth().getYear(),
-                monthlyBudget.getYearMonth().getMonthValue());
-
-
-        budgetSpringDataRepository.save(budgetEntity);
     }
 
     @Override

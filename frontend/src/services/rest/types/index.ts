@@ -48,6 +48,9 @@ export interface BudgetRest {
     id: string;
     categoryId: string;
     amount: number;
+    year?: number
+    month?: number; 
+    type: 'DEFAULT' | 'YEARLY' | 'MONTHLY';
 }
 
 export interface CategorySpendingRest {

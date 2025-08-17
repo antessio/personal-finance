@@ -20,7 +20,7 @@ export interface Budget {
   id: string;
   categoryId: string;
   amount: number;
-  period: 'monthly' | 'annual';
+  period: 'monthly' | 'annual' | 'default';
   month?: string; // Format: 'YYYY-MM', required only for monthly budgets
   year: string; // Format: 'YYYY'
 }
