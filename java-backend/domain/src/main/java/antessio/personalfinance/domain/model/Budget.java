@@ -11,5 +11,6 @@ public class Budget {
     private BudgetId id;
     private CategoryId categoryId;
     private BigDecimal amount;
+    private String userOwner;
 
 }

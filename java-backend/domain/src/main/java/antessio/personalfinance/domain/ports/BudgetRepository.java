@@ -9,9 +9,9 @@ import java.util.Map;
 
 public interface BudgetRepository {
 
-    Map<CategoryId, Budget> getDefaultBudgets();
+    Map<CategoryId, Budget> getDefaultBudgets(String userOwner, int year);
 
-    Map<CategoryId, Map<YearMonth, MonthlyBudget>> getMonthlyBudgets();
+    Map<CategoryId, Map<YearMonth, MonthlyBudget>> getMonthlyBudgets(String userOwner, int year);
 
     void create(MonthlyBudget monthlyBudget);
 

@@ -5,14 +5,13 @@ import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Pie, Cell } from 'recharts';
-import { mockTransactions, mockCategories, mockBudgets } from '../services/mockData';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
-import { Transaction } from '../types';
+import { MonthlyData } from '../types';
 
 export default function HomePage() {
   const { user } = useAuth();
-  const currentYear = '2024';
+  const currentYear = new Date().getFullYear();
 
   // Fetch data
   const { data: transactionsResponse } = useQuery({
@@ -20,81 +19,72 @@ export default function HomePage() {
     queryFn: () => service.getTransactions({}),
   });
 
+  const { data: totalIncome = 0 } = useQuery({
+    queryKey: ['totalIncome'],
+    queryFn: () => service.getTotalIncome(currentYear),
+  });
+
+
+  const { data: totalExpenses = 0 } = useQuery({
+    queryKey: ['totalExpenses'],
+    queryFn: () => service.getTotalExpenses(currentYear),
+  });
+
+  const { data: totalSavings = 0 } = useQuery({
+    queryKey: ['totalSavings'],
+    queryFn: () => service.getTotalSavings(currentYear),
+  });
+
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => service.getCategories(),
+    queryFn: () => service.getAllCategories(),
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets', currentYear],
-    queryFn: () => service.getBudgets(currentYear),
+    queryFn: () => service.getAllBudgets(currentYear.toString()),
   });
+  const incomeBudget = 0;
+  const expenseBudget = 0;
+  const savingsBudget = 0;
+  // const { data: incomeBudget = 0 } = useQuery({
+  //   queryKey: ['incomeBudget', currentYear],
+  //   queryFn: () => service.getIncomeBudget(currentYear),
+  // });
+
+  // const { data: expenseBudget = 0 } = useQuery({
+  //   queryKey: ['expenseBudget', currentYear],
+  //   queryFn: () => service.getExpenseBudget(currentYear),
+  // });
+  // const { data: savingsBudget = 0 } = useQuery({
+  //   queryKey: ['savingsBudget', currentYear],
+  //   queryFn: () => service.getSavingsBudget(currentYear),
+  // });
 
   const transactions = transactionsResponse?.data || [];
 
-  // Calculate summary data
-  const totalIncome = transactions
-    .filter((tx: Transaction) => tx.amount > 0 && tx.included)
-    .reduce((sum: number, tx: Transaction) => sum + tx.amount, 0);
-
-  const totalExpenses = transactions
-    .filter((tx: Transaction) => tx.amount < 0 && tx.included)
-    .reduce((sum: number, tx: Transaction) => sum + Math.abs(tx.amount), 0);
-
-  const totalSavings = totalIncome - totalExpenses;
-
-  // Mock income and savings budgets (since they're not in the data)
-  const incomeBudget = 50000; // Annual income target
-  const savingsBudget = 15000; // Annual savings target
 
   // Calculate budget data
-  const totalAnnualBudget = budgets
-    .filter(b => b.period === 'annual')
-    .reduce((sum, b) => sum + b.amount, 0);
-
-  const totalMonthlyBudget = budgets
-    .filter(b => b.period === 'monthly')
-    .reduce((sum, b) => sum + b.amount, 0);
-
-  const totalBudget = totalAnnualBudget + (totalMonthlyBudget * 12);
-
-  // Calculate category spending
-  const categorySpending = categories.map(category => {
-    const spent = transactions
-      .filter((tx: Transaction) => tx.categoryId === category.id && tx.included && tx.amount < 0)
-      .reduce((sum: number, tx: Transaction) => sum + Math.abs(tx.amount), 0);
-
-    const budget = budgets.find(b => b.categoryId === category.id);
-    const budgetAmount = budget ? (budget.period === 'annual' ? budget.amount / 12 : budget.amount) : 0;
-
-    return {
-      category: category.name,
-      spent,
-      budget: budgetAmount,
-      percentage: budgetAmount ? Math.min(100, (spent / budgetAmount) * 100) : 0,
-    };
-  }).filter(c => c.budget > 0);
+  const totalBudget = incomeBudget + expenseBudget + savingsBudget;
+  const { data: categorySpending = [] } = useQuery({
+    queryKey: ['categorySpending', currentYear],
+    queryFn: () => service.getCategorySpending(currentYear.toString()),
+  });
 
   // Money Flow data
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const moneyFlowData = months.map(month => {
-    const monthTransactions = transactions.filter((tx: Transaction) => {
-      const txDate = new Date(tx.date);
-      return txDate.getMonth() === months.indexOf(month) && txDate.getFullYear() === parseInt(currentYear);
-    });
+  const { data: monthlyData = [] } = useQuery({
+    queryKey: ['monthlyData', currentYear],
+    queryFn: () => service.getMonthlyData(currentYear.toString()),
+  });
 
-    const income = monthTransactions
-      .filter((tx: Transaction) => tx.amount > 0 && tx.included)
-      .reduce((sum: number, tx: Transaction) => sum + tx.amount, 0);
 
-    const expenses = monthTransactions
-      .filter((tx: Transaction) => tx.amount < 0 && tx.included)
-      .reduce((sum: number, tx: Transaction) => sum + Math.abs(tx.amount), 0);
-
+  const monthTransactions = months.map((month, index) => {
+    const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index);
     return {
       month,
-      Income: income,
-      Expense: expenses,
+      Income: monthData ? monthData.totalIncome : 0,
+      Expense: monthData ? monthData.totalExpenses : 0,
     };
   });
 
@@ -147,7 +137,7 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalIncome / incomeBudget) * 100)}% of income target reached
+              {Math.round((totalIncome / incomeBudget == 0 ? 1 : incomeBudget) * 100)}% of income target reached
             </Typography>
           </Paper>
 
@@ -173,7 +163,7 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalExpenses / totalBudget) * 100)}% of budget spent
+              {Math.round((totalExpenses / totalBudget == 0 ? 1 : totalBudget) * 100)}% of budget spent
             </Typography>
           </Paper>
 
@@ -199,7 +189,7 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalSavings / savingsBudget) * 100)}% of savings target reached
+              {Math.round((totalSavings / savingsBudget == 0 ? 1 : savingsBudget) * 100)}% of savings target reached
             </Typography>
           </Paper>
         </Box>
@@ -216,7 +206,7 @@ export default function HomePage() {
             </Box>
             <Box sx={{ width: '100%', height: 220, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={moneyFlowData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
@@ -239,10 +229,10 @@ export default function HomePage() {
             </Box>
             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {categorySpending.map((category) => (
-                <Box key={category.category} sx={{ width: '100%' }}>
+                <Box key={category.categoryName} sx={{ width: '100%' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2" fontWeight={600}>
-                      {category.category}
+                      {category.categoryName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {Math.round(category.percentage)}%
@@ -262,10 +252,10 @@ export default function HomePage() {
                   />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
                     <Typography variant="caption" color="text.secondary">
-                      €{category.spent.toLocaleString()}
+                      €{category.totalSpent.toLocaleString()}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      €{category.budget.toLocaleString()}
+                      €{(category.budgetedAmount || 0).toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -350,7 +340,8 @@ export default function HomePage() {
                   <LinearProgress
                     variant="determinate"
                     value={Math.min(100, (budget502010.actual[key] / budget502010.goal[key]) * 100)}
-                    sx={{ height: 8, borderRadius: 5, bgcolor: 'grey.200',
+                    sx={{
+                      height: 8, borderRadius: 5, bgcolor: 'grey.200',
                       '& .MuiLinearProgress-bar': {
                         bgcolor: key === 'needs' ? 'success.main' : key === 'wants' ? 'warning.main' : 'info.main',
                       },

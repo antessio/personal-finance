@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
-import { CategoryRest, TransactionRest, UploadFilRest } from './rest/types';
+import { BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
@@ -91,10 +91,56 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     return !!this.getAuthToken();
   }
 
+  async getCategorySpending(year: string): Promise<CategorySpending[]> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budget?.amount || 0,
+      percentage: spending.budget ? (spending.totalSpent / spending.budget.amount) * 100 : 0,
+    })) ;
+  }
+
+  async getMonthlyData(year: string): Promise<MonthlyData[]> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<MonthlyDataRest[]>(`/api/transactions/monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(data => ({
+      year: data.yearMonth.split('-')[0],
+      month: data.yearMonth.split('-')[1],
+      totalIncome: data.totalIncome,
+      totalExpenses: data.totalExpenses,
+      totalSavings: data.totalSavings,
+    }));
+  }
+
+  async getTotalIncome(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/transactions/total-income?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
+  }
+
+  async getTotalExpenses(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/transactions/total-expenses?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
+  }
+
+  async getTotalSavings(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/transactions/total-savings?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
+  }
+
   // Transaction methods
   async getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>> {
-    
-    const response = await this.api.get<PaginatedResponse<TransactionRest>>('/api/transactions', { params: this.convertFilters(filters) });
+
+    const response = await this.api.get<PaginatedResponseRest<TransactionRest>>('/api/transactions', { params: this.convertFilters(filters) });
     return {
       data: response.data.data.map(transaction => ({
         id: transaction.id,
@@ -111,8 +157,8 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
         account: transaction.source,
         included: !transaction.skip
       })),
-      hasMore: response.data.hasMore,
-      nextCursor: response.data.nextCursor
+      hasMore: response.data.hasNext,
+      nextCursor: response.data.data.length > 0 ? response.data.data[response.data.data.length - 1].id : undefined
     }
   }
 
@@ -121,15 +167,15 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     if (filters.month) params.targetDate = filters.month;
     if (filters.included !== undefined) params.skip = !filters.included;
     if (filters.account) params.source = filters.account.toLowerCase();
-    if (filters.categoryId){
-      if (filters.categoryId == "uncategorized"){
+    if (filters.categoryId) {
+      if (filters.categoryId == "uncategorized") {
         params.uncategorized = true;
-      }else if(filters.categoryId == "categorized"){
+      } else if (filters.categoryId == "categorized") {
         params.uncategorized = false;
-      }else{
+      } else {
         params.categoryId = filters.categoryId;
       }
-    } 
+    }
     if (filters.limit) params.limit = filters.limit;
     if (filters.cursor) params.cursor = filters.cursor;
     return params;
@@ -142,19 +188,19 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void> {
-    console.log("Bulk updating transactions with payload:", payload);
+  
     try {
       const requestData = {
         transactionIds: payload.transactionIds,
         categoryId: payload.updates.categoryId,
         skip: payload.updates.included != undefined ? !payload.updates.included : undefined,
       };
-    
-      if(!this.api){
+
+      if (!this.api) {
         throw new Error("API instance is not initialized");
       }
       const response = await this.api.patch('/api/transactions/bulk-update', requestData);
-      
+
     } catch (error) {
       console.error("Bulk update error:", error);
       throw error;
@@ -166,18 +212,33 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Category methods
-  async getCategories(): Promise<Category[]> {
-    const response = await this.api.get<PaginatedResponse<CategoryRest>>('/api/categories', {params: {limit: 2000}});
-    return response.data.data.map(category => ({
-      id: category.id,
-      name: category.name,
-      macroCategory: category.macroCategory,
-      regexPatterns: category.matchers,
-    }));
+  async getAllCategories(): Promise<Category[]> {
+    return (await this.getCategories({ limit: 200 })).data;
+  } 
+  async getCategories(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<Category>> {
+    const params: any = { 
+      limit: filters?.limit || 20 
+    };
+    
+    if (filters?.cursor) {
+      params.cursor = filters.cursor;
+    }
+    
+    const response = await this.api.get<PaginatedResponseRest<CategoryRest>>('/api/categories', { params });
+    return {
+      data: response.data.data.map(category => ({
+        id: category.id,
+        name: category.name,
+        macroCategory: category.macroCategory,
+        regexPatterns: category.matchers,
+      })),
+      hasMore: response.data.hasNext,
+      nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined
+    };
   }
 
   async createCategory(category: Omit<Category, 'id'>): Promise<Category> {
-    const response = await this.api.post<Category>('/categories', category);
+    const response = await this.api.post<Category>('/api/categories', category);
     return response.data;
   }
 
@@ -187,27 +248,52 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async deleteCategory(id: string): Promise<void> {
-    await this.api.delete(`/categories/${id}`);
+    await this.api.delete(`/api/categories/${id}`);
   }
 
   // Budget methods
-  async getBudgets(year: string): Promise<Budget[]> {
-    const response = await this.api.get<Budget[]>(`/budgets?year=${year}`);
-    return response.data;
+  async getAllBudgets(): Promise<Budget[]> {
+    return (await this.getBudgets(new Date().getFullYear().toString(), 2000)).data;
+  }
+  async getBudgets(year: string, limit: number = 20): Promise<PaginatedResponse<Budget>> {
+    const response = await this.api.get<PaginatedResponseRest<BudgetRest>>(`/api/budgets?year=${year}`, { params: { limit } });
+    return {
+      data: response.data.data.map(budget => ({
+        id: budget.id,
+        categoryId: budget.categoryId,
+        amount: budget.amount,
+        year: year,
+        period: 'annual',
+      })),
+      hasMore: response.data.hasNext,
+      nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined
+    };
   }
 
+  async getIncomeBudget(year: string): Promise<number> {
+    const response = await this.api.get<{ total: number }>(`/api/budgets/total-income?year=${year}`);
+    return response.data.total;
+  }
+  async getExpenseBudget(year: string): Promise<number> {
+    const response = await this.api.get<{ total: number }>(`/api/budgets/total-expenses?year=${year}`);
+    return response.data.total;
+  }
+  async getSavingsBudget(year: string): Promise<number> {
+    const response = await this.api.get<{ total: number }>(`/api/budgets/total-savings?year=${year}`);
+    return response.data.total;
+  }
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
-    const response = await this.api.post<Budget>('/budgets', budget);
+    const response = await this.api.post<Budget>('/api/budgets', budget);
     return response.data;
   }
 
   async updateBudget(id: string, budget: Partial<Budget>): Promise<Budget> {
-    const response = await this.api.patch<Budget>(`/budgets/${id}`, budget);
+    const response = await this.api.patch<Budget>(`/api/budgets/${id}`, budget);
     return response.data;
   }
 
   async deleteBudget(id: string): Promise<void> {
-    await this.api.delete(`/budgets/${id}`);
+    await this.api.delete(`/api/budgets/${id}`);
   }
 
   // Auth methods
@@ -239,17 +325,21 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Upload methods
-  async getUploads(): Promise<UploadFile[]> {
-    const response = await this.api.get<PaginatedResponse<UploadFilRest>>('/api/transaction-imports');
-    return response.data.data.map(upload => ({
-      id: upload.id,
-      status: this.convertUploadStatus(upload.status),
-      filename: upload.filePath,
-      account: upload.sourceType,
-      uploadedAt: upload.insertedAt,
-      processedAt: upload.updatedAt || upload.insertedAt, // Assuming updatedAt is used for processed time
-      errorMessage: upload.status === 'error' ? 'Error processing file' : undefined,
-    }));
+  async getUploads(): Promise<PaginatedResponse<UploadFile>> {
+    const response = await this.api.get<PaginatedResponseRest<UploadFilRest>>('/api/transaction-imports');
+    return {
+      data: response.data.data.map(upload => ({
+        id: upload.id,
+        status: this.convertUploadStatus(upload.status),
+        filename: upload.filePath,
+        account: upload.sourceType,
+        uploadedAt: upload.insertedAt,
+        processedAt: upload.updatedAt || upload.insertedAt, // Assuming updatedAt is used for processed time
+        errorMessage: upload.status === 'error' ? 'Error processing file' : undefined,
+      })),
+      hasMore: response.data.hasNext,
+      nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined
+    };
   }
 
   convertUploadStatus(status: string): 'pending' | 'processing' | 'completed' | 'error' {

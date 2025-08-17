@@ -13,6 +13,7 @@ public class MonthlyBudget {
     private CategoryId categoryId;
     private BigDecimal amount;
     private YearMonth yearMonth;
+    private String userOwner;
 
 
 }

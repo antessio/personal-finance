@@ -11,10 +11,7 @@ import antessio.personalfinance.domain.model.MonthlyBudget;
 import antessio.personalfinance.domain.ports.BudgetRepository;
 
 import java.time.YearMonth;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -28,38 +25,39 @@ public class BudgetService {
         this.categoryService = categoryService;
     }
 
-    public void createMonthlyBudget(CreateMonthlyBudgetDTO createMonthlyBudgetDTO) {
+    public void createMonthlyBudget(String userOwner, CreateMonthlyBudgetDTO createMonthlyBudgetDTO) {
         CategoryDTO category = getUserCategoryById(createMonthlyBudgetDTO.getUserOwner(), createMonthlyBudgetDTO.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or does not belong to user"));
-        budgetRepository.create(new MonthlyBudget(BudgetId.generate(), category.getId(), createMonthlyBudgetDTO.getAmount(), createMonthlyBudgetDTO.getYearMonth()));
+        budgetRepository.create(new MonthlyBudget(BudgetId.generate(), category.getId(), createMonthlyBudgetDTO.getAmount(), createMonthlyBudgetDTO.getYearMonth(), userOwner));
     }
-    public void createDefaultBudget(CreateDefaultBudgetDTO createDefaultBudgetDTO) {
+    public void createDefaultBudget(String userOwner, CreateDefaultBudgetDTO createDefaultBudgetDTO) {
         CategoryDTO category = getUserCategoryById(createDefaultBudgetDTO.getUserOwner(), createDefaultBudgetDTO.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or does not belong to user"));
-        budgetRepository.create(new Budget(BudgetId.generate(), category.getId(), createDefaultBudgetDTO.getAmount()));
+        budgetRepository.create(new Budget(BudgetId.generate(), category.getId(), createDefaultBudgetDTO.getAmount(), userOwner));
     }
 
-    public void createDefaultBudgets(Set<CreateDefaultBudgetDTO> createDefaultBudgetDTOs) {
+    public void createDefaultBudgets(String userOwner, Set<CreateDefaultBudgetDTO> createDefaultBudgetDTOs) {
         for (CreateDefaultBudgetDTO createDefaultBudgetDTO : createDefaultBudgetDTOs) {
-            createDefaultBudget(createDefaultBudgetDTO);
+            createDefaultBudget(userOwner, createDefaultBudgetDTO);
         }
     }
 
     public List<BudgetDTO> getAllBudgets(String userOwner, int year) {
-        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets();
-        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets();
+        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(userOwner, year);
+        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets(userOwner, year);
         return categoryService.getAllCategories(userOwner)
                 .map(CategoryDTO::getId)
                 .flatMap(categoryId -> getYearMonths(year)
                         .map(yearMonth -> getMonthlyBudget(categoryId, yearMonth, monthlyBudgets)
                                 .orElseGet(() -> getDefaultBudget(categoryId, defaultBudgets)
                                         .orElse(null))))
+                .filter(Objects::nonNull)
                 .toList();
     }
 
     public List<BudgetDTO> getAllBudgets(String userOwner, int year, CategoryId categoryId) {
-        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets();
-        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets();
+        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(userOwner, year);
+        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets(userOwner, year);
         return getUserCategoryById(userOwner, categoryId)
                 .map(CategoryDTO::getId)
                 .map(catId -> getYearMonths(year)
@@ -77,8 +75,8 @@ public class BudgetService {
 
 
     public List<BudgetDTO> getAllBudgets(String userOwner, YearMonth yearMonth) {
-        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets();
-        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets();
+        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(userOwner, yearMonth.getYear());
+        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets(userOwner, yearMonth.getYear());
         return categoryService.getAllCategories(userOwner)
                 .map(CategoryDTO::getId)
                 .map(categoryId -> getMonthlyBudget(categoryId, yearMonth, monthlyBudgets)
@@ -88,8 +86,8 @@ public class BudgetService {
     }
 
     public BudgetDTO getMonthlyBudgetByCategory(String userOwner, YearMonth yearMonth, CategoryId categoryId) {
-        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets();
-        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets();
+        Map<CategoryId, Map<YearMonth, MonthlyBudget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(userOwner, yearMonth.getYear());
+        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudgets(userOwner, yearMonth.getYear());
         return getUserCategoryById(userOwner, categoryId)
                 .map(CategoryDTO::getId)
                 .map(catId -> getMonthlyBudget(catId, yearMonth, monthlyBudgets)

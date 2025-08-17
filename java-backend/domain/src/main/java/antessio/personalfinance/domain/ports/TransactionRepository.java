@@ -1,9 +1,11 @@
 
 package antessio.personalfinance.domain.ports;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.Transaction;
@@ -30,6 +32,13 @@ public interface TransactionRepository {
                                               List<CategoryId> categories,
                                               TransactionId startingAfterId);
 
+    Stream<Transaction> findAllIncludedCategorizedByUserAndYear(String userOwner, int year);
+    Stream<Transaction> findAllIncludedCategorizedByUserAndYear(String userOwner, LocalDate startDate, LocalDate endDate);
+
+    Stream<Transaction> findAllByUserAndYearAndCategories(String userOwner, int year,
+                                                                List<CategoryId> categories);
+    Stream<Transaction> findAllByUserAndYearAndCategories(String userOwner, LocalDate startDate, LocalDate endDate,
+                                                                List<CategoryId> categories);
 
     List<Transaction> findByIds(List<TransactionId> transactionIds);
 

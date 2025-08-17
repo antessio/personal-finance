@@ -38,3 +38,27 @@ export interface TransactionRest{
     insertedAt: string;
     updatedAt?: string;
 }
+
+export interface PaginatedResponseRest<T> {
+    data: T[];
+    hasNext: boolean;
+}
+
+export interface BudgetRest {
+    id: string;
+    categoryId: string;
+    amount: number;
+}
+
+export interface CategorySpendingRest {
+  category: CategoryRest;
+  totalSpent: number;
+  budget: BudgetRest;
+}
+
+export interface MonthlyDataRest {
+  yearMonth: string; // Format: 'YYYY-MM'
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+}

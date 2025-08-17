@@ -59,3 +59,19 @@ export interface Account{
   id: string;
   name: string;
 }
+
+
+export interface CategorySpending{
+  categoryName: string;
+  totalSpent: number;
+  budgetedAmount?: number;
+  percentage: number;
+}
+
+export interface MonthlyData {
+  year: string;
+  month: string;
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+}

@@ -22,11 +22,12 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  CircularProgress,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
-import { Category } from '../../types';
+import { Category, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
 
 export default function CategoriesPage() {
@@ -39,16 +40,36 @@ export default function CategoriesPage() {
   });
   const queryClient = useQueryClient();
   const [needWantMap, setNeedWantMap] = useState<{ [categoryId: string]: 'Need' | 'Want' }>({});
-
-  const { data: categories = [], isLoading } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: () => service.getCategories(),
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [filters, setFilters] = useState<{ limit: number; cursor?: string }>({
+    limit: 20,
   });
+
+  const { data: paginatedData, isLoading } = useQuery<PaginatedResponse<Category>>({
+    queryKey: ['categories', filters],
+    queryFn: () => service.getCategories(filters),
+  });
+
+  // Update allCategories when new data is fetched
+  useEffect(() => {
+    if (paginatedData) {
+      if (filters.cursor) {
+        // Append new categories when loading more (cursor-based pagination)
+        setAllCategories(prev => [...prev, ...paginatedData.data]);
+        setIsLoadingMore(false); // Reset loading state after data is loaded
+      } else {
+        // Replace categories when filters change (new query)
+        setAllCategories(paginatedData.data);
+      }
+    }
+  }, [paginatedData, filters.cursor]);
+
   // Initialize mapping for expense categories
   useEffect(() => {
-    if (categories.length && Object.keys(needWantMap).length === 0) {
+    if (allCategories.length && Object.keys(needWantMap).length === 0) {
       const initial: { [categoryId: string]: 'Need' | 'Want' } = {};
-      categories.forEach((cat) => {
+      allCategories.forEach((cat: Category) => {
         if (cat.macroCategory.toUpperCase() === 'EXPENSE') {
           initial[cat.id] = 'Need';
         }
@@ -56,12 +77,15 @@ export default function CategoriesPage() {
       setNeedWantMap(initial);
     }
     // eslint-disable-next-line
-  }, [categories]);
+  }, [allCategories]);
 
   const createMutation = useMutation({
     mutationFn: service.createCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // Reset pagination to show new category
+      setFilters({ limit: 20 });
+      setAllCategories([]);
       handleClose();
     },
   });
@@ -71,6 +95,9 @@ export default function CategoriesPage() {
       service.updateCategory(id, category),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // Reset pagination to reload updated data
+      setFilters({ limit: 20 });
+      setAllCategories([]);
       handleClose();
     },
   });
@@ -79,6 +106,9 @@ export default function CategoriesPage() {
     mutationFn: service.deleteCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // Reset pagination to reload after deletion
+      setFilters({ limit: 20 });
+      setAllCategories([]);
     },
   });
 
@@ -128,6 +158,16 @@ export default function CategoriesPage() {
   const handleNeedWantChange = (categoryId: string, value: 'Need' | 'Want') => {
     setNeedWantMap((prev) => ({ ...prev, [categoryId]: value }));
   };
+
+  const handleLoadMore = () => {
+    if (paginatedData?.nextCursor && paginatedData?.hasMore && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setFilters(prev => ({
+        ...prev,
+        cursor: paginatedData.nextCursor
+      }));
+    }
+  };
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>
@@ -147,7 +187,7 @@ export default function CategoriesPage() {
         </Box>
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        {categories.map((category) => (
+        {allCategories.map((category: Category) => (
           <Box key={category.id} sx={{ flex: '1 1 320px', minWidth: 280, maxWidth: 400 }}>
             <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', position: 'relative', minHeight: 170 }}>
               <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
@@ -175,7 +215,7 @@ export default function CategoriesPage() {
                 </RadioGroup>
               )}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                {category.regexPatterns.map((pattern, idx) => (
+                {category.regexPatterns.map((pattern: string, idx: number) => (
                   <Chip key={idx} label={pattern} variant="outlined" color="primary" size="small" />
                 ))}
               </Box>
@@ -183,6 +223,23 @@ export default function CategoriesPage() {
           </Box>
         ))}
       </Box>
+      
+      {/* Load More Button */}
+      {paginatedData?.hasMore && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            startIcon={isLoadingMore ? <CircularProgress size={20} /> : null}
+            sx={{ borderRadius: 2, fontWeight: 700, px: 4, py: 1 }}
+          >
+            {isLoadingMore ? 'Loading...' : 'Load More Categories'}
+          </Button>
+        </Box>
+      )}
+
+      {/* Category Dialog */}
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 700 }}>{editingCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
         <DialogContent>

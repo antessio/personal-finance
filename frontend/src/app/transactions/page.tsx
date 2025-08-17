@@ -31,7 +31,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
-import { Transaction, TransactionFilters, Category, BulkUpdatePayload } from '../../types';
+import { Transaction, TransactionFilters, Category, BulkUpdatePayload, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -60,7 +60,7 @@ export default function TransactionsPage() {
   });
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => service.getCategories(),
+    queryFn: () => service.getAllCategories(),
   });
 
   // Update allTransactions when new data is fetched

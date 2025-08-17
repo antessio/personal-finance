@@ -2,11 +2,13 @@ package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
 import antessio.personalfinance.domain.dto.*;
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.MonthlyDataDTO;
 import antessio.personalfinance.domain.model.TransactionId;
 import antessio.personalfinance.domain.service.TransactionService;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
+import antessio.personalfinance.domain.dto.CategorySpendingDTO;
 import antessio.personalfinance.infrastructure.web.controller.dto.TransactionBulkUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -180,6 +184,66 @@ public class TransactionController {
                 .header("Content-Type", "text/csv")
                 .body(csv.toString());
     }
+
+    @GetMapping("/category-spending")
+    public ResponseEntity<List<CategorySpendingDTO>> getCategorySpending(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategorySpendingDTO> categorySpending = transactionService.getCategorySpending(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categorySpending);
+    }
+
+    @GetMapping("/monthly-data")
+    public ResponseEntity<List<MonthlyDataDTO>> getMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MonthlyDataDTO> monthlyData = transactionService.getMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(monthlyData);
+    }
+
+    @GetMapping("/total-savings")
+    public ResponseEntity<BigDecimal> getTotalSavings(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+    ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalSavings = transactionService.getTotalSavings(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalSavings);
+    }
+
+    @GetMapping("/total-income")
+    public ResponseEntity<BigDecimal> getTotalIncome(@RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalIncome = transactionService.getTotalIncome(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalIncome);
+    }
+
+    @GetMapping("/total-expenses")
+    public ResponseEntity<BigDecimal> getTotalExpenses(@RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalExpenses = transactionService.getTotalExpenses(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalExpenses);
+    }
+
 
 }
 
