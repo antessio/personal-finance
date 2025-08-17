@@ -80,11 +80,12 @@ export default function HomePage() {
 
 
   const monthTransactions = months.map((month, index) => {
-    const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index);
+    const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index +1);
     return {
       month,
       Income: monthData ? monthData.totalIncome : 0,
       Expense: monthData ? monthData.totalExpenses : 0,
+      Savings: monthData ? monthData.totalSavings : 0,
     };
   });
 
@@ -214,6 +215,7 @@ export default function HomePage() {
                   <Legend verticalAlign="top" height={36} />
                   <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
                   <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
+                  <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
                 </BarChart>
               </ResponsiveContainer>
             </Box>

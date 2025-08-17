@@ -245,7 +245,7 @@ public class TransactionService {
 
     private Transaction fromDTO(CreateTransactionDTO createTransactionDTO) {
         return new Transaction(
-                TransactionId.generate(),
+                TransactionId.generate(createTransactionDTO.date()),
                 createTransactionDTO.date(),
                 createTransactionDTO.amount(),
                 createTransactionDTO.description(),

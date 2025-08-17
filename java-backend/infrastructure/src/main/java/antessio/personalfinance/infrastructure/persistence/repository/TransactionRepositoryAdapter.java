@@ -139,33 +139,33 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                         .map(categoryIds -> categoryIds.stream().map(CategoryId::id).toList())
                         .orElse(null),
                 null);
-        Pageable page = PageRequest.of(0, 100,
+        Pageable page = PageRequest.of(0, Integer.MAX_VALUE,
                 Sort.by("id"));
-        List<Transaction> firstPage = findAllByFilters(filters, page);
+        return findAllByFilters(filters, page).stream();
 
-        return Stream.iterate(
-                        Pair.of(page, firstPage),
-                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
-                        transactionsPage -> {
-                            List<Transaction> transactions = transactionsPage.getRight();
-                            if (transactions.isEmpty()) {
-                                return Pair.of(page, transactions);
-                            }
-                            String lastId = transactions.getLast().getId().id().toString();
-
-                            Specification<TransactionEntity> nextFilters = filters
-                                    .and((root, query, cb) ->
-                                            cb.greaterThan(root.get("id"), lastId));
-
-                            Pageable transactionsPageLeft = transactionsPage.getLeft();
-                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
-                                    100, Sort.by("id")
-                            );
-                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
-                                    nextPageRequest));
-                        })
-                .map(Pair::getRight)
-                .flatMap(List::stream);
+//        return Stream.iterate(
+//                        Pair.of(page, firstPage),
+//                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
+//                        transactionsPage -> {
+//                            List<Transaction> transactions = transactionsPage.getRight();
+//                            if (transactions.isEmpty()) {
+//                                return Pair.of(page, transactions);
+//                            }
+//                            String lastId = transactions.getLast().getId().id().toString();
+//
+//                            Specification<TransactionEntity> nextFilters = filters
+//                                    .and((root, query, cb) ->
+//                                            cb.greaterThan(root.get("id"), lastId));
+//
+//                            Pageable transactionsPageLeft = transactionsPage.getLeft();
+//                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
+//                                    100, Sort.by( "id")
+//                            );
+//                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
+//                                    nextPageRequest));
+//                        })
+//                .map(Pair::getRight)
+//                .flatMap(List::stream);
     }
 
     @Override
@@ -185,33 +185,33 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 null);
         filters.and((root, query, cb) ->
                 root.get("categoryId").isNotNull());
-        Pageable page = PageRequest.of(0, 100,
+        Pageable page = PageRequest.of(0, Integer.MAX_VALUE,
                 Sort.by("id"));
-        List<Transaction> firstPage = findAllByFilters(filters, page);
+        return findAllByFilters(filters, page).stream();
 
-        return Stream.iterate(
-                        Pair.of(page, firstPage),
-                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
-                        transactionsPage -> {
-                            List<Transaction> transactions = transactionsPage.getRight();
-                            if (transactions.isEmpty()) {
-                                return Pair.of(page, transactions);
-                            }
-                            String lastId = transactions.getLast().getId().id().toString();
-
-                            Specification<TransactionEntity> nextFilters = filters
-                                    .and((root, query, cb) ->
-                                            cb.greaterThan(root.get("id"), lastId));
-
-                            Pageable transactionsPageLeft = transactionsPage.getLeft();
-                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
-                                    100, Sort.by("id")
-                            );
-                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
-                                    nextPageRequest));
-                        })
-                .map(Pair::getRight)
-                .flatMap(List::stream);
+//        return Stream.iterate(
+//                        Pair.of(page, firstPage),
+//                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
+//                        transactionsPage -> {
+//                            List<Transaction> transactions = transactionsPage.getRight();
+//                            if (transactions.isEmpty()) {
+//                                return Pair.of(page, transactions);
+//                            }
+//                            String lastId = transactions.getLast().getId().id().toString();
+//
+//                            Specification<TransactionEntity> nextFilters = filters
+//                                    .and((root, query, cb) ->
+//                                            cb.greaterThan(root.get("id"), lastId));
+//
+//                            Pageable transactionsPageLeft = transactionsPage.getLeft();
+//                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
+//                                    100, Sort.by("id")
+//                            );
+//                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
+//                                    nextPageRequest));
+//                        })
+//                .map(Pair::getRight)
+//                .flatMap(List::stream);
     }
 
     @Override
