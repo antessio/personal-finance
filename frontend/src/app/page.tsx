@@ -194,10 +194,10 @@ export default function HomePage() {
           </Paper>
         </Box>
 
-        {/* Middle Row: Money Flow Chart + Category Breakdown */}
+        {/* Middle Row: Money Flow Chart */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
           {/* Money Flow Card */}
-          <Paper elevation={4} sx={{ flex: 2, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <MuiBarChart color="success" sx={{ mr: 1 }} />
               <Typography color="success.dark" fontWeight={700} variant="subtitle1">
@@ -218,51 +218,84 @@ export default function HomePage() {
               </ResponsiveContainer>
             </Box>
           </Paper>
+        </Box>
 
-          {/* Category Breakdown Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <PieChart color="info" sx={{ mr: 1 }} />
-              <Typography color="info.dark" fontWeight={700} variant="subtitle1">
-                Category Breakdown
-              </Typography>
-            </Box>
-            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {categorySpending.map((category) => (
-                <Box key={category.categoryName} sx={{ width: '100%' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {category.categoryName}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {Math.round(category.percentage)}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={category.percentage}
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      bgcolor: 'grey.200',
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
-                      },
+        {/* Category Breakdown - Full Width */}
+        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <PieChart color="info" sx={{ mr: 1 }} />
+            <Typography color="info.dark" fontWeight={700} variant="h6">
+              Category Breakdown
+            </Typography>
+          </Box>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { 
+              xs: '1fr', 
+              sm: 'repeat(2, 1fr)', 
+              md: 'repeat(3, 1fr)', 
+              lg: 'repeat(4, 1fr)' 
+            }, 
+            gap: 3 
+          }}>
+            {categorySpending.map((category) => (
+              <Box key={category.categoryName} sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                bgcolor: 'rgba(255, 255, 255, 0.7)',
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={700} noWrap>
+                    {category.categoryName}
+                  </Typography>
+                  <Chip 
+                    label={`${Math.round(category.percentage)}%`}
+                    size="small"
+                    sx={{ 
+                      bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
+                      color: category.percentage > 100 ? 'error.dark' : 'success.dark',
+                      fontWeight: 700,
+                      minWidth: 45
                     }}
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(100, category.percentage)}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: 'grey.200',
+                    mb: 1,
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
+                    },
+                  }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" fontWeight={600} color="text.primary">
                       €{category.totalSpent.toLocaleString()}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
+                      Spent
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant="body2" fontWeight={600} color="text.secondary">
                       €{(category.budgetedAmount || 0).toLocaleString()}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Budget
                     </Typography>
                   </Box>
                 </Box>
-              ))}
-            </Box>
-          </Paper>
-        </Box>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
 
         {/* Remaining Monthly Card */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>

@@ -34,7 +34,7 @@ export interface PersonalFinanceService {
   getSavingsBudget(year: string): Promise<number>;
 
   // Upload methods
-  getUploads(): Promise<PaginatedResponse<UploadFile>>;
+  getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>>;
   uploadFile(file: { file: File; account: string }): Promise<void>;
   processUpload(id: string): Promise<void>;
   deleteUpload(id: string): Promise<void>;

@@ -96,7 +96,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const toDate = `${year}-12-31`;
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
-      categoryName: spending.category.name,
+      categoryName: spending.category.name+ ' '+spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budget?.amount || 0,
       percentage: spending.budget ? (spending.totalSpent / spending.budget.amount) * 100 : 0,
@@ -325,8 +325,16 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Upload methods
-  async getUploads(): Promise<PaginatedResponse<UploadFile>> {
-    const response = await this.api.get<PaginatedResponseRest<UploadFilRest>>('/api/transaction-imports');
+  async getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>> {
+    const params: any = { 
+      limit: filters?.limit || 20 
+    };
+    
+    if (filters?.cursor) {
+      params.cursor = filters.cursor;
+    }
+    
+    const response = await this.api.get<PaginatedResponseRest<UploadFilRest>>('/api/transaction-imports', { params });
     return {
       data: response.data.data.map(upload => ({
         id: upload.id,

@@ -22,6 +22,7 @@ import {
   Stack,
   Alert,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import { 
   Upload as UploadIcon, 
@@ -33,12 +34,18 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
-import { UploadFile } from '../../types';
+import { UploadFile, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import { useEffect } from 'react';
 
 export default function UploadPage() {
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [allUploads, setAllUploads] = useState<UploadFile[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [filters, setFilters] = useState<{ limit: number; cursor?: string }>({
+    limit: 20,
+  });
   const queryClient = useQueryClient();
 
   // Get unique accounts from transactions
@@ -47,13 +54,25 @@ export default function UploadPage() {
     queryFn: () => service.getAccounts(),
   });
 
-  
-
-  // Get uploaded files
-  const { data: uploads = [], isLoading } = useQuery<UploadFile[]>({
-    queryKey: ['uploads'],
-    queryFn: () => service.getUploads(),
+  // Get uploaded files with pagination
+  const { data: paginatedData, isLoading } = useQuery<PaginatedResponse<UploadFile>>({
+    queryKey: ['uploads', filters],
+    queryFn: () => service.getUploads(filters),
   });
+
+  // Update allUploads when new data is fetched
+  useEffect(() => {
+    if (paginatedData) {
+      if (filters.cursor) {
+        // Append new uploads when loading more (cursor-based pagination)
+        setAllUploads(prev => [...prev, ...paginatedData.data]);
+        setIsLoadingMore(false); // Reset loading state after data is loaded
+      } else {
+        // Replace uploads when filters change (new query)
+        setAllUploads(paginatedData.data);
+      }
+    }
+  }, [paginatedData, filters.cursor]);
 
   const uploadMutation = useMutation({
     mutationFn: (file: { file: File; account: string }) => service.uploadFile(file),
@@ -97,6 +116,16 @@ export default function UploadPage() {
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this upload?')) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (paginatedData && paginatedData.hasMore && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setFilters(prev => ({
+        ...prev,
+        cursor: paginatedData.nextCursor,
+      }));
     }
   };
 
@@ -204,7 +233,7 @@ export default function UploadPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {uploads.map((upload) => (
+                {allUploads.map((upload: UploadFile) => (
                   <TableRow 
                     key={upload.id}
                     hover
@@ -259,6 +288,19 @@ export default function UploadPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          
+          {paginatedData && paginatedData.hasMore && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                startIcon={isLoadingMore ? <CircularProgress size={20} /> : undefined}
+              >
+                {isLoadingMore ? 'Loading...' : 'Load More'}
+              </Button>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Layout>
