@@ -440,10 +440,7 @@ public class TransactionService {
         if (toDate.getYear() != year) {
             throw new IllegalArgumentException("From and to date must be in the same year");
         }
-        Map<CategoryId, BudgetDTO> budgets = budgetService.getAllBudgets(username, year)
-                .stream()
-                .collect(Collectors.toMap(BudgetDTO::getCategoryId, Function.identity()));
-
+        Map<CategoryId, BigDecimal> budgetTotals = budgetService.getBudgetsTotals(username, year);
         Map<CategoryId, Double> spending = transactionRepository.findAllByUserAndYearAndCategories(
                         username,
                         fromDate, toDate, categories.keySet().stream().toList())
@@ -455,7 +452,7 @@ public class TransactionService {
                 .stream()
                 .map(s -> new CategorySpendingDTO(categories.get(s.getKey()),
                         BigDecimal.valueOf(s.getValue()).abs(),
-                        budgets.get(s.getKey())))
+                        budgetTotals.get(s.getKey())))
                 .toList();
     }
 

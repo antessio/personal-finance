@@ -96,11 +96,11 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const toDate = `${year}-12-31`;
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
-      categoryName: spending.category.name+ ' '+spending.category.emoji,
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
-      budgetedAmount: spending.budget?.amount || 0,
-      percentage: spending.budget ? (spending.totalSpent / spending.budget.amount) * 100 : 0,
-    })) ;
+      budgetedAmount: spending.budgetAmount || 0,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+    }));
   }
 
   async getMonthlyData(year: string): Promise<MonthlyData[]> {
@@ -188,7 +188,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void> {
-  
+
     try {
       const requestData = {
         transactionIds: payload.transactionIds,
@@ -214,16 +214,16 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   // Category methods
   async getAllCategories(): Promise<Category[]> {
     return (await this.getCategories({ limit: 200 })).data;
-  } 
+  }
   async getCategories(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<Category>> {
-    const params: any = { 
-      limit: filters?.limit || 20 
+    const params: any = {
+      limit: filters?.limit || 20
     };
-    
+
     if (filters?.cursor) {
       params.cursor = filters.cursor;
     }
-    
+
     const response = await this.api.get<PaginatedResponseRest<CategoryRest>>('/api/categories', { params });
     return {
       data: response.data.data.map(category => ({
@@ -253,21 +253,17 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   // Budget methods
   async getAllBudgets(): Promise<Budget[]> {
-    return (await this.getBudgets(new Date().getFullYear().toString(), 2000)).data;
+    return (await this.getBudgets(new Date().getFullYear().toString()));
   }
-  async getBudgets(year: string, limit: number = 20): Promise<PaginatedResponse<Budget>> {
-    const response = await this.api.get<PaginatedResponseRest<BudgetRest>>(`/api/budgets?year=${year}`, { params: { limit } });
-    return {
-      data: response.data.data.map(budget => ({
-        id: budget.id,
-        categoryId: budget.categoryId,
-        amount: budget.amount,
-        year: year,
-        period: 'annual',
-      })),
-      hasMore: response.data.hasNext,
-      nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined
-    };
+  async getBudgets(year: string): Promise<Budget[]> {
+    const response = await this.api.get<BudgetRest[]>(`/api/budgets`, { params: { year } });
+    return response.data.map(budget => ({
+      id: budget.id,
+      categoryId: budget.categoryId,
+      amount: budget.amount,
+      year: year,
+      period: 'annual',
+    }));
   }
 
   async getIncomeBudget(year: string): Promise<number> {
@@ -283,7 +279,30 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     return response.data.total;
   }
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
-    const response = await this.api.post<Budget>('/api/budgets', budget);
+    var response: any;
+    console.log("Creating budget", budget);
+    if (budget.period && budget.period == 'monthly') {
+      response = await this.api.post<Budget>('/api/budgets/monthly', {
+        amount: budget.amount,
+        categoryId: budget.categoryId,
+        yearMonth: budget.month
+      });
+    } else {
+      response = await this.api.post<Budget>('/api/budgets/annual', {
+        amount: budget.amount,
+        categoryId: budget.categoryId
+      });
+    }
+    return response.data;
+  }
+
+  async bulkCreateBudgets(budgets: Omit<Budget, 'id'>[]): Promise<Budget[]> {
+
+    const response = await this.api.post<Budget[]>('/api/budgets/bulk',
+      budgets.map(budget => ({
+        categoryId: budget.categoryId,
+        amount: budget.amount,
+      })));
     return response.data;
   }
 
@@ -326,14 +345,14 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   // Upload methods
   async getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>> {
-    const params: any = { 
-      limit: filters?.limit || 20 
+    const params: any = {
+      limit: filters?.limit || 20
     };
-    
+
     if (filters?.cursor) {
       params.cursor = filters.cursor;
     }
-    
+
     const response = await this.api.get<PaginatedResponseRest<UploadFilRest>>('/api/transaction-imports', { params });
     return {
       data: response.data.data.map(upload => ({

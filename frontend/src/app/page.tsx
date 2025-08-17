@@ -42,7 +42,7 @@ export default function HomePage() {
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets', currentYear],
-    queryFn: () => service.getAllBudgets(currentYear.toString()),
+    queryFn: () => service.getBudgets(currentYear.toString()),
   });
   const incomeBudget = 0;
   const expenseBudget = 0;

@@ -12,5 +12,7 @@ public class Budget {
     private CategoryId categoryId;
     private BigDecimal amount;
     private String userOwner;
+    private Integer year;
+    private Integer month;
 
 }

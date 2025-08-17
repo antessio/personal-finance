@@ -13,6 +13,8 @@ public class BudgetDTO {
     private BudgetId budgetId;
     private CategoryId categoryId;
     private BigDecimal amount;
+    private Integer year;
+    private Integer month;
 
 
 }

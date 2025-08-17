@@ -53,7 +53,7 @@ export interface BudgetRest {
 export interface CategorySpendingRest {
   category: CategoryRest;
   totalSpent: number;
-  budget: BudgetRest;
+  budgetAmount: number;
 }
 
 export interface MonthlyDataRest {

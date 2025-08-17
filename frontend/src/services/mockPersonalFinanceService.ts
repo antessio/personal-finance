@@ -305,13 +305,13 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Budget methods
-  async getAllBudgets(year: string): Promise<Budget[]> {
+  async getAllBudgets(): Promise<Budget[]> {
     await simulateDelay();
-    return Promise.resolve((await this.getBudgets(year)).data);
+    return Promise.resolve((await this.getBudgets(new Date().getFullYear().toString())));
   }
-  async getBudgets(year: string): Promise<PaginatedResponse<Budget>> {
+  async getBudgets(year: string): Promise<Budget[]> {
     await simulateDelay();
-    return Promise.resolve({data: this.budgets.filter(budget => budget.year === year), hasMore: false, nextCursor: undefined});
+    return Promise.resolve(this.budgets.filter(budget => budget.year === year));
   }
 
   async getIncomeBudget(year: string): Promise<number> {
@@ -340,6 +340,16 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     };
     this.budgets.push(newBudget);
     return newBudget;
+  }
+
+  async bulkCreateBudgets(budgets: Omit<Budget, 'id'>[]): Promise<Budget[]> {
+    await simulateDelay();
+    const newBudgets: Budget[] = budgets.map(budget => ({
+      ...budget,
+      id: Math.random().toString(36).substr(2, 9),
+    }));
+    this.budgets.push(...newBudgets);
+    return newBudgets;
   }
 
   async updateBudget(id: string, budget: Partial<Budget>): Promise<Budget> {

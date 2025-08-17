@@ -24,8 +24,9 @@ export interface PersonalFinanceService {
   deleteCategory(id: string): Promise<void>;
 
   // Budget methods
-  getAllBudgets(year: string): Promise<Budget[]>;
-  getBudgets(year: string, limit: number): Promise<PaginatedResponse<Budget>>;
+  getAllBudgets(): Promise<Budget[]>;
+  getBudgets(year: string): Promise<Budget[]>;
+  bulkCreateBudgets(budgets: Omit<Budget, 'id'>[]): Promise<Budget[]>;
   createBudget(budget: Omit<Budget, 'id'>): Promise<Budget>;
   updateBudget(id: string, budget: Partial<Budget>): Promise<Budget>;
   deleteBudget(id: string): Promise<void>;
