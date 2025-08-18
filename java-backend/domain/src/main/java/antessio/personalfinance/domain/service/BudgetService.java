@@ -10,8 +10,10 @@ import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.ports.BudgetRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -30,7 +32,7 @@ public class BudgetService {
         CategoryDTO category = getUserCategoryById(createMonthlyBudgetDTO.getUserOwner(), createMonthlyBudgetDTO.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found or does not belong to user"));
         YearMonth yearMonth = createMonthlyBudgetDTO.getYearMonth();
-        budgetRepository.create(new Budget(BudgetId.generate(), category.getId(), createMonthlyBudgetDTO.getAmount(), userOwner, yearMonth.getYear(),yearMonth.getMonthValue()));
+        budgetRepository.create(new Budget(BudgetId.generate(), category.getId(), createMonthlyBudgetDTO.getAmount(), userOwner, yearMonth.getYear(), yearMonth.getMonthValue()));
     }
 
     public Budget createDefaultBudget(String userOwner, CreateDefaultBudgetDTO createDefaultBudgetDTO) {
@@ -57,11 +59,17 @@ public class BudgetService {
     }
 
     public Map<CategoryId, BigDecimal> getBudgetsTotals(String owner, int year) {
+        return getCategoryIdBigDecimalMap(owner, year, __ -> true);
+
+    }
+
+    private Map<CategoryId, BigDecimal> getCategoryIdBigDecimalMap(String owner, int year, Predicate<CategoryDTO> categoryPredicate) {
         Map<CategoryId, Map<YearMonth, Budget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(owner, year);
         Map<CategoryId, Budget> annualBudgets = budgetRepository.getAnnualBudgets(owner, year);
         Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudget(owner);
 
         return categoryService.getAllCategories(owner)
+                .filter(categoryPredicate)
                 .map(CategoryDTO::getId)
                 .collect(Collectors.toMap(
                         categoryId -> categoryId,
@@ -75,7 +83,6 @@ public class BudgetService {
                                                 .map(Budget::getAmount)
                                                 .orElse(BigDecimal.ZERO)))
                 ));
-
     }
 
     public List<BudgetDTO> getAllBudgets(String userOwner, int year) {
@@ -152,5 +159,43 @@ public class BudgetService {
     private static Stream<YearMonth> getYearMonths(int year) {
         return IntStream.range(0, 12)
                 .mapToObj(month -> YearMonth.of(year, month + 1));
+    }
+
+    public BigDecimal getTotalIncome(String username, LocalDate fromDate, LocalDate toDate) {
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("From date cannot be after to date");
+        }
+        if (fromDate.getYear() != toDate.getYear()) {
+            throw new IllegalArgumentException("From date and to date must be in the same year");
+        }
+        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isIncome())
+                .values()
+                .stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public BigDecimal getTotalExpense(String username, LocalDate fromDate, LocalDate toDate) {
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("From date cannot be after to date");
+        }
+        if (fromDate.getYear() != toDate.getYear()) {
+            throw new IllegalArgumentException("From date and to date must be in the same year");
+        }
+        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isExpense())
+                .values()
+                .stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    public BigDecimal getTotalSavings(String username, LocalDate fromDate, LocalDate toDate) {
+        if (fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("From date cannot be after to date");
+        }
+        if (fromDate.getYear() != toDate.getYear()) {
+            throw new IllegalArgumentException("From date and to date must be in the same year");
+        }
+        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isSavings())
+                .values()
+                .stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

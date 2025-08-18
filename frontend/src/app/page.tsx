@@ -3,8 +3,8 @@
 import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider, LinearProgress, Avatar, Stack, Chip, CircularProgress } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
-import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, ArrowUpward, ArrowDownward } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Pie, Cell } from 'recharts';
+import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, ArrowUpward, ArrowDownward, Timeline } from '@mui/icons-material';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Pie, Cell, LineChart, Line } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
 import { MonthlyData } from '../types';
@@ -14,10 +14,6 @@ export default function HomePage() {
   const currentYear = new Date().getFullYear();
 
   // Fetch data
-  const { data: transactionsResponse } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => service.getTransactions({}),
-  });
 
   const { data: totalIncome = 0 } = useQuery({
     queryKey: ['totalIncome'],
@@ -44,24 +40,22 @@ export default function HomePage() {
     queryKey: ['budgets', currentYear],
     queryFn: () => service.getBudgets(currentYear.toString()),
   });
-  const incomeBudget = 0;
-  const expenseBudget = 0;
-  const savingsBudget = 0;
-  // const { data: incomeBudget = 0 } = useQuery({
-  //   queryKey: ['incomeBudget', currentYear],
-  //   queryFn: () => service.getIncomeBudget(currentYear),
-  // });
+  // const incomeBudget = 0;
+  // const expenseBudget = 0;
+  // const savingsBudget = 0;
+  const { data: incomeBudget = 0 } = useQuery({
+    queryKey: ['incomeBudget', currentYear],
+    queryFn: () => service.getIncomeBudget(currentYear),
+  });
 
-  // const { data: expenseBudget = 0 } = useQuery({
-  //   queryKey: ['expenseBudget', currentYear],
-  //   queryFn: () => service.getExpenseBudget(currentYear),
-  // });
-  // const { data: savingsBudget = 0 } = useQuery({
-  //   queryKey: ['savingsBudget', currentYear],
-  //   queryFn: () => service.getSavingsBudget(currentYear),
-  // });
-
-  const transactions = transactionsResponse?.data || [];
+  const { data: expenseBudget = 0 } = useQuery({
+    queryKey: ['expenseBudget', currentYear],
+    queryFn: () => service.getExpenseBudget(currentYear),
+  });
+  const { data: savingsBudget = 0 } = useQuery({
+    queryKey: ['savingsBudget', currentYear],
+    queryFn: () => service.getSavingsBudget(currentYear),
+  });
 
 
   // Calculate budget data
@@ -88,6 +82,34 @@ export default function HomePage() {
       Savings: monthData ? monthData.totalSavings : 0,
     };
   });
+
+  const { data: macroCategoryTrends = [] } = useQuery({
+    queryKey: ['macroCategoryTrends', currentYear],
+    queryFn: () => service.getMacroCategoriesMontlyData(currentYear.toString()),
+  });
+
+  // Transform macro category data for line chart
+  const transformedMacroData = months.map((month, index) => {
+    const monthData = macroCategoryTrends.filter(data => data.month == index +1);
+    const result: any = { month };
+    monthData.forEach(item => {
+      result[item.macroCategory] = item.total;
+    });
+    
+    return result;
+  });
+
+  // Define colors for each macro category
+  const macroCategoryColors = {
+    'EXPENSE': '#f44336', 
+    'BILLS': '#ff9800',
+    'SAVINGS': '#2196f3',
+    'SUBSCRIPTIONS': '#9c27b0',
+    'DEBTS': '#795548'
+  };
+
+  // Get unique macro categories from the data
+  const uniqueMacroCategories = [...new Set(macroCategoryTrends.map(item => item.macroCategory))];
 
   // --- 50-30-20 Budget Fake Data ---
   type BudgetKey = 'needs' | 'wants' | 'savingsDebts';
@@ -138,7 +160,7 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalIncome / incomeBudget == 0 ? 1 : incomeBudget) * 100)}% of income target reached
+              {Math.round((totalIncome / (incomeBudget == 0 ? 1 : incomeBudget) * 100))}% of income target reached
             </Typography>
           </Paper>
 
@@ -164,7 +186,8 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalExpenses / totalBudget == 0 ? 1 : totalBudget) * 100)}% of budget spent
+              {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
+              
             </Typography>
           </Paper>
 
@@ -190,7 +213,7 @@ export default function HomePage() {
             </Box>
             <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
             <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalSavings / savingsBudget == 0 ? 1 : savingsBudget) * 100)}% of savings target reached
+              {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
             </Typography>
           </Paper>
         </Box>
@@ -217,6 +240,40 @@ export default function HomePage() {
                   <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
                   <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
                 </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Macro Category Trends Chart */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Timeline color="warning" sx={{ mr: 1 }} />
+              <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
+                Macro Category Trends
+              </Typography>
+            </Box>
+            <Box sx={{ width: '100%', height: 280, mb: 2 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => `€${value?.toLocaleString()}`} />
+                  <Legend verticalAlign="top" height={36} />
+                  {uniqueMacroCategories.map((category) => (
+                    <Line 
+                      key={category} 
+                      type="monotone" 
+                      dataKey={category} 
+                      stroke={macroCategoryColors[category as keyof typeof macroCategoryColors] || '#666666'} 
+                      strokeWidth={3} 
+                      dot={{ r: 4 }} 
+                      name={category.charAt(0) + category.slice(1).toLowerCase()} 
+                    />
+                  ))}
+                </LineChart>
               </ResponsiveContainer>
             </Box>
           </Paper>
@@ -457,44 +514,6 @@ export default function HomePage() {
               </ResponsiveContainer>
             </Box>
           </Box>
-        </Paper>
-
-        {/* Recent Transactions */}
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 4, boxShadow: '0 2px 12px #b2dfdb33', mt: 3 }}>
-          <Typography variant="h6" fontWeight={700} color="#222" mb={2}>
-            Recent Transactions
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Account</TableCell>
-                  <TableCell>Category</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {transactions.slice(0, 10).map((tx) => {
-                  const category = categories.find(cat => cat.id === tx.categoryId);
-                  return (
-                    <TableRow key={tx.id} hover>
-                      <TableCell>{tx.date}</TableCell>
-                      <TableCell>{tx.description}</TableCell>
-                      <TableCell>
-                        <Typography color={tx.amount < 0 ? 'error.main' : 'success.main'} fontWeight={700}>
-                          {tx.amount < 0 ? '-' : '+'}€{Math.abs(tx.amount).toLocaleString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{tx.account}</TableCell>
-                      <TableCell>{category ? category.name : tx.categoryId}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
         </Paper>
       </Box>
     </Layout>

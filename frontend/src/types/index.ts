@@ -75,3 +75,10 @@ export interface MonthlyData {
   totalExpenses: number;
   totalSavings: number;
 }
+
+export interface MacroCategoryMonthlyData{
+  macroCategory: string;
+  year: number;
+  month: number;
+  total: number;
+}

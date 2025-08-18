@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -92,5 +94,44 @@ public class BudgetController {
                         b.amount()
                 )).collect(Collectors.toSet())));
 
+    }
+
+    @GetMapping("/total-income")
+    public ResponseEntity<BigDecimal> getTotalIncomes(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+            ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        BigDecimal totalIncome = budgetService.getTotalIncome(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalIncome);
+    }
+    @GetMapping("/total-expenses")
+    public ResponseEntity<BigDecimal> getTotalExpenses(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+            ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        BigDecimal totalIncome = budgetService.getTotalExpense(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalIncome);
+    }
+    @GetMapping("/total-savings")
+    public ResponseEntity<BigDecimal> getTotalSavings(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+            ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalIncome = budgetService.getTotalSavings(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalIncome);
     }
 }

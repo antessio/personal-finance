@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
@@ -103,6 +103,13 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }));
   }
 
+  async getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<MacroCategoryMonthlyData[]>(`/api/transactions/expenses-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
+    console.log("Macro categories monthly data response:", response.data);
+    return response.data;
+  }
   async getMonthlyData(year: string): Promise<MonthlyData[]> {
     const fromDate = `${year}-01-01`;
     const toDate = `${year}-12-31`;
@@ -277,17 +284,23 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }
   }
 
-  async getIncomeBudget(year: string): Promise<number> {
-    const response = await this.api.get<{ total: number }>(`/api/budgets/total-income?year=${year}`);
-    return response.data.total;
+  async getIncomeBudget(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/budgets/total-income?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
   }
-  async getExpenseBudget(year: string): Promise<number> {
-    const response = await this.api.get<{ total: number }>(`/api/budgets/total-expenses?year=${year}`);
-    return response.data.total;
+  async getExpenseBudget(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/budgets/total-expenses?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
   }
-  async getSavingsBudget(year: string): Promise<number> {
-    const response = await this.api.get<{ total: number }>(`/api/budgets/total-savings?year=${year}`);
-    return response.data.total;
+  async getSavingsBudget(year: number): Promise<number> {
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+    const response = await this.api.get<number>(`/api/budgets/total-savings?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
   }
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
     var response: any;

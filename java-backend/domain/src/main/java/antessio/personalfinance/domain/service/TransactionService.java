@@ -424,7 +424,8 @@ public class TransactionService {
 
                             .mapToDouble(t -> t.getAmount().doubleValue())
                             .sum();
-                    return new MonthlyDataDTO(yearMonth, BigDecimal.valueOf(totalIncome).abs(), BigDecimal.valueOf(totalExpenses).abs(), BigDecimal.valueOf(totalSavings).abs());
+                    return new MonthlyDataDTO(yearMonth,
+                            BigDecimal.valueOf(totalIncome).abs(), BigDecimal.valueOf(totalExpenses).abs(), BigDecimal.valueOf(totalSavings).abs());
                 })
                 .sorted(Comparator.comparing(MonthlyDataDTO::yearMonth))
                 .toList();
@@ -479,6 +480,7 @@ public class TransactionService {
                         (total, transaction) -> total.add(transaction.getAmount()),
                         BigDecimal::add).abs();
     }
+
     public BigDecimal getTotalIncome(String username, LocalDate fromDate, LocalDate toDate) {
         List<CategoryId> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
@@ -489,5 +491,48 @@ public class TransactionService {
                 .reduce(BigDecimal.ZERO,
                         (total, transaction) -> total.add(transaction.getAmount()),
                         BigDecimal::add).abs();
+    }
+
+    public List<MacroCategoryMonthlyDataDTO> getExpensesMacroCategoriesMonthlyBudgets(String username, LocalDate startDate, LocalDate endDate) {
+        Map<YearMonth, List<Transaction>> transactionsByMonth = transactionRepository.findAllIncludedCategorizedByUserAndYear(
+                        username,
+                        startDate, endDate)
+                .collect(Collectors.groupingBy(transaction -> YearMonth.from(transaction.getDate())));
+
+        Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
+                .stream()
+                .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
+        return transactionsByMonth
+                .entrySet()
+                .stream()
+                .flatMap(entry -> {
+                    YearMonth yearMonth = entry.getKey();
+                    Map<MacroCategoryEnum, BigDecimal> partialsMap = entry.getValue()
+                            .stream()
+                            .map(t -> Pair.of(categories.get(t.getCategoryId()).getMacroCategory(), t.getAmount()))
+                            .filter(p -> p.getLeft().isExpense())
+                            .map(p -> new MacroCategoryMonthlyDataDTO(
+                                    yearMonth.getYear(),
+                                    yearMonth.getMonthValue(),
+                                    p.getLeft(),
+                                    p.getRight()))
+                            .collect(Collectors.groupingBy(
+                                    MacroCategoryMonthlyDataDTO::macroCategory,
+                                    Collectors.reducing(
+                                            BigDecimal.ZERO,
+                                            MacroCategoryMonthlyDataDTO::total,
+                                            BigDecimal::add
+                                    )));
+
+                          return   partialsMap.entrySet()
+                                    .stream()
+                                    .map(e -> new MacroCategoryMonthlyDataDTO(
+                                            yearMonth.getYear(),
+                                            yearMonth.getMonthValue(),
+                                            e.getKey(),
+                                            e.getValue().abs()));
+                })
+                .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::month))
+                .toList();
     }
 }

@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
@@ -45,6 +45,47 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       // Remove auth-token cookie
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     }
+  }
+
+  async getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]> {
+    await simulateDelay();
+    const macroCategories = ['INCOME', 'EXPENSE', 'BILLS', 'SAVINGS', 'SUBSCRIPTIONS', 'DEBTS'];
+    const monthlyData: MacroCategoryMonthlyData[] = [];
+
+    for (const macroCategory of macroCategories) {
+      for (let month = 1; month <= 12; month++) {
+        const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+        
+        // Generate realistic mock data for each macro category
+        let total = 0;
+        const baseMultiplier = 1 + (month * 0.05); // Gradual increase throughout year
+        const seasonalVariation = Math.sin((month / 12) * 2 * Math.PI) * 0.2; // Seasonal variation
+        
+        switch (macroCategory) {
+          case 'INCOME':
+            total = Math.round((2500 + (Math.random() * 500 - 250)) * baseMultiplier * (1 + seasonalVariation));
+            break;
+          case 'EXPENSE':
+            total = Math.round((1800 + (Math.random() * 400 - 200)) * baseMultiplier * (1 + seasonalVariation * 0.5));
+            break;
+          case 'BILLS':
+            total = Math.round((600 + (Math.random() * 100 - 50)) * baseMultiplier * (1 + seasonalVariation * 0.3));
+            break;
+          case 'SAVINGS':
+            total = Math.round((400 + (Math.random() * 200 - 100)) * baseMultiplier * (1 + seasonalVariation * 0.8));
+            break;
+          case 'SUBSCRIPTIONS':
+            total = Math.round((150 + (Math.random() * 50 - 25)) * baseMultiplier * (1 + seasonalVariation * 0.1));
+            break;
+          case 'DEBTS':
+            total = Math.round((200 + (Math.random() * 100 - 50)) * baseMultiplier * (1 + seasonalVariation * 0.2));
+            break;
+        }
+        
+        monthlyData.push({ macroCategory, year: Number(year), month, total });
+      }
+    }
+    return monthlyData;
   }
 
   // Category spending methods
@@ -314,21 +355,21 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return Promise.resolve(this.budgets.filter(budget => budget.year === year));
   }
 
-  async getIncomeBudget(year: string): Promise<number> {
+  async getIncomeBudget(year: number): Promise<number> {
     await simulateDelay();
-    const incomeBudgets = this.budgets.filter(budget => budget.categoryId === 'income' && budget.year === year);
+    const incomeBudgets = this.budgets.filter(budget => budget.categoryId === 'income' && budget.year === year + '');
     return incomeBudgets.reduce((sum, budget) => sum + budget.amount, 0);
   }
 
-  async getExpenseBudget(year: string): Promise<number> {
+  async getExpenseBudget(year: number): Promise<number> {
     await simulateDelay();
-    const expenseBudgets = this.budgets.filter(budget => budget.categoryId === 'expense' && budget.year === year);
+    const expenseBudgets = this.budgets.filter(budget => budget.categoryId === 'expense' && budget.year === year + '');
     return expenseBudgets.reduce((sum, budget) => sum + budget.amount, 0);
   } 
 
-  async getSavingsBudget(year: string): Promise<number> {
+  async getSavingsBudget(year: number): Promise<number> {
     await simulateDelay();
-    const savingsBudgets = this.budgets.filter(budget => budget.categoryId === 'savings' && budget.year === year);
+    const savingsBudgets = this.budgets.filter(budget => budget.categoryId === 'savings' && budget.year === year + '');
     return savingsBudgets.reduce((sum, budget) => sum + budget.amount, 0);
   }
 

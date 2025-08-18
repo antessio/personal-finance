@@ -2,20 +2,17 @@ package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
 import antessio.personalfinance.domain.dto.*;
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.MacroCategoryMonthlyDataDTO;
 import antessio.personalfinance.domain.model.MonthlyDataDTO;
 import antessio.personalfinance.domain.model.TransactionId;
 import antessio.personalfinance.domain.service.TransactionService;
-import antessio.personalfinance.infrastructure.persistence.entity.TransactionEntity;
-import antessio.personalfinance.infrastructure.persistence.repository.BudgetRepositoryAdapter;
 import antessio.personalfinance.infrastructure.persistence.repository.BudgetSpringDataRepository;
-import antessio.personalfinance.infrastructure.persistence.repository.TransactionRepositoryAdapter;
 import antessio.personalfinance.infrastructure.persistence.repository.TransactionSpringDataRepository;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
 import antessio.personalfinance.domain.dto.CategorySpendingDTO;
 import antessio.personalfinance.infrastructure.web.controller.dto.TransactionBulkUpdateRequestDTO;
-import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,10 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -215,6 +210,18 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         List<MonthlyDataDTO> monthlyData = transactionService.getMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(monthlyData);
+    }
+
+    @GetMapping("/expenses-monthly-data")
+    public ResponseEntity<List<MacroCategoryMonthlyDataDTO>> getExpensesMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MacroCategoryMonthlyDataDTO> monthlyData = transactionService.getExpensesMacroCategoriesMonthlyBudgets(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(monthlyData);
     }
 
