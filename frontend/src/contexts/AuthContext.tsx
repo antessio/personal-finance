@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { service } from '@/services/api';
+import { isAuthEnabled } from '@/config/auth';
 
 interface User {
   id: string;
@@ -36,15 +37,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const checkAuth = async () => {
+      // Skip auth check if authentication is disabled
+      if (!isAuthEnabled()) {
+        if (mounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
       try {
-        console.log("Starting auth check...");
         const response = await service.getCurrentUser();
         if (mounted) {
-          console.log("Auth check response:", response);
+          
           setUser(response);
         }
       } catch (error) {
-        console.log("Auth check error:", error);
         if (mounted) {
           setUser(null);
         }
@@ -65,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await service.login(email, password);
-      console.log("Login response:", response);
       setUser(response.user);
       router.push('/');
     } catch (error) {
@@ -88,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: isAuthEnabled() ? !!user : true,
         login,
         logout,
         isLoading,

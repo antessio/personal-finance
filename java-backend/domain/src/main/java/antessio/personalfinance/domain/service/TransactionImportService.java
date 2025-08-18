@@ -13,7 +13,6 @@ import antessio.personalfinance.domain.model.TransactionUploadStatus;
 import antessio.personalfinance.domain.ports.TransactionImportEventPublisher;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
 import antessio.personalfinance.domain.service.transactionparser.PayPalTransactionParser;
-import antessio.personalfinance.domain.service.transactionparser.SatispayOldTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
 
@@ -73,7 +72,7 @@ public class TransactionImportService {
                     transactionImport.success();
 
                 }, transactionImport::fail);
-        transactionImportRepository.save(transactionImport);
+        transactionImportRepository.update(transactionImport);
     }
 
     public List<TransactionImportDTO> findByUserOwner(String username, int limit, TransactionImportId startingFrom) {

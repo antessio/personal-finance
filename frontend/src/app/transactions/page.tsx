@@ -25,13 +25,14 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
-import { Transaction, TransactionFilters, Category } from '../../types';
+import { Transaction, TransactionFilters, Category, BulkUpdatePayload, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
-import { mockCategories } from '../../services/mockData';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -44,6 +45,8 @@ export default function TransactionsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string>('');
   const queryClient = useQueryClient();
 
   const { data: paginatedData, isLoading: isLoadingTransactions } = useQuery({
@@ -51,9 +54,13 @@ export default function TransactionsPage() {
     queryFn: () => service.getTransactions(filters),
   });
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => service.getAccounts(),
+  });
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => service.getCategories(),
+    queryFn: () => service.getAllCategories(),
   });
 
   // Update allTransactions when new data is fetched
@@ -69,8 +76,6 @@ export default function TransactionsPage() {
     }
   }, [paginatedData]);
 
-  // Get unique accounts from transactions
-  const accounts = Array.from(new Set(allTransactions.map(t => t.account))).sort();
 
   // Add special categories
   const allCategories = [
@@ -79,6 +84,8 @@ export default function TransactionsPage() {
     ...categories
   ];
 
+
+
   // Calculate the sum of displayed transactions
   const totalAmount = allTransactions.reduce(
     (sum, transaction) => sum + transaction.amount, 
@@ -86,7 +93,7 @@ export default function TransactionsPage() {
   );
 
   const bulkUpdateMutation = useMutation({
-    mutationFn: service.bulkUpdateTransactions,
+    mutationFn: (payload: BulkUpdatePayload) => service.bulkUpdateTransactions(payload) ,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelected([]);
@@ -210,8 +217,8 @@ export default function TransactionsPage() {
             >
               <MenuItem value="">All</MenuItem>
               {accounts.map((account) => (
-                <MenuItem key={account} value={account}>
-                  {account}
+                <MenuItem key={account.id} value={account.id}>
+                  {account.name}
                 </MenuItem>
               ))}
             </Select>
@@ -304,6 +311,7 @@ export default function TransactionsPage() {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Amount</TableCell>
@@ -314,7 +322,7 @@ export default function TransactionsPage() {
             </TableHead>
             <TableBody>
               {allTransactions.map((transaction, idx) => {
-                const category = mockCategories.find((cat: Category) => cat.id === transaction.categoryId);
+                const category = transaction.category
                 const isItemSelected = isSelected(transaction.id);
                 
                 return (
@@ -338,6 +346,27 @@ export default function TransactionsPage() {
                         onClick={(event) => event.stopPropagation()}
                         onChange={() => handleClick(transaction.id)}
                       />
+                    </TableCell>
+                    <TableCell 
+                      sx={{ 
+                        color: 'grey.600', 
+                        fontSize: 13, 
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          color: 'primary.main',
+                          bgcolor: 'primary.lighter'
+                        }
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        navigator.clipboard.writeText(transaction.id);
+                        setCopiedId(transaction.id);
+                        setSnackbarOpen(true);
+                      }}
+                      title="Click to copy ID"
+                    >
+                      {transaction.id}
                     </TableCell>
                     <TableCell sx={{ color: 'grey.600', fontSize: 13, fontWeight: 500 }}>{transaction.date}</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>{transaction.description}</TableCell>
@@ -449,6 +478,23 @@ export default function TransactionsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Copy ID Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbarOpen(false)} 
+          severity="success"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          ID {copiedId} copied to clipboard!
+        </Alert>
+      </Snackbar>
     </Layout>
   );
 }

@@ -1,7 +1,9 @@
 package antessio.personalfinance.domain.service.transactionparser;
 
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.AccountType;
 import antessio.personalfinance.domain.model.TransactionImport;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
@@ -12,7 +14,6 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -22,19 +23,19 @@ public class PayPalTransactionParser implements TransactionParser {
 
     @Override
     public boolean canParse(TransactionImport transactionImport) {
-        return transactionImport.getSourceType().equalsIgnoreCase("paypal");
+        return transactionImport.getSourceType().equalsIgnoreCase(AccountType.PAYPAL.name());
     }
 
     @Override
     public List<CreateTransactionDTO> parse(TransactionImport transactionImport) {
         try {
-            return processFile(transactionImport.getFilePath(), transactionImport.getUserOwner());
+            return processFile(transactionImport.getFilePath(), transactionImport.getUserOwner(), transactionImport.getId());
         } catch (IOException | CsvException e) {
             throw new RuntimeException("Failed to parse Satispay file: " + e.getMessage(), e);
         }
     }
 
-    private List<CreateTransactionDTO> processFile(String filePath, String userOwner) throws IOException, CsvException {
+    private List<CreateTransactionDTO> processFile(String filePath, String userOwner, TransactionImportId id) throws IOException, CsvException {
         List<CreateTransactionDTO> transactions = new ArrayList<>();
 
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8)) {
@@ -44,22 +45,18 @@ public class PayPalTransactionParser implements TransactionParser {
                             .withSkipLines(1)
                             .build()
             ) {
-
-
                 List<String[]> rows = csvReader.readAll();
                 for (String[] row : rows) {
                     if (Arrays.equals(row, HEADER)) {
                         continue;
                     }
-
-                    parseLine(row, userOwner, HEADER).ifPresent(transactions::add);
+                    parseLine(row, userOwner, HEADER, id).ifPresent(transactions::add);
                 }
             }
         }
-
         return transactions;
     }
-    private Optional<CreateTransactionDTO> parseLine(String[] row, String userOwner, String[] header) {
+    private Optional<CreateTransactionDTO> parseLine(String[] row, String userOwner, String[] header, TransactionImportId id) {
         try {
             if(!Arrays.equals(header, HEADER)){
                 return Optional.empty();
@@ -70,11 +67,9 @@ public class PayPalTransactionParser implements TransactionParser {
             if (name.isBlank()){
                 return Optional.empty();
             }
-
             LocalDate date = parseDate(dateStr);
             BigDecimal amount = parseAmount(amountStr);
-
-            return Optional.of(new CreateTransactionDTO(userOwner, date, amount, name, "paypal"));
+            return Optional.of(new CreateTransactionDTO(userOwner, date, amount, name, "paypal", id));
         } catch (Exception e) {
             return Optional.empty();
         }

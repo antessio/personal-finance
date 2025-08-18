@@ -1,7 +1,9 @@
 package antessio.personalfinance.domain.service.transactionparser;
 
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.AccountType;
 import antessio.personalfinance.domain.model.TransactionImport;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -26,13 +28,13 @@ public class WidibaTransactionParser implements TransactionParser {
 
     @Override
     public boolean canParse(TransactionImport transactionImport) {
-        return transactionImport.getSourceType().equalsIgnoreCase("widiba");
+        return transactionImport.getSourceType().equalsIgnoreCase(AccountType.WIDIBA.name());
     }
 
     @Override
     public List<CreateTransactionDTO> parse(TransactionImport transactionImport) {
         try {
-            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner());
+            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner(), transactionImport.getId());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -41,7 +43,7 @@ public class WidibaTransactionParser implements TransactionParser {
     private static final int SKIP_ROWS = 19;
     private static final Pattern DATE_TIME_REGEX = Pattern.compile("Data\\s(\\d{2}/\\d{2}/\\d{2})\\sOra\\s(\\d{2}\\.\\d{2})");
 
-    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner) throws IOException {
+    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner, TransactionImportId id) throws IOException {
         List<CreateTransactionDTO> transactions = new ArrayList<>();
         try (
                 FileInputStream fis = new FileInputStream(filePath);
@@ -53,14 +55,14 @@ public class WidibaTransactionParser implements TransactionParser {
 
             for (int i = SKIP_ROWS; i <= rowCount; i++) {
                 Row row = sheet.getRow(i);
-                parseRow(row, userOwner)
+                parseRow(row, userOwner, id)
                         .ifPresent(transactions::add);
             }
         }
         return transactions;
     }
 
-    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner) {
+    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner, TransactionImportId id) {
         try {
             LocalDateTime settlementDate = row.getCell(1).getLocalDateTimeCellValue();
             String reason = row.getCell(3).getStringCellValue();
@@ -72,7 +74,7 @@ public class WidibaTransactionParser implements TransactionParser {
             }
             LocalDate transactionDate = extractDateTime(description).orElse(settlementDate.toLocalDate());
 
-            return Optional.of(new CreateTransactionDTO(userOwner, transactionDate, BigDecimal.valueOf(amount), description + " " + reason, "widiba"));
+            return Optional.of(new CreateTransactionDTO(userOwner, transactionDate, BigDecimal.valueOf(amount), description + " " + reason, "widiba", id));
         } catch (Exception e) {
             logger.error("Error parsing row {}", row.getRowNum(), e);
             return Optional.empty(); // Ignora righe non valide

@@ -6,6 +6,7 @@ import java.util.List;
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
 import antessio.personalfinance.domain.model.TransactionImport;
 
+import antessio.personalfinance.domain.model.TransactionImportId;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
@@ -46,13 +47,13 @@ public class SatispayOldTransactionParser implements TransactionParser {
     @Override
     public List<CreateTransactionDTO> parse(TransactionImport transactionImport) {
         try {
-            return processFile(transactionImport.getFilePath(), transactionImport.getUserOwner());
+            return processFile(transactionImport.getFilePath(), transactionImport.getUserOwner(), transactionImport.getId());
         } catch (IOException | CsvException e) {
             throw new RuntimeException("Failed to parse Satispay file: " + e.getMessage(), e);
         }
     }
 
-    private List<CreateTransactionDTO> processFile(String filePath, String userOwner) throws IOException, CsvException {
+    private List<CreateTransactionDTO> processFile(String filePath, String userOwner, TransactionImportId id) throws IOException, CsvException {
         List<CreateTransactionDTO> transactions = new ArrayList<>();
 
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8)) {
@@ -74,7 +75,7 @@ public class SatispayOldTransactionParser implements TransactionParser {
                         continue;
                     }
 
-                    parseLine(row, userOwner, HEADER).ifPresent(transactions::add);
+                    parseLine(row, userOwner, HEADER, id).ifPresent(transactions::add);
                 }
             }
         }
@@ -82,7 +83,7 @@ public class SatispayOldTransactionParser implements TransactionParser {
         return transactions;
     }
 
-    private Optional<CreateTransactionDTO> parseLine(String[] row, String userOwner, String[] header) {
+    private Optional<CreateTransactionDTO> parseLine(String[] row, String userOwner, String[] header, TransactionImportId id) {
         try {
             if(!Arrays.equals(header, HEADER)){
                 return Optional.empty();
@@ -99,7 +100,7 @@ public class SatispayOldTransactionParser implements TransactionParser {
             BigDecimal amount = parseAmount(amountStr);
             String description = name + " " + kind+ " "+additionalInfo;
 
-            return Optional.of(new CreateTransactionDTO(userOwner, date, amount, description, "satispay"));
+            return Optional.of(new CreateTransactionDTO(userOwner, date, amount, description, "satispay", id));
         } catch (Exception e) {
             return Optional.empty();
         }

@@ -39,56 +39,64 @@ class IntesaTransactionParserTest {
                         LocalDate.parse("2025-04-28"),
                         new BigDecimal("-73.2"),
                         "Test 2 Test 2",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-27"),
                         new BigDecimal("-30.0"),
                         "Test 3 Test 3",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-24"),
                         new BigDecimal("-6.99"),
                         "Test 4 Test 4",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-22"),
                         new BigDecimal("-7.99"),
                         "Test 5 Test 5",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-21"),
                         new BigDecimal("20.0"),
                         "Test 6 Test 6",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-15"),
                         new BigDecimal("-99.27"),
                         "Test 7 Test 7",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-11"),
                         new BigDecimal("-0.99"),
                         "Test 8 Test 8",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 ),
                 new CreateTransactionDTO(
                         "testUser",
                         LocalDate.parse("2025-04-11"),
                         new BigDecimal("-264.0"),
                         "Test 9 Test 9",
-                        "intesa"
+                        "intesa",
+                        transactionImport.getId()
                 )
         );
 

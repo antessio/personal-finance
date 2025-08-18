@@ -1,25 +1,29 @@
 package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
-import antessio.personalfinance.domain.dto.SavingsExportDTO;
-import antessio.personalfinance.domain.dto.TransactionDTO;
-import antessio.personalfinance.domain.dto.TransactionExportDTO;
-import antessio.personalfinance.domain.dto.TransactionsQueryDTO;
+import antessio.personalfinance.domain.dto.*;
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.MacroCategoryMonthlyDataDTO;
+import antessio.personalfinance.domain.model.MonthlyDataDTO;
 import antessio.personalfinance.domain.model.TransactionId;
 import antessio.personalfinance.domain.service.TransactionService;
+import antessio.personalfinance.infrastructure.persistence.repository.BudgetSpringDataRepository;
+import antessio.personalfinance.infrastructure.persistence.repository.TransactionSpringDataRepository;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
+import antessio.personalfinance.domain.dto.CategorySpendingDTO;
+import antessio.personalfinance.infrastructure.web.controller.dto.TransactionBulkUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -27,6 +31,10 @@ import java.util.Optional;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final SecurityUtils securityUtils;
+
+    private final BudgetSpringDataRepository budgetSpringDataRepository;
+    private final TransactionSpringDataRepository transactionSpringDataRepository;
 
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionDTO>> getTransactions(
@@ -37,7 +45,7 @@ public class TransactionController {
             @RequestParam(required = false) Boolean skip,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Boolean uncategorized) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -65,7 +73,7 @@ public class TransactionController {
 
     @PostMapping("/{id}/skip")
     public ResponseEntity<Void> skipTransaction(@PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -75,7 +83,7 @@ public class TransactionController {
 
     @PostMapping("/{id}/include")
     public ResponseEntity<Void> includeTransaction(@PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -86,7 +94,7 @@ public class TransactionController {
     @PostMapping("/{id}/processCategory")
     public ResponseEntity<Void> processCategory(
             @PathVariable String id) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -96,7 +104,7 @@ public class TransactionController {
 
     @PostMapping("/processCategoriesAll")
     public ResponseEntity<Void> processCategoriesAll() {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -104,11 +112,28 @@ public class TransactionController {
         return ResponseEntity.accepted().build();
     }
 
+    @PatchMapping("/bulk-update")
+    public ResponseEntity<Void> bulkUpdateTransactions(
+            @RequestBody TransactionBulkUpdateRequestDTO bulkUpdateRequestDTO) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        transactionService.bulkUpdate(
+                new TransactionBulkUpdateDTO(
+                        Stream.of(bulkUpdateRequestDTO.transactionIds()).map(TransactionId::fromString).toList(),
+                        new CategoryId(bulkUpdateRequestDTO.categoryId()),
+                        bulkUpdateRequestDTO.skip()),
+                user.getUsername());
+
+        return ResponseEntity.accepted().build();
+    }
+
     @PutMapping("/{id}/category")
     public ResponseEntity<Void> assignCategory(
             @PathVariable String id,
             @RequestParam Long categoryId) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -119,7 +144,7 @@ public class TransactionController {
     @GetMapping("/export/transactions")
     public ResponseEntity<String> exportTransactions(
             @RequestParam() String yearMonth) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -129,21 +154,22 @@ public class TransactionController {
         csv.append("date,type,macro_category,category,currency,amount,description\n");
         for (TransactionExportDTO t : transactions) {
             csv.append(t.getDate()).append(",")
-               .append(t.getType()).append(",")
-               .append(t.getMacroCategory()).append(",")
-               .append(t.getCategory()).append(",")
-               .append(t.getCurrency()).append(",")
-               .append(t.getAmount()).append(",")
-               .append(t.getDescription().replaceAll("[\r\n]", " ")).append("\n");
+                    .append(t.getType()).append(",")
+                    .append(t.getMacroCategory()).append(",")
+                    .append(t.getCategory()).append(",")
+                    .append(t.getCurrency()).append(",")
+                    .append(t.getAmount()).append(",")
+                    .append(t.getDescription().replaceAll("[\r\n]", " ")).append("\n");
         }
         return ResponseEntity.ok()
                 .header("Content-Type", "text/csv")
                 .body(csv.toString());
     }
+
     @GetMapping("/export/savings")
     public ResponseEntity<String> exportSavings(
             @RequestParam() String yearMonth) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -153,15 +179,87 @@ public class TransactionController {
         csv.append("date,category,currency,amount\n");
         for (SavingsExportDTO t : transactions) {
             csv.append(t.getDate()).append(",")
-               .append(t.getCategory()).append(",")
-               .append(t.getCurrency()).append(",")
-               .append(t.getAmount()).append(",")
-               .append("\n");
+                    .append(t.getCategory()).append(",")
+                    .append(t.getCurrency()).append(",")
+                    .append(t.getAmount()).append(",")
+                    .append("\n");
         }
         return ResponseEntity.ok()
                 .header("Content-Type", "text/csv")
                 .body(csv.toString());
     }
+
+    @GetMapping("/category-spending")
+    public ResponseEntity<List<CategorySpendingDTO>> getCategorySpending(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategorySpendingDTO> categorySpending = transactionService.getCategorySpending(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categorySpending);
+    }
+
+    @GetMapping("/monthly-data")
+    public ResponseEntity<List<MonthlyDataDTO>> getMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MonthlyDataDTO> monthlyData = transactionService.getMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(monthlyData);
+    }
+
+    @GetMapping("/expenses-monthly-data")
+    public ResponseEntity<List<MacroCategoryMonthlyDataDTO>> getExpensesMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MacroCategoryMonthlyDataDTO> monthlyData = transactionService.getExpensesMacroCategoriesMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(monthlyData);
+    }
+
+    @GetMapping("/total-savings")
+    public ResponseEntity<BigDecimal> getTotalSavings(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+    ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalSavings = transactionService.getTotalSavings(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalSavings);
+    }
+
+    @GetMapping("/total-income")
+    public ResponseEntity<BigDecimal> getTotalIncome(@RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalIncome = transactionService.getTotalIncome(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalIncome);
+    }
+
+    @GetMapping("/total-expenses")
+    public ResponseEntity<BigDecimal> getTotalExpenses(@RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalExpenses = transactionService.getTotalExpenses(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalExpenses);
+    }
+
 
 }
 

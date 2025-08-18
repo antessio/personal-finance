@@ -4,8 +4,10 @@ import antessio.personalfinance.domain.exceptions.TransactionDuplicatedException
 import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
+import antessio.personalfinance.domain.model.TransactionImportId;
 import antessio.personalfinance.domain.ports.TransactionRepository;
 import antessio.personalfinance.infrastructure.persistence.entity.TransactionEntity;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Component
 public class TransactionRepositoryAdapter implements TransactionRepository {
@@ -77,7 +80,7 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
 
     @Override
     public void update(Transaction transaction) {
-         try {
+        try {
             transactionSpringDataRepository.save(toEntity(transaction));
         } catch (DataIntegrityViolationException e) {
             throw new TransactionDuplicatedException("Transaction with uniqueId %s already exists".formatted(transaction.getUniqueId()), e);
@@ -112,12 +115,110 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                         .map(TransactionId::id)
                         .map(UUID::toString)
                         .orElse(null));
+        return findAllByFilters(filters, page);
+
+    }
+
+    private List<Transaction> findAllByFilters(Specification<TransactionEntity> filters, Pageable page) {
         return transactionSpringDataRepository.findAll(
                         filters,
                         page)
                 .stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Stream<Transaction> findAllByUserAndYearAndCategories(String userOwner, LocalDate fromDate, LocalDate toDate, List<CategoryId> categories) {
+
+        Specification<TransactionEntity> filters = TransactionSpringDataRepository.byFilters(
+                userOwner, fromDate,
+                toDate, false,
+                null,
+                Optional.ofNullable(categories)
+                        .map(categoryIds -> categoryIds.stream().map(CategoryId::id).toList())
+                        .orElse(null),
+                null);
+        Pageable page = PageRequest.of(0, Integer.MAX_VALUE,
+                Sort.by("id"));
+        return findAllByFilters(filters, page).stream();
+
+//        return Stream.iterate(
+//                        Pair.of(page, firstPage),
+//                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
+//                        transactionsPage -> {
+//                            List<Transaction> transactions = transactionsPage.getRight();
+//                            if (transactions.isEmpty()) {
+//                                return Pair.of(page, transactions);
+//                            }
+//                            String lastId = transactions.getLast().getId().id().toString();
+//
+//                            Specification<TransactionEntity> nextFilters = filters
+//                                    .and((root, query, cb) ->
+//                                            cb.greaterThan(root.get("id"), lastId));
+//
+//                            Pageable transactionsPageLeft = transactionsPage.getLeft();
+//                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
+//                                    100, Sort.by( "id")
+//                            );
+//                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
+//                                    nextPageRequest));
+//                        })
+//                .map(Pair::getRight)
+//                .flatMap(List::stream);
+    }
+
+    @Override
+    public Stream<Transaction> findAllByUserAndYearAndCategories(String userOwner, int year, List<CategoryId> categories) {
+        LocalDate fromDate = LocalDate.of(year, 1, 1);
+        LocalDate toDate = LocalDate.of(year, 12, 31);
+        return findAllByUserAndYearAndCategories(userOwner, fromDate, toDate, categories);
+    }
+
+    @Override
+    public Stream<Transaction> findAllIncludedCategorizedByUserAndYear(String userOwner, LocalDate fromDate, LocalDate toDate){
+        Specification<TransactionEntity> filters = TransactionSpringDataRepository.byFilters(
+                userOwner, fromDate,
+                toDate, false,
+                null,
+                null,
+                null);
+        filters.and((root, query, cb) ->
+                root.get("categoryId").isNotNull());
+        Pageable page = PageRequest.of(0, Integer.MAX_VALUE,
+                Sort.by("id"));
+        return findAllByFilters(filters, page).stream();
+
+//        return Stream.iterate(
+//                        Pair.of(page, firstPage),
+//                        pageableListPair -> !pageableListPair.getRight().isEmpty(),
+//                        transactionsPage -> {
+//                            List<Transaction> transactions = transactionsPage.getRight();
+//                            if (transactions.isEmpty()) {
+//                                return Pair.of(page, transactions);
+//                            }
+//                            String lastId = transactions.getLast().getId().id().toString();
+//
+//                            Specification<TransactionEntity> nextFilters = filters
+//                                    .and((root, query, cb) ->
+//                                            cb.greaterThan(root.get("id"), lastId));
+//
+//                            Pageable transactionsPageLeft = transactionsPage.getLeft();
+//                            PageRequest nextPageRequest = PageRequest.of(transactionsPageLeft.getPageNumber() + 1,
+//                                    100, Sort.by("id")
+//                            );
+//                            return Pair.of(nextPageRequest, findAllByFilters(nextFilters,
+//                                    nextPageRequest));
+//                        })
+//                .map(Pair::getRight)
+//                .flatMap(List::stream);
+    }
+
+    @Override
+    public Stream<Transaction> findAllIncludedCategorizedByUserAndYear(String userOwner, int year) {
+        LocalDate fromDate = LocalDate.of(year, 1, 1);
+        LocalDate toDate = LocalDate.of(year, 12, 31);
+        return findAllIncludedCategorizedByUserAndYear(userOwner, fromDate, toDate);
 
     }
 
@@ -128,6 +229,16 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 ).stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<Pair<TransactionId, Float>> findSimilarTransactionIds(String userOwner, TransactionId uniqueId, String description) {
+        return transactionSpringDataRepository.findSimilarTransactionsRaw(userOwner, description, List.of(uniqueId.getId().toString()))
+                .stream()
+                .map(row -> Pair.of(TransactionId.fromString((String) row[0]), (Float) row[1]))
+                .toList();
+
+
     }
 
     private Transaction toDomain(TransactionEntity transactionEntity) {
@@ -142,7 +253,8 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 transactionEntity.getUserOwner(),
                 transactionEntity.getCategoryId(),
                 transactionEntity.getInsertedAt(),
-                transactionEntity.getUpdatedAt()
+                transactionEntity.getUpdatedAt(),
+                new TransactionImportId(transactionEntity.getTransactionImportId())
         );
     }
 
@@ -158,7 +270,8 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 transaction.getUserOwner(),
                 Optional.ofNullable(transaction.getCategoryId()).map(CategoryId::id).orElse(null),
                 transaction.getInsertedAt(),
-                transaction.getUpdatedAt()
+                transaction.getUpdatedAt(),
+                transaction.getTransactionImportId().id()
         );
     }
 }

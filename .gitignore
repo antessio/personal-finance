@@ -81,3 +81,4 @@ frontend/.env.production.local
 */.DS_Store
 */Thumbs.db
 */.turbo/
+.DS_Store

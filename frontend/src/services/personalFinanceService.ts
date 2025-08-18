@@ -1,26 +1,42 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
 
 export interface PersonalFinanceService {
+
+  
+  getCategorySpending(year: string): Promise<CategorySpending[]>;
+  getMonthlyData(year: string): Promise<MonthlyData[]>;
+  getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]>;
+
   // Transaction methods
+  getTotalIncome(year: number): Promise<number>;
+  getTotalExpenses(year: number): Promise<number>;
+  getTotalSavings(year: number): Promise<number>;
   getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>>;
   uploadTransactions(file: File): Promise<void>;
   bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void>;
   categorizeTransactions(transactionIds: string[]): Promise<void>;
 
   // Category methods
-  getCategories(): Promise<Category[]>;
+  
+  getCategories(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<Category>>;
+  getAllCategories(): Promise<Category[]>;
   createCategory(category: Omit<Category, 'id'>): Promise<Category>;
   updateCategory(id: string, category: Partial<Category>): Promise<Category>;
   deleteCategory(id: string): Promise<void>;
 
   // Budget methods
+  getAllBudgets(): Promise<Budget[]>;
   getBudgets(year: string): Promise<Budget[]>;
+  bulkCreateBudgets(budgets: Omit<Budget, 'id'>[]): Promise<Budget[]>;
   createBudget(budget: Omit<Budget, 'id'>): Promise<Budget>;
   updateBudget(id: string, budget: Partial<Budget>): Promise<Budget>;
   deleteBudget(id: string): Promise<void>;
+  getIncomeBudget(year: number): Promise<number>;
+  getExpenseBudget(year: number): Promise<number>;
+  getSavingsBudget(year: number): Promise<number>;
 
   // Upload methods
-  getUploads(): Promise<UploadFile[]>;
+  getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>>;
   uploadFile(file: { file: File; account: string }): Promise<void>;
   processUpload(id: string): Promise<void>;
   deleteUpload(id: string): Promise<void>;
@@ -34,4 +50,6 @@ export interface PersonalFinanceService {
   // Token management (optional for implementations)
   setToken?(token: string): void;
   isAuthenticated?(): boolean;
+
+  getAccounts(): Promise<Account[]>;
 } 

@@ -20,7 +20,7 @@ export interface Budget {
   id: string;
   categoryId: string;
   amount: number;
-  period: 'monthly' | 'annual';
+  period: 'monthly' | 'annual' | 'default';
   month?: string; // Format: 'YYYY-MM', required only for monthly budgets
   year: string; // Format: 'YYYY'
 }
@@ -54,3 +54,31 @@ export interface UploadFile {
   processedAt?: string;
   errorMessage?: string;
 } 
+
+export interface Account{
+  id: string;
+  name: string;
+}
+
+
+export interface CategorySpending{
+  categoryName: string;
+  totalSpent: number;
+  budgetedAmount?: number;
+  percentage: number;
+}
+
+export interface MonthlyData {
+  year: string;
+  month: string;
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+}
+
+export interface MacroCategoryMonthlyData{
+  macroCategory: string;
+  year: number;
+  month: number;
+  total: number;
+}

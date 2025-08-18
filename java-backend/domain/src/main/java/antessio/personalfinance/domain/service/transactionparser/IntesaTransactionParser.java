@@ -3,8 +3,10 @@ package antessio.personalfinance.domain.service.transactionparser;
 import java.util.List;
 
 import antessio.personalfinance.domain.dto.CreateTransactionDTO;
+import antessio.personalfinance.domain.model.AccountType;
 import antessio.personalfinance.domain.model.TransactionImport;
 
+import antessio.personalfinance.domain.model.TransactionImportId;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -23,19 +25,19 @@ public class IntesaTransactionParser implements TransactionParser {
 
     @Override
     public boolean canParse(TransactionImport transactionImport) {
-        return transactionImport.getSourceType().equalsIgnoreCase("intesa");
+        return transactionImport.getSourceType().equalsIgnoreCase(AccountType.INTESA.name());
     }
 
     @Override
     public List<CreateTransactionDTO> parse(TransactionImport transactionImport) {
         try {
-            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner());
+            return processAccount(transactionImport.getFilePath(), transactionImport.getUserOwner(), transactionImport.getId());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner) throws IOException {
+    private List<CreateTransactionDTO> processAccount(String filePath, String userOwner, TransactionImportId id) throws IOException {
         List<CreateTransactionDTO> transactions = new ArrayList<>();
         try (
                 FileInputStream fis = new FileInputStream(filePath);
@@ -47,7 +49,7 @@ public class IntesaTransactionParser implements TransactionParser {
             for (int i = SKIP_ROWS; i <= rowCount; i++) {
                 Row row = sheet.getRow(i);
                 if (row != null && !skipRow(row)) {
-                    parseRow(row, userOwner)
+                    parseRow(row, userOwner, id)
                             .ifPresent(transactions::add);
                 }
             }
@@ -69,7 +71,7 @@ public class IntesaTransactionParser implements TransactionParser {
         return allEmpty;
     }
 
-    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner) {
+    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner, TransactionImportId id) {
         try {
 
             LocalDate transactionDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
@@ -84,7 +86,8 @@ public class IntesaTransactionParser implements TransactionParser {
                     transactionDate,
                     BigDecimal.valueOf(amount),
                     description,
-                    "intesa"
+                    "intesa",
+                    id
             ));
         } catch (Exception e) {
             return Optional.empty();

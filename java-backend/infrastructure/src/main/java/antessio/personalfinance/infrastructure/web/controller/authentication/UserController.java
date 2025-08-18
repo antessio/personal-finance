@@ -23,15 +23,17 @@ import antessio.personalfinance.infrastructure.web.controller.authentication.dto
 public class UserController {
 
     private final AuthenticationService authenticationService;
+    private final SecurityUtils securityUtils;
 
-    public UserController(AuthenticationService authenticationService) {
+    public UserController(AuthenticationService authenticationService, SecurityUtils securityUtils) {
         this.authenticationService = authenticationService;
+        this.securityUtils = securityUtils;
     }
 
 
     @GetMapping("/api/users/me")
     public ResponseEntity<UserDTO> getCurrentUser() {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

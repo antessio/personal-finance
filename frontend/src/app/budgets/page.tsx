@@ -22,17 +22,19 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Card,
+  CardContent,
 } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Budget, Category } from '../../types';
 import Layout from '../../components/Layout';
-import { mockCategories } from '../../services/mockData';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 
 export default function BudgetsPage() {
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [open, setOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [formData, setFormData] = useState({
     categoryId: '',
@@ -40,6 +42,7 @@ export default function BudgetsPage() {
     period: 'monthly',
     month: '',
   });
+  const [bulkBudgets, setBulkBudgets] = useState<Record<string, string>>({});
 
   const queryClient = useQueryClient();
 
@@ -50,7 +53,7 @@ export default function BudgetsPage() {
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => service.getCategories(),
+    queryFn: () => service.getAllCategories(),
   });
 
   const createMutation = useMutation({
@@ -74,6 +77,14 @@ export default function BudgetsPage() {
     mutationFn: (id: string) => service.deleteBudget(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    },
+  });
+
+  const bulkCreateMutation = useMutation({
+    mutationFn: (budgets: Omit<Budget, 'id'>[]) => service.bulkCreateBudgets(budgets),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      handleBulkClose();
     },
   });
 
@@ -109,6 +120,16 @@ export default function BudgetsPage() {
     });
   };
 
+  const handleBulkOpen = () => {
+    setBulkBudgets({});
+    setBulkOpen(true);
+  };
+
+  const handleBulkClose = () => {
+    setBulkOpen(false);
+    setBulkBudgets({});
+  };
+
   const handleSubmit = () => {
     const budgetData = {
       categoryId: formData.categoryId,
@@ -131,6 +152,27 @@ export default function BudgetsPage() {
     }
   };
 
+  const handleBulkSubmit = () => {
+    const budgetsToCreate = Object.entries(bulkBudgets)
+      .filter(([, amount]) => amount && parseFloat(amount) > 0)
+      .map(([categoryId, amount]) => ({
+        categoryId,
+        amount: parseFloat(amount),
+        period: 'monthly' as const,
+        year: selectedYear,
+      }));
+    if (budgetsToCreate.length > 0) {
+      bulkCreateMutation.mutate(budgetsToCreate);
+    }
+  };
+
+  const handleBulkAmountChange = (categoryId: string, amount: string) => {
+    setBulkBudgets(prev => ({
+      ...prev,
+      [categoryId]: amount,
+    }));
+  };
+
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     return category ? category.name : categoryId;
@@ -143,15 +185,26 @@ export default function BudgetsPage() {
           <Typography variant="h4" fontWeight={800} color="primary.main" letterSpacing={1}>
             Budgets
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpen()}
-            sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1 }}
-          >
-            Add Budget
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<PlaylistAddIcon />}
+              onClick={handleBulkOpen}
+              sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1 }}
+            >
+              Bulk Create
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpen()}
+              sx={{ borderRadius: 2, fontWeight: 700, px: 3, py: 1 }}
+            >
+              Add Budget
+            </Button>
+          </Box>
         </Box>
       </Box>
 
@@ -271,6 +324,53 @@ export default function BudgetsPage() {
             disabled={!formData.categoryId || !formData.amount || (formData.period === 'monthly' && !formData.month)}
           >
             {editingBudget ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Create Dialog */}
+      <Dialog open={bulkOpen} onClose={handleBulkClose} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Bulk Create Budgets
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Set budget amounts for categories. Only categories with amounts will be created.
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 3 }}>
+              {categories.map((category: Category) => (
+                <Card variant="outlined" key={category.id} sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Typography variant="h6" component="div" sx={{ mb: 2, fontSize: '1rem' }}>
+                      {category.name}
+                    </Typography>
+                    <TextField
+                      label="Amount"
+                      type="number"
+                      value={bulkBudgets[category.id] || ''}
+                      onChange={(e) => handleBulkAmountChange(category.id, e.target.value)}
+                      fullWidth
+                      size="small"
+                      InputProps={{
+                        startAdornment: <Typography sx={{ mr: 1 }}>€</Typography>,
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleBulkClose}>Cancel</Button>
+          <Button
+            onClick={handleBulkSubmit}
+            variant="contained"
+            color="primary"
+            disabled={Object.values(bulkBudgets).every(amount => !amount || parseFloat(amount) <= 0)}
+          >
+            Create Budgets
           </Button>
         </DialogActions>
       </Dialog>

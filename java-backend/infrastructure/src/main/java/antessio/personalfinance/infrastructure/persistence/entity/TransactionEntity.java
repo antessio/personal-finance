@@ -1,13 +1,9 @@
 package antessio.personalfinance.infrastructure.persistence.entity;
 
 import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.Transaction;
 import antessio.personalfinance.domain.model.TransactionId;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,6 +15,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder(toBuilder = true)
 public class TransactionEntity {
     @Id
     @Column(name = "id")
@@ -53,6 +50,9 @@ public class TransactionEntity {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "transaction_import_id")
+    private Long transactionImportId;
 
     public TransactionId getTransactionId() {
         return TransactionId.fromString(id);

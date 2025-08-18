@@ -30,12 +30,12 @@ class WidibaTransactionParserTest {
         // Assert
         LocalDate expectedDate = LocalDate.of(2023, 8, 8);
         List<CreateTransactionDTO> expectedTransactions = Arrays.asList(
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-90.0"), "Test 1 Pagamento Circuito Internazionale", "widiba"),
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-104.0"), "Test 2 Pagamento Circuito Internazionale", "widiba"),
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("300.0"), "Test 3 Accredito Stipendio", "widiba"),
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("401.0"), "Test 4 Addebito Diretto Sdd", "widiba"),
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("200.0"), "Test 5 Addebito Diretto Sdd", "widiba"),
-                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-48.26"), "Test 6 Addebito Diretto Sdd", "widiba")
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-90.0"), "Test 1 Pagamento Circuito Internazionale", "widiba", transactionImport.getId()),
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-104.0"), "Test 2 Pagamento Circuito Internazionale", "widiba", transactionImport.getId()),
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("300.0"), "Test 3 Accredito Stipendio", "widiba", transactionImport.getId()),
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("401.0"), "Test 4 Addebito Diretto Sdd", "widiba", transactionImport.getId()),
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("200.0"), "Test 5 Addebito Diretto Sdd", "widiba", transactionImport.getId()),
+                new CreateTransactionDTO("testUser", expectedDate, new BigDecimal("-48.26"), "Test 6 Addebito Diretto Sdd", "widiba", transactionImport.getId())
         );
         assertTransactionsEquals(transactions, expectedTransactions);
     }

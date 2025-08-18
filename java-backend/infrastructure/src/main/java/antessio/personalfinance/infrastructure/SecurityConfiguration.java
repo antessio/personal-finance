@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -33,25 +34,21 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
+    @Value("${security.authentication.enabled:true}")
+    private boolean authenticationEnabled;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource(@Value("${security.allowedOrigins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Set allowed origins
+        // Gestione CORS: consenti tutti i metodi e headers, e imposta allowed origins
         configuration.setAllowedOrigins(Optional.ofNullable(allowedOrigins)
-                                                .filter(Predicate.not(String::isBlank))
-                                                .map(s -> s.split(","))
-                                                .map(List::of)
-                                                .orElseGet(List::of));
-
-        // Allow credentials if needed
-        configuration.setAllowCredentials(true);
-
-        // Set allowed methods (e.g., GET, POST, etc.)
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Set allowed headers
+                .filter(Predicate.not(String::isBlank))
+                .map(s -> Arrays.asList(s.split(",")))
+                .orElse(List.of("http://localhost:3000")));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -65,21 +62,25 @@ public class SecurityConfiguration {
             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .cors(withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/public/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/me").authenticated()
-                        .requestMatchers("/api/categories/**").authenticated()
-                        .requestMatchers("/api/transactions/**").authenticated()
-                        .requestMatchers("/api/transaction-imports/**").authenticated()
-                        .requestMatchers("/dashboard/**").authenticated()
-                        .anyRequest().denyAll())
+                .csrf(AbstractHttpConfigurer::disable);
+
+        if (authenticationEnabled) {
+            http.authorizeHttpRequests(authz -> authz
+                    .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/public/**").permitAll()
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/users/me").authenticated()
+                    .requestMatchers("/api/categories/**").authenticated()
+                    .requestMatchers("/api/transactions/**").authenticated()
+                    .requestMatchers("/api/transaction-imports/**").authenticated()
+                    .requestMatchers("/dashboard/**").authenticated()
+                    .anyRequest().denyAll())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
+        } else {
+            http.authorizeHttpRequests(authz -> authz.anyRequest().permitAll());
+        }
         return http.build();
     }
 

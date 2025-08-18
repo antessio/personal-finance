@@ -24,18 +24,20 @@ import java.util.Optional;
 public class TransactionImportController {
 
     private final TransactionImportService transactionImportService;
+    private final SecurityUtils securityUtils;
     private @Value("${personal-finance.file.path}") String filePath;
 
-    public TransactionImportController(TransactionImportService transactionImportService) {
+    public TransactionImportController(TransactionImportService transactionImportService, SecurityUtils securityUtils) {
         this.transactionImportService = transactionImportService;
+        this.securityUtils = securityUtils;
     }
 
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionImportDTO>> getTransactionImports(
-            @RequestParam("limit") Integer limit,
-            @RequestParam("cursor") Long cursor
+            @RequestParam(value = "limit", defaultValue = "20") Integer limit,
+            @RequestParam(value = "cursor", required = false) Long cursor
     ) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -53,7 +55,7 @@ public class TransactionImportController {
     public ResponseEntity<TransactionImportDTO> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam String sourceType) {
-        User user = SecurityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
