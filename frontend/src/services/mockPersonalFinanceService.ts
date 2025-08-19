@@ -89,18 +89,21 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
   }
 
   // Category spending methods
-  async getCategorySpending(year: string): Promise<CategorySpending[]> {
+  async getCategorySpending(year: number, month?: number): Promise<CategorySpending[]> {
     await simulateDelay();
+    if(month){
+      return this.getCategorySpendingByMonth(year, month);
+    }
     const categorySpending: CategorySpending[] = this.categories.map(category => {
       const totalSpent = this.transactions
-        .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year) && tx.included)
+        .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year.toString()) && tx.included)
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
       return {
         categoryName: category.name,
         totalSpent,
         budgetedAmount: this.budgets
-          .find(budget => budget.categoryId === category.id && budget.year === year)?.amount || 0,
-        percentage: totalSpent / (this.budgets.find(budget => budget.categoryId === category.id && budget.year === year)?.amount || 1) * 100,
+          .find(budget => budget.categoryId === category.id && budget.year === year.toString())?.amount || 0,
+        percentage: totalSpent / (this.budgets.find(budget => budget.categoryId === category.id && budget.year === year.toString())?.amount || 1) * 100,
       };
     });
     return categorySpending;
@@ -159,6 +162,92 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return this.transactions
       .filter(tx => tx.included && tx.categoryId && savingsCategoryIds.includes(tx.categoryId))
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }
+
+  async getTotalIncomeByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const incomeCategoryIds = this.categories
+      .filter(c => c.macroCategory === 'INCOME')
+      .map(c => c.id);
+    return this.transactions
+      .filter(tx => {
+        const transactionDate = new Date(tx.date);
+        const transactionMonth = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
+        return tx.included && 
+               transactionDate.getFullYear() === year && 
+               transactionMonth === month && 
+               tx.categoryId && 
+               incomeCategoryIds.includes(tx.categoryId);
+      })
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  }
+
+  async getTotalExpensesByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const expenseCategoryIds = this.categories
+      .filter(c => c.macroCategory === 'EXPENSE')
+      .map(c => c.id);
+    return this.transactions
+      .filter(tx => {
+        const transactionDate = new Date(tx.date);
+        const transactionMonth = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
+        return tx.included && 
+               transactionDate.getFullYear() === year && 
+               transactionMonth === month && 
+               tx.categoryId && 
+               expenseCategoryIds.includes(tx.categoryId);
+      })
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }
+
+  async getTotalSavingsByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const savingsCategoryIds = this.categories
+      .filter(c => c.macroCategory === 'SAVINGS')
+      .map(c => c.id);
+    return this.transactions
+      .filter(tx => {
+        const transactionDate = new Date(tx.date);
+        const transactionMonth = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
+        return tx.included && 
+               transactionDate.getFullYear() === year && 
+               transactionMonth === month && 
+               tx.categoryId && 
+               savingsCategoryIds.includes(tx.categoryId);
+      })
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }
+
+  async getCategorySpendingByMonth(year: number, month: number): Promise<CategorySpending[]> {
+    await simulateDelay();
+    const monthlyTransactions = this.transactions.filter(tx => {
+      const transactionDate = new Date(tx.date);
+      const transactionMonth = transactionDate.getMonth();
+      return tx.included && 
+             transactionDate.getFullYear() === year && 
+             transactionMonth === month;
+    });
+
+    const categorySpending: { [key: string]: { totalSpent: number; budgetedAmount: number } } = {};
+    
+    monthlyTransactions.forEach(transaction => {
+      if (transaction.categoryId) {
+        const category = this.categories.find(c => c.id === transaction.categoryId);
+        if (category) {
+          if (!categorySpending[category.name]) {
+            categorySpending[category.name] = { totalSpent: 0, budgetedAmount: 1000 };
+          }
+          categorySpending[category.name].totalSpent += Math.abs(transaction.amount);
+        }
+      }
+    });
+
+    return Object.entries(categorySpending).map(([categoryName, data]) => ({
+      categoryName,
+      totalSpent: data.totalSpent,
+      budgetedAmount: data.budgetedAmount,
+      percentage: (data.totalSpent / data.budgetedAmount) * 100,
+    }));
   }
 
   // Transaction methods
@@ -371,6 +460,58 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     await simulateDelay();
     const savingsBudgets = this.budgets.filter(budget => budget.categoryId === 'savings' && budget.year === year + '');
     return savingsBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+  }
+
+  async getIncomeBudgetByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const monthlyBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'income' && 
+      budget.year === year.toString() &&
+      (budget.period === 'monthly' && budget.month === month)
+    );
+    const annualBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'income' && 
+      budget.year === year.toString() &&
+      budget.period === 'annual'
+    );
+    // Monthly budgets take precedence, otherwise use annual budget divided by 12
+    const monthlyTotal = monthlyBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+    const annualTotal = annualBudgets.reduce((sum, budget) => sum + budget.amount, 0) / 12;
+    return monthlyTotal || annualTotal;
+  }
+
+  async getExpenseBudgetByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const monthlyBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'expense' && 
+      budget.year === year.toString() &&
+      (budget.period === 'monthly' && budget.month === month)
+    );
+    const annualBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'expense' && 
+      budget.year === year.toString() &&
+      budget.period === 'annual'
+    );
+    const monthlyTotal = monthlyBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+    const annualTotal = annualBudgets.reduce((sum, budget) => sum + budget.amount, 0) / 12;
+    return monthlyTotal || annualTotal;
+  }
+
+  async getSavingsBudgetByMonth(year: number, month: string): Promise<number> {
+    await simulateDelay();
+    const monthlyBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'savings' && 
+      budget.year === year.toString() &&
+      (budget.period === 'monthly' && budget.month === month)
+    );
+    const annualBudgets = this.budgets.filter(budget => 
+      budget.categoryId === 'savings' && 
+      budget.year === year.toString() &&
+      budget.period === 'annual'
+    );
+    const monthlyTotal = monthlyBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+    const annualTotal = annualBudgets.reduce((sum, budget) => sum + budget.amount, 0) / 12;
+    return monthlyTotal || annualTotal;
   }
 
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {

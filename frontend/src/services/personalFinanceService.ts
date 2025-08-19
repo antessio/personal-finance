@@ -3,14 +3,14 @@ import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFil
 export interface PersonalFinanceService {
 
   
-  getCategorySpending(year: string): Promise<CategorySpending[]>;
+  getCategorySpending(year: number): Promise<CategorySpending[]>;
   getMonthlyData(year: string): Promise<MonthlyData[]>;
   getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]>;
 
   // Transaction methods
-  getTotalIncome(year: number): Promise<number>;
-  getTotalExpenses(year: number): Promise<number>;
-  getTotalSavings(year: number): Promise<number>;
+  getTotalIncome(year: number, month: number | undefined): Promise<number>;
+  getTotalExpenses(year: number, month: number | undefined): Promise<number>;
+  getTotalSavings(year: number, month: number | undefined): Promise<number>;
   getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>>;
   uploadTransactions(file: File): Promise<void>;
   bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void>;
@@ -31,9 +31,9 @@ export interface PersonalFinanceService {
   createBudget(budget: Omit<Budget, 'id'>): Promise<Budget>;
   updateBudget(id: string, budget: Partial<Budget>): Promise<Budget>;
   deleteBudget(id: string): Promise<void>;
-  getIncomeBudget(year: number): Promise<number>;
-  getExpenseBudget(year: number): Promise<number>;
-  getSavingsBudget(year: number): Promise<number>;
+  getIncomeBudget(year: number, month: number | undefined): Promise<number>;
+  getExpenseBudget(year: number, month: number | undefined): Promise<number>;
+  getSavingsBudget(year: number, month: number | undefined): Promise<number>;
 
   // Upload methods
   getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>>;

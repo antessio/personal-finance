@@ -10,7 +10,7 @@ import antessio.personalfinance.domain.model.CategoryId;
 import antessio.personalfinance.domain.ports.BudgetRepository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.math.RoundingMode;
 import java.time.YearMonth;
 import java.util.*;
 import java.util.function.Predicate;
@@ -60,7 +60,43 @@ public class BudgetService {
 
     public Map<CategoryId, BigDecimal> getBudgetsTotals(String owner, int year) {
         return getCategoryIdBigDecimalMap(owner, year, __ -> true);
+    }
 
+    public Map<CategoryId, BigDecimal> getBudgetsTotals(String owner, int year, Integer month) {
+        if (month == null) {
+            return getBudgetsTotals(owner, year);
+        } else {
+            return getCategoryIdBigDecimalMap(owner, year, month, __ -> true);
+        }
+    }
+
+    private Map<CategoryId, BigDecimal> getCategoryIdBigDecimalMap(String owner, int year, Integer month, Predicate<CategoryDTO> categoryPredicate) {
+        Map<CategoryId, Map<YearMonth, Budget>> monthlyBudgets = budgetRepository.getMonthlyBudgets(owner, year);
+        Map<CategoryId, Budget> annualBudgets = budgetRepository.getAnnualBudgets(owner, year);
+        Map<CategoryId, Budget> defaultBudgets = budgetRepository.getDefaultBudget(owner);
+
+        return categoryService.getAllCategories(owner)
+                .filter(categoryPredicate)
+                .map(CategoryDTO::getId)
+                .collect(Collectors.toMap(
+                        categoryId -> categoryId,
+                        categoryId -> Optional.ofNullable(monthlyBudgets.get(categoryId))
+                                .map(monthMap -> monthMap.values().stream()
+                                        .map(Budget::getAmount)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                                .orElseGet(() -> {
+                                            BigDecimal totalBudget = Optional.ofNullable(annualBudgets.get(categoryId))
+                                                    .map(Budget::getAmount)
+                                                    .orElseGet(() -> Optional.ofNullable(defaultBudgets.get(categoryId))
+                                                            .map(Budget::getAmount)
+                                                            .orElse(BigDecimal.ZERO));
+                                            if (month != null) {
+                                                return totalBudget.divide(BigDecimal.valueOf(12L), RoundingMode.HALF_UP);
+                                            } else {
+                                                return totalBudget;
+                                            }
+                                        }
+                                )));
     }
 
     private Map<CategoryId, BigDecimal> getCategoryIdBigDecimalMap(String owner, int year, Predicate<CategoryDTO> categoryPredicate) {
@@ -161,39 +197,25 @@ public class BudgetService {
                 .mapToObj(month -> YearMonth.of(year, month + 1));
     }
 
-    public BigDecimal getTotalIncome(String username, LocalDate fromDate, LocalDate toDate) {
-        if (fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException("From date cannot be after to date");
-        }
-        if (fromDate.getYear() != toDate.getYear()) {
-            throw new IllegalArgumentException("From date and to date must be in the same year");
-        }
-        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isIncome())
+    public BigDecimal getTotalIncome(String username, int year, Integer month) {
+
+        return getCategoryIdBigDecimalMap(username, year, month, category -> category.getMacroCategory().isIncome())
                 .values()
                 .stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal getTotalExpense(String username, LocalDate fromDate, LocalDate toDate) {
-        if (fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException("From date cannot be after to date");
-        }
-        if (fromDate.getYear() != toDate.getYear()) {
-            throw new IllegalArgumentException("From date and to date must be in the same year");
-        }
-        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isExpense())
+    public BigDecimal getTotalExpense(String username, int year, Integer month) {
+
+        return getCategoryIdBigDecimalMap(username, year, month, category -> category.getMacroCategory().isExpense())
                 .values()
                 .stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-    public BigDecimal getTotalSavings(String username, LocalDate fromDate, LocalDate toDate) {
-        if (fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException("From date cannot be after to date");
-        }
-        if (fromDate.getYear() != toDate.getYear()) {
-            throw new IllegalArgumentException("From date and to date must be in the same year");
-        }
-        return getCategoryIdBigDecimalMap(username, fromDate.getYear(), category -> category.getMacroCategory().isSavings())
+
+    public BigDecimal getTotalSavings(String username, int year, Integer month) {
+
+        return getCategoryIdBigDecimalMap(username, year, month, category -> category.getMacroCategory().isSavings())
                 .values()
                 .stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

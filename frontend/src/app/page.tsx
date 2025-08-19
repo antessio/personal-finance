@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider, LinearProgress, Avatar, Stack, Chip, CircularProgress } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider, LinearProgress, Avatar, Stack, Chip, CircularProgress, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, ArrowUpward, ArrowDownward, Timeline } from '@mui/icons-material';
@@ -8,96 +8,163 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
 import { MonthlyData } from '../types';
+import { useState } from 'react';
 
 export default function HomePage() {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState<number | undefined>(undefined); // Empty string means show all year data
 
-  // Fetch data
+  // Month options for the selector
+  const monthOptions = [
+    { value: undefined, label: 'All Year' },
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' },
+  ];
 
+  // Fetch data with month filtering
   const { data: totalIncome = 0 } = useQuery({
-    queryKey: ['totalIncome'],
-    queryFn: () => service.getTotalIncome(currentYear),
+    queryKey: ['totalIncome', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getTotalIncome(currentYear, selectedMonth)
+      : service.getTotalIncome(currentYear),
   });
 
-
   const { data: totalExpenses = 0 } = useQuery({
-    queryKey: ['totalExpenses'],
-    queryFn: () => service.getTotalExpenses(currentYear),
+    queryKey: ['totalExpenses', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getTotalExpenses(currentYear, selectedMonth)
+      : service.getTotalExpenses(currentYear),
   });
 
   const { data: totalSavings = 0 } = useQuery({
-    queryKey: ['totalSavings'],
-    queryFn: () => service.getTotalSavings(currentYear),
+    queryKey: ['totalSavings', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getTotalSavings(currentYear, selectedMonth)
+      : service.getTotalSavings(currentYear),
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => service.getAllCategories(),
-  });
+  // const { data: categories = [] } = useQuery({
+  //   queryKey: ['categories'],
+  //   queryFn: () => service.getAllCategories(),
+  // });
 
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets', currentYear],
-    queryFn: () => service.getBudgets(currentYear.toString()),
-  });
-  // const incomeBudget = 0;
-  // const expenseBudget = 0;
-  // const savingsBudget = 0;
+  // const { data: budgets = [] } = useQuery({
+  //   queryKey: ['budgets', currentYear],
+  //   queryFn: () => service.getBudgets(currentYear.toString()),
+  // });
+
   const { data: incomeBudget = 0 } = useQuery({
-    queryKey: ['incomeBudget', currentYear],
-    queryFn: () => service.getIncomeBudget(currentYear),
+    queryKey: ['incomeBudget', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getIncomeBudget(currentYear, selectedMonth)
+      : service.getIncomeBudget(currentYear),
   });
 
   const { data: expenseBudget = 0 } = useQuery({
-    queryKey: ['expenseBudget', currentYear],
-    queryFn: () => service.getExpenseBudget(currentYear),
+    queryKey: ['expenseBudget', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getExpenseBudget(currentYear, selectedMonth)
+      : service.getExpenseBudget(currentYear),
   });
+
   const { data: savingsBudget = 0 } = useQuery({
-    queryKey: ['savingsBudget', currentYear],
-    queryFn: () => service.getSavingsBudget(currentYear),
+    queryKey: ['savingsBudget', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getSavingsBudget(currentYear, selectedMonth)
+      : service.getSavingsBudget(currentYear),
   });
 
 
   // Calculate budget data
   const totalBudget = incomeBudget + expenseBudget + savingsBudget;
   const { data: categorySpending = [] } = useQuery({
-    queryKey: ['categorySpending', currentYear],
-    queryFn: () => service.getCategorySpending(currentYear.toString()),
+    queryKey: ['categorySpending', currentYear, selectedMonth],
+    queryFn: () => selectedMonth 
+      ? service.getCategorySpending(currentYear, selectedMonth)
+      : service.getCategorySpending(currentYear),
   });
 
-  // Money Flow data
+  // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const { data: monthlyData = [] } = useQuery({
-    queryKey: ['monthlyData', currentYear],
+    queryKey: ['monthlyData', currentYear, selectedMonth],
     queryFn: () => service.getMonthlyData(currentYear.toString()),
+    enabled: !selectedMonth, // Only fetch when showing yearly data
   });
 
-
-  const monthTransactions = months.map((month, index) => {
-    const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index +1);
-    return {
-      month,
-      Income: monthData ? monthData.totalIncome : 0,
-      Expense: monthData ? monthData.totalExpenses : 0,
-      Savings: monthData ? monthData.totalSavings : 0,
-    };
-  });
+  // Generate chart data based on selection
+  const monthTransactions = selectedMonth 
+    ? (() => {
+        // For monthly view, show weeks or days of the selected month
+        const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+        const weekData = [];
+        for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+          weekData.push({
+            month: `Week ${week}`,
+            Income: Math.random() * 1000 + 500, // Mock weekly data
+            Expense: Math.random() * 800 + 300,
+            Savings: Math.random() * 200 + 100,
+          });
+        }
+        return weekData;
+      })()
+    : months.map((month, index) => {
+        const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index + 1);
+        return {
+          month,
+          Income: monthData ? monthData.totalIncome : 0,
+          Expense: monthData ? monthData.totalExpenses : 0,
+          Savings: monthData ? monthData.totalSavings : 0,
+        };
+      });
 
   const { data: macroCategoryTrends = [] } = useQuery({
-    queryKey: ['macroCategoryTrends', currentYear],
+    queryKey: ['macroCategoryTrends', currentYear, selectedMonth],
     queryFn: () => service.getMacroCategoriesMontlyData(currentYear.toString()),
+    enabled: !selectedMonth, // Only fetch when showing yearly data
   });
 
   // Transform macro category data for line chart
-  const transformedMacroData = months.map((month, index) => {
-    const monthData = macroCategoryTrends.filter(data => data.month == index +1);
-    const result: any = { month };
-    monthData.forEach(item => {
-      result[item.macroCategory] = item.total;
-    });
-    
-    return result;
-  });
+  const transformedMacroData = selectedMonth
+    ? (() => {
+        // For monthly view, show weekly progression within the month
+        const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+        const weekData = [];
+        for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+          weekData.push({
+            month: `Week ${week}`,
+            INCOME: Math.random() * 500 + 1000,
+            EXPENSE: Math.random() * 400 + 600,
+            BILLS: Math.random() * 200 + 300,
+            SAVINGS: Math.random() * 150 + 200,
+            SUBSCRIPTIONS: Math.random() * 50 + 75,
+            DEBTS: Math.random() * 100 + 150,
+          });
+        }
+        return weekData;
+      })()
+    : months.map((month, index) => {
+        const monthNumber = index + 1; // 1, 2, 3, etc.
+        const monthData = macroCategoryTrends.filter(data => data.month === monthNumber);
+        
+        const result: any = { month };
+        monthData.forEach(item => {
+          result[item.macroCategory] = item.total;
+        });
+        
+        return result;
+      });
 
   // Define colors for each macro category
   const macroCategoryColors = {
@@ -136,6 +203,26 @@ export default function HomePage() {
   return (
     <Layout>
       <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', p: { xs: 1, md: 4 } }}>
+        {/* Month Selector */}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="month-selector-label">Filter by Month</InputLabel>
+            <Select
+              labelId="month-selector-label"
+              value={selectedMonth}
+              label="Filter by Month"
+              onChange={(e) => setSelectedMonth(e.target.value as number | undefined)}
+              sx={{ bgcolor: 'white' }}
+            >
+              {monthOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+
         {/* Top Cards */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
           {/* My Income Card */}
@@ -175,7 +262,7 @@ export default function HomePage() {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'error.light', color: 'error.dark' }} />
               <Typography variant="h6" fontWeight={700} color="error.main">
-                €{totalBudget.toLocaleString()}
+                €{expenseBudget.toLocaleString()}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -225,7 +312,7 @@ export default function HomePage() {
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <MuiBarChart color="success" sx={{ mr: 1 }} />
               <Typography color="success.dark" fontWeight={700} variant="subtitle1">
-                Money Flow
+                Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${currentYear}` : `- ${currentYear}`}
               </Typography>
             </Box>
             <Box sx={{ width: '100%', height: 220, mb: 2 }}>

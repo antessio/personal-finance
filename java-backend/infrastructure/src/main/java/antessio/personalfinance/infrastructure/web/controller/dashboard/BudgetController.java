@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -31,14 +30,18 @@ public class BudgetController {
 
     @GetMapping
     public ResponseEntity<List<BudgetDTO>> getBudgets(
-            @RequestParam int year
+            @RequestParam int year,
+            @RequestParam(required = false) Integer month
     ) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return ResponseEntity.ok(budgetService.getAllBudgets(user.getUsername(), year));
+        return ResponseEntity.ok(Optional.ofNullable(month)
+                .map(m -> YearMonth.of(year, m))
+                .map(yearMonth -> budgetService.getAllBudgets(user.getUsername(), yearMonth))
+                .orElseGet(() -> budgetService.getAllBudgets(user.getUsername(), year)));
     }
 
     @PostMapping("/annual")
@@ -98,40 +101,42 @@ public class BudgetController {
 
     @GetMapping("/total-income")
     public ResponseEntity<BigDecimal> getTotalIncomes(
-            @RequestParam LocalDate fromDate,
-            @RequestParam LocalDate toDate
-            ) {
+            @RequestParam int year,
+            @RequestParam(required = false) Integer month
+    ) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        BigDecimal totalIncome = budgetService.getTotalIncome(user.getUsername(), fromDate, toDate);
+        BigDecimal totalIncome = budgetService.getTotalIncome(user.getUsername(), year, month);
         return ResponseEntity.ok(totalIncome);
     }
+
     @GetMapping("/total-expenses")
     public ResponseEntity<BigDecimal> getTotalExpenses(
-            @RequestParam LocalDate fromDate,
-            @RequestParam LocalDate toDate
-            ) {
+            @RequestParam int year,
+            @RequestParam(required = false) Integer month
+    ) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        BigDecimal totalIncome = budgetService.getTotalExpense(user.getUsername(), fromDate, toDate);
+        BigDecimal totalIncome = budgetService.getTotalExpense(user.getUsername(), year, month);
         return ResponseEntity.ok(totalIncome);
     }
+
     @GetMapping("/total-savings")
     public ResponseEntity<BigDecimal> getTotalSavings(
-            @RequestParam LocalDate fromDate,
-            @RequestParam LocalDate toDate
-            ) {
+            @RequestParam int year,
+            @RequestParam(required = false) Integer month
+    ) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        BigDecimal totalIncome = budgetService.getTotalSavings(user.getUsername(), fromDate, toDate);
+        BigDecimal totalIncome = budgetService.getTotalSavings(user.getUsername(), year, month);
         return ResponseEntity.ok(totalIncome);
     }
 }

@@ -123,26 +123,41 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }));
   }
 
-  async getTotalIncome(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getTotalIncome(year: number, month?: number | undefined): Promise<number> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<number>(`/api/transactions/total-income?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data;
   }
 
-  async getTotalExpenses(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getTotalExpenses(year: number, month?: number | undefined): Promise<number> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<number>(`/api/transactions/total-expenses?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data;
   }
 
-  async getTotalSavings(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getTotalSavings(year: number, month?: number | undefined): Promise<number> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<number>(`/api/transactions/total-savings?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data;
   }
+
+
+
 
   // Transaction methods
   async getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>> {
@@ -284,24 +299,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }
   }
 
-  async getIncomeBudget(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
-    const response = await this.api.get<number>(`/api/budgets/total-income?fromDate=${fromDate}&toDate=${toDate}`);
+  async getIncomeBudget(year: number, month?: number): Promise<number> {
+    const response = await this.api.get<number>(`/api/budgets/total-income?`, { params: { year, month } });
     return response.data;
   }
-  async getExpenseBudget(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
-    const response = await this.api.get<number>(`/api/budgets/total-expenses?fromDate=${fromDate}&toDate=${toDate}`);
+  async getExpenseBudget(year: number, month?: number): Promise<number> {
+    const response = await this.api.get<number>(`/api/budgets/total-expenses?`, { params: { year, month } });
     return response.data;
   }
-  async getSavingsBudget(year: number): Promise<number> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
-    const response = await this.api.get<number>(`/api/budgets/total-savings?fromDate=${fromDate}&toDate=${toDate}`);
+  async getSavingsBudget(year: number, month?: number): Promise<number> {
+    const response = await this.api.get<number>(`/api/budgets/total-savings?`, { params: { year, month } });
     return response.data;
   }
+
+
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
     var response: any;
     console.log("Creating budget", budget);

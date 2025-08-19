@@ -431,17 +431,29 @@ public class TransactionService {
                 .toList();
     }
 
-    public List<CategorySpendingDTO> getCategorySpending(String username, LocalDate fromDate, LocalDate toDate) {
+    public List<CategorySpendingDTO> getCategorySpending(String username, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+        if(startDate.getYear() != endDate.getYear()) {
+            throw new IllegalArgumentException("Start date and end date must be in the same year");
+        }
+        Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
+        return getCategorySpending(username, startDate.getYear(), month);
+
+    }
+
+    public List<CategorySpendingDTO> getCategorySpending(String username, int year, Integer month) {
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
                 .filter(c -> c.getMacroCategory().isExpense())
                 .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
 
-        Integer year = fromDate.getYear();
-        if (toDate.getYear() != year) {
-            throw new IllegalArgumentException("From and to date must be in the same year");
-        }
-        Map<CategoryId, BigDecimal> budgetTotals = budgetService.getBudgetsTotals(username, year);
+
+        LocalDate fromDate = LocalDate.of(year, Optional.ofNullable(month).orElse(1), 1);
+        LocalDate toDate = month != null ? fromDate.withDayOfMonth(fromDate.lengthOfMonth()) : LocalDate.of(year, 12, 31);
+
+        Map<CategoryId, BigDecimal> budgetTotals = budgetService.getBudgetsTotals(username, year, month);
         Map<CategoryId, Double> spending = transactionRepository.findAllByUserAndYearAndCategories(
                         username,
                         fromDate, toDate, categories.keySet().stream().toList())
@@ -524,13 +536,13 @@ public class TransactionService {
                                             BigDecimal::add
                                     )));
 
-                          return   partialsMap.entrySet()
-                                    .stream()
-                                    .map(e -> new MacroCategoryMonthlyDataDTO(
-                                            yearMonth.getYear(),
-                                            yearMonth.getMonthValue(),
-                                            e.getKey(),
-                                            e.getValue().abs()));
+                    return partialsMap.entrySet()
+                            .stream()
+                            .map(e -> new MacroCategoryMonthlyDataDTO(
+                                    yearMonth.getYear(),
+                                    yearMonth.getMonthValue(),
+                                    e.getKey(),
+                                    e.getValue().abs()));
                 })
                 .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::month))
                 .toList();
