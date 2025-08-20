@@ -77,11 +77,15 @@ public class BudgetService {
 
         return categoryService.getAllCategories(owner)
                 .filter(categoryPredicate)
+                .sorted(Comparator.comparing(CategoryDTO::getId, Comparator.comparingLong(CategoryId::getId)))
                 .map(CategoryDTO::getId)
                 .collect(Collectors.toMap(
                         categoryId -> categoryId,
                         categoryId -> Optional.ofNullable(monthlyBudgets.get(categoryId))
-                                .map(monthMap -> monthMap.values().stream()
+                                .map(monthMap -> Optional.ofNullable(month)
+                                        .map(m -> Stream.of(monthMap.get(YearMonth.of(year, month))))
+                                        .orElseGet(() -> monthMap.values().stream())
+                                        .filter(Objects::nonNull)
                                         .map(Budget::getAmount)
                                         .reduce(BigDecimal.ZERO, BigDecimal::add))
                                 .orElseGet(() -> {

@@ -61,6 +61,7 @@ export interface CategorySpendingRest {
 
 export interface MonthlyDataRest {
   yearMonth: string; // Format: 'YYYY-MM'
+  week: number;
   totalIncome: number;
   totalExpenses: number;
   totalSavings: number;

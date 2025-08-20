@@ -47,7 +47,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     }
   }
 
-  async getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]> {
+  async getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]> {
     await simulateDelay();
     const macroCategories = ['INCOME', 'EXPENSE', 'BILLS', 'SAVINGS', 'SUBSCRIPTIONS', 'DEBTS'];
     const monthlyData: MacroCategoryMonthlyData[] = [];
@@ -81,8 +81,8 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
             total = Math.round((200 + (Math.random() * 100 - 50)) * baseMultiplier * (1 + seasonalVariation * 0.2));
             break;
         }
-        
-        monthlyData.push({ macroCategory, year: Number(year), month, total });
+
+        monthlyData.push({ macroCategory, year: Number(year), month, week: 1, total });
       }
     }
     return monthlyData;
@@ -109,7 +109,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return categorySpending;
   }
 
-  async getMonthlyData(year: string): Promise<MonthlyData[]> {
+  async getMonthlyData(year: number, month?: number): Promise<MonthlyData[]> {
     await simulateDelay();
     const monthlyData: MonthlyData[] = [];
     for (let month = 1; month <= 12; month++) {
@@ -124,8 +124,9 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
         .filter(tx => tx.date.startsWith(monthStr) && tx.category?.macroCategory === 'SAVINGS' && tx.included)
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
       monthlyData.push({
-        year: year,
+        year: year.toString(),
         month: monthStr,
+        week: 1, // Assuming week 1 for simplicity
         totalIncome,
         totalExpenses,
         totalSavings,

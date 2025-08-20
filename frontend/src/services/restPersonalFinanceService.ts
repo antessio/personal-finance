@@ -91,9 +91,13 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     return !!this.getAuthToken();
   }
 
-  async getCategorySpending(year: string): Promise<CategorySpending[]> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getCategorySpending(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
       categoryName: spending.category.name + ' ' + spending.category.emoji,
@@ -103,20 +107,28 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }));
   }
 
-  async getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]> {
+    let fromDate = `${year}-01-01`;
+    let toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<MacroCategoryMonthlyData[]>(`/api/transactions/expenses-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
-    console.log("Macro categories monthly data response:", response.data);
     return response.data;
   }
-  async getMonthlyData(year: string): Promise<MonthlyData[]> {
-    const fromDate = `${year}-01-01`;
-    const toDate = `${year}-12-31`;
+  async getMonthlyData(year: number, month?: number): Promise<MonthlyData[]> {
+    let fromDate = `${year}-01-01`;
+    let toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
     const response = await this.api.get<MonthlyDataRest[]>(`/api/transactions/monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(data => ({
       year: data.yearMonth.split('-')[0],
       month: data.yearMonth.split('-')[1],
+      week: data.week,
       totalIncome: data.totalIncome,
       totalExpenses: data.totalExpenses,
       totalSavings: data.totalSavings,

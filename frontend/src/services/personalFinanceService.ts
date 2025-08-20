@@ -2,10 +2,10 @@ import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFil
 
 export interface PersonalFinanceService {
 
-  
-  getCategorySpending(year: number): Promise<CategorySpending[]>;
-  getMonthlyData(year: string): Promise<MonthlyData[]>;
-  getMacroCategoriesMontlyData(year: string): Promise<MacroCategoryMonthlyData[]>;
+
+  getCategorySpending(year: number, month?: number): Promise<CategorySpending[]>;
+  getMonthlyData(year: number, month?: number): Promise<MonthlyData[]>;
+  getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]>;
 
   // Transaction methods
   getTotalIncome(year: number, month: number | undefined): Promise<number>;

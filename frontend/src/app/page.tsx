@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
 import { MonthlyData } from '../types';
 import { useState } from 'react';
+import { se } from 'date-fns/locale';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -35,21 +36,21 @@ export default function HomePage() {
   // Fetch data with month filtering
   const { data: totalIncome = 0 } = useQuery({
     queryKey: ['totalIncome', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getTotalIncome(currentYear, selectedMonth)
       : service.getTotalIncome(currentYear),
   });
 
   const { data: totalExpenses = 0 } = useQuery({
     queryKey: ['totalExpenses', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getTotalExpenses(currentYear, selectedMonth)
       : service.getTotalExpenses(currentYear),
   });
 
   const { data: totalSavings = 0 } = useQuery({
     queryKey: ['totalSavings', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getTotalSavings(currentYear, selectedMonth)
       : service.getTotalSavings(currentYear),
   });
@@ -66,21 +67,21 @@ export default function HomePage() {
 
   const { data: incomeBudget = 0 } = useQuery({
     queryKey: ['incomeBudget', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getIncomeBudget(currentYear, selectedMonth)
       : service.getIncomeBudget(currentYear),
   });
 
   const { data: expenseBudget = 0 } = useQuery({
     queryKey: ['expenseBudget', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getExpenseBudget(currentYear, selectedMonth)
       : service.getExpenseBudget(currentYear),
   });
 
   const { data: savingsBudget = 0 } = useQuery({
     queryKey: ['savingsBudget', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getSavingsBudget(currentYear, selectedMonth)
       : service.getSavingsBudget(currentYear),
   });
@@ -90,7 +91,7 @@ export default function HomePage() {
   const totalBudget = incomeBudget + expenseBudget + savingsBudget;
   const { data: categorySpending = [] } = useQuery({
     queryKey: ['categorySpending', currentYear, selectedMonth],
-    queryFn: () => selectedMonth 
+    queryFn: () => selectedMonth
       ? service.getCategorySpending(currentYear, selectedMonth)
       : service.getCategorySpending(currentYear),
   });
@@ -99,76 +100,77 @@ export default function HomePage() {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const { data: monthlyData = [] } = useQuery({
     queryKey: ['monthlyData', currentYear, selectedMonth],
-    queryFn: () => service.getMonthlyData(currentYear.toString()),
-    enabled: !selectedMonth, // Only fetch when showing yearly data
+    queryFn: () => service.getMonthlyData(currentYear, selectedMonth)
   });
 
   // Generate chart data based on selection
-  const monthTransactions = selectedMonth 
+  const monthTransactions = selectedMonth
     ? (() => {
-        // For monthly view, show weeks or days of the selected month
-        const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
-        const weekData = [];
-        for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
-          weekData.push({
-            month: `Week ${week}`,
-            Income: Math.random() * 1000 + 500, // Mock weekly data
-            Expense: Math.random() * 800 + 300,
-            Savings: Math.random() * 200 + 100,
-          });
-        }
-        return weekData;
-      })()
+      // For monthly view, show weeks or days of the selected month
+      const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+      const monthData = monthlyData.filter((tx: MonthlyData) => Number(tx.month) === selectedMonth);
+      const weekData = [];
+      for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+        const wd = monthData.find(m => m.week === week);
+        weekData.push({
+          month: `Week ${week}`,
+          Income: wd ? wd.totalIncome / 4 : 0,
+          Expense: wd ? wd.totalExpenses / 4 : 0,
+          Savings: wd ? wd.totalSavings / 4 : 0,
+        });
+      }
+      return weekData;
+    })()
     : months.map((month, index) => {
-        const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index + 1);
-        return {
-          month,
-          Income: monthData ? monthData.totalIncome : 0,
-          Expense: monthData ? monthData.totalExpenses : 0,
-          Savings: monthData ? monthData.totalSavings : 0,
-        };
-      });
+      const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index + 1);
+      return {
+        month,
+        Income: monthData ? monthData.totalIncome : 0,
+        Expense: monthData ? monthData.totalExpenses : 0,
+        Savings: monthData ? monthData.totalSavings : 0,
+      };
+    });
 
   const { data: macroCategoryTrends = [] } = useQuery({
     queryKey: ['macroCategoryTrends', currentYear, selectedMonth],
-    queryFn: () => service.getMacroCategoriesMontlyData(currentYear.toString()),
-    enabled: !selectedMonth, // Only fetch when showing yearly data
+    queryFn: () => service.getMacroCategoriesMontlyData(currentYear, selectedMonth)
   });
 
   // Transform macro category data for line chart
   const transformedMacroData = selectedMonth
     ? (() => {
-        // For monthly view, show weekly progression within the month
-        const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
-        const weekData = [];
-        for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
-          weekData.push({
-            month: `Week ${week}`,
-            INCOME: Math.random() * 500 + 1000,
-            EXPENSE: Math.random() * 400 + 600,
-            BILLS: Math.random() * 200 + 300,
-            SAVINGS: Math.random() * 150 + 200,
-            SUBSCRIPTIONS: Math.random() * 50 + 75,
-            DEBTS: Math.random() * 100 + 150,
-          });
-        }
-        return weekData;
-      })()
-    : months.map((month, index) => {
-        const monthNumber = index + 1; // 1, 2, 3, etc.
-        const monthData = macroCategoryTrends.filter(data => data.month === monthNumber);
-        
-        const result: any = { month };
-        monthData.forEach(item => {
-          result[item.macroCategory] = item.total;
+      // For monthly view, show weekly progression within the month
+      const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+      const weekData = [];
+      for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+        const w = macroCategoryTrends.filter(data => data.month === selectedMonth && data.week === week);
+        weekData.push({
+          month: `Week ${week}`,
+          INCOME: w.find(data => data.macroCategory === 'INCOME')?.total || 0,
+          EXPENSE: w.find(data => data.macroCategory === 'EXPENSE')?.total || 0,
+          BILLS: w.find(data => data.macroCategory === 'BILLS')?.total || 0,
+          SAVINGS: w.find(data => data.macroCategory === 'SAVINGS')?.total || 0,
+          SUBSCRIPTIONS: w.find(data => data.macroCategory === 'SUBSCRIPTIONS')?.total || 0,
+          DEBTS: w.find(data => data.macroCategory === 'DEBTS')?.total || 0,
         });
-        
-        return result;
+      }
+      return weekData;
+    })()
+    : months.map((month, index) => {
+      const monthNumber = index + 1; // 1, 2, 3, etc.
+      const monthData = macroCategoryTrends.filter(data => data.month === monthNumber);
+
+      const result: any = { month };
+      monthData.forEach(item => {
+        result[item.macroCategory] = item.total;
       });
+
+      return result;
+    });
 
   // Define colors for each macro category
   const macroCategoryColors = {
-    'EXPENSE': '#f44336', 
+    'EXPENSE': '#f44336',
     'BILLS': '#ff9800',
     'SAVINGS': '#2196f3',
     'SUBSCRIPTIONS': '#9c27b0',
@@ -274,7 +276,7 @@ export default function HomePage() {
             <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
             <Typography variant="caption" color="text.secondary" mt={1}>
               {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
-              
+
             </Typography>
           </Paper>
 
@@ -306,38 +308,40 @@ export default function HomePage() {
         </Box>
 
         {/* Middle Row: Money Flow Chart */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-          {/* Money Flow Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <MuiBarChart color="success" sx={{ mr: 1 }} />
-              <Typography color="success.dark" fontWeight={700} variant="subtitle1">
-                Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${currentYear}` : `- ${currentYear}`}
-              </Typography>
-            </Box>
-            <Box sx={{ width: '100%', height: 220, mb: 2 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value) => `€${value.toLocaleString()}`} />
-                  <Legend verticalAlign="top" height={36} />
-                  <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
-                  <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
-                  <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </Paper>
-        </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+            {/* Money Flow Card */}
+            <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <MuiBarChart color="success" sx={{ mr: 1 }} />
+                <Typography color="success.dark" fontWeight={700} variant="subtitle1">
+                  Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${currentYear}` : `- ${currentYear}`}
+                </Typography>
+              </Box>
+
+              <Box sx={{ width: '100%', height: 220, mb: 2 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(value) => `€${value.toLocaleString()}`} />
+                    <Legend verticalAlign="top" height={36} />
+                    <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
+                    <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
+                    <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </Paper>
+          </Box>
 
         {/* Macro Category Trends Chart */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Timeline color="warning" sx={{ mr: 1 }} />
-              <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+            <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Timeline color="warning" sx={{ mr: 1 }} />
+                <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
                 Macro Category Trends
               </Typography>
             </Box>
@@ -350,14 +354,14 @@ export default function HomePage() {
                   <Tooltip formatter={(value) => `€${value?.toLocaleString()}`} />
                   <Legend verticalAlign="top" height={36} />
                   {uniqueMacroCategories.map((category) => (
-                    <Line 
-                      key={category} 
-                      type="monotone" 
-                      dataKey={category} 
-                      stroke={macroCategoryColors[category as keyof typeof macroCategoryColors] || '#666666'} 
-                      strokeWidth={3} 
-                      dot={{ r: 4 }} 
-                      name={category.charAt(0) + category.slice(1).toLowerCase()} 
+                    <Line
+                      key={category}
+                      type="monotone"
+                      dataKey={category}
+                      stroke={macroCategoryColors[category as keyof typeof macroCategoryColors] || '#666666'}
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      name={category.charAt(0) + category.slice(1).toLowerCase()}
                     />
                   ))}
                 </LineChart>
@@ -374,20 +378,20 @@ export default function HomePage() {
               Category Breakdown
             </Typography>
           </Box>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { 
-              xs: '1fr', 
-              sm: 'repeat(2, 1fr)', 
-              md: 'repeat(3, 1fr)', 
-              lg: 'repeat(4, 1fr)' 
-            }, 
-            gap: 3 
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)'
+            },
+            gap: 3
           }}>
             {categorySpending.map((category) => (
-              <Box key={category.categoryName} sx={{ 
-                p: 2, 
-                borderRadius: 2, 
+              <Box key={category.categoryName} sx={{
+                p: 2,
+                borderRadius: 2,
                 bgcolor: 'rgba(255, 255, 255, 0.7)',
                 border: '1px solid',
                 borderColor: 'grey.200'
@@ -396,10 +400,10 @@ export default function HomePage() {
                   <Typography variant="subtitle2" fontWeight={700} noWrap>
                     {category.categoryName}
                   </Typography>
-                  <Chip 
+                  <Chip
                     label={`${Math.round(category.percentage)}%`}
                     size="small"
-                    sx={{ 
+                    sx={{
                       bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
                       color: category.percentage > 100 ? 'error.dark' : 'success.dark',
                       fontWeight: 700,

@@ -71,6 +71,7 @@ export interface CategorySpending{
 export interface MonthlyData {
   year: string;
   month: string;
+  week: number;
   totalIncome: number;
   totalExpenses: number;
   totalSavings: number;
@@ -80,5 +81,6 @@ export interface MacroCategoryMonthlyData{
   macroCategory: string;
   year: number;
   month: number;
+  week: number;
   total: number;
 }

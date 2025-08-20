@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -387,11 +388,12 @@ public class TransactionService {
     }
 
     public List<MonthlyDataDTO> getMonthlyBudgets(String username, LocalDate startDate, LocalDate endDate) {
-
-        Map<YearMonth, List<Transaction>> transactionsByMonth = transactionRepository.findAllIncludedCategorizedByUserAndYear(
+        boolean groupingByMonth = startDate.getYear() == endDate.getYear() && startDate.getMonth() == endDate.getMonth();
+        Map<YearMonth, Map<Integer, List<Transaction>>> transactionsByMonth = transactionRepository.findAllIncludedCategorizedByUserAndYear(
                         username,
                         startDate, endDate)
-                .collect(Collectors.groupingBy(transaction -> YearMonth.from(transaction.getDate())));
+                .collect(Collectors.groupingBy(transaction -> YearMonth.from(transaction.getDate()),
+                        Collectors.groupingBy(transaction -> ((transaction.getDate().getDayOfMonth()) / 7) + 1, Collectors.toList())));
 
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
@@ -399,33 +401,78 @@ public class TransactionService {
         return transactionsByMonth
                 .entrySet()
                 .stream()
-                .map(entry -> {
+                .flatMap(entry -> {
                     YearMonth yearMonth = entry.getKey();
-                    List<Transaction> transactions = entry.getValue();
-                    double totalIncome = transactions.stream()
-                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
-                                    .map(CategoryDTO::getMacroCategory)
-                                    .map(MacroCategoryEnum::isIncome)
-                                    .orElse(false))
-                            .mapToDouble(t -> t.getAmount().doubleValue())
-                            .sum();
-                    double totalExpenses = transactions.stream()
-                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
-                                    .map(CategoryDTO::getMacroCategory)
-                                    .map(MacroCategoryEnum::isExpense)
-                                    .orElse(false))
-                            .mapToDouble(t -> t.getAmount().doubleValue())
-                            .sum();
-                    double totalSavings = transactions.stream()
-                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
-                                    .map(CategoryDTO::getMacroCategory)
-                                    .map(MacroCategoryEnum::isSavings)
-                                    .orElse(false))
+                    if (groupingByMonth) {
+                        return entry
+                                .getValue()
+                                .entrySet()
+                                .stream()
+                                .map(e -> {
+                                    int week = e.getKey();
+                                    double totalIncome = e.getValue()
+                                            .stream()
+                                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                                    .map(CategoryDTO::getMacroCategory)
+                                                    .map(MacroCategoryEnum::isIncome)
+                                                    .orElse(false))
+                                            .mapToDouble(t -> t.getAmount().doubleValue())
+                                            .sum();
+                                    double totalExpenses = e.getValue()
+                                            .stream()
+                                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                                    .map(CategoryDTO::getMacroCategory)
+                                                    .map(MacroCategoryEnum::isExpense)
+                                                    .orElse(false))
+                                            .mapToDouble(t -> t.getAmount().doubleValue())
+                                            .sum();
+                                    double totalSavings = e.getValue()
+                                            .stream()
+                                            .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                                    .map(CategoryDTO::getMacroCategory)
+                                                    .map(MacroCategoryEnum::isSavings)
+                                                    .orElse(false))
+                                            .mapToDouble(t -> t.getAmount().doubleValue())
+                                            .sum();
+                                    return new MonthlyDataDTO(yearMonth, week,
+                                            BigDecimal.valueOf(totalIncome).abs(),
+                                            BigDecimal.valueOf(totalExpenses).abs(),
+                                            BigDecimal.valueOf(totalSavings).abs());
+                                });
 
-                            .mapToDouble(t -> t.getAmount().doubleValue())
-                            .sum();
-                    return new MonthlyDataDTO(yearMonth,
-                            BigDecimal.valueOf(totalIncome).abs(), BigDecimal.valueOf(totalExpenses).abs(), BigDecimal.valueOf(totalSavings).abs());
+                    } else {
+
+                        List<Transaction> transactions = entry
+                                .getValue()
+                                .values()
+                                .stream()
+                                .flatMap(List::stream)
+                                .toList();
+                        double totalIncome = transactions.stream()
+                                .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                        .map(CategoryDTO::getMacroCategory)
+                                        .map(MacroCategoryEnum::isIncome)
+                                        .orElse(false))
+                                .mapToDouble(t -> t.getAmount().doubleValue())
+                                .sum();
+                        double totalExpenses = transactions.stream()
+                                .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                        .map(CategoryDTO::getMacroCategory)
+                                        .map(MacroCategoryEnum::isExpense)
+                                        .orElse(false))
+                                .mapToDouble(t -> t.getAmount().doubleValue())
+                                .sum();
+                        double totalSavings = transactions.stream()
+                                .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
+                                        .map(CategoryDTO::getMacroCategory)
+                                        .map(MacroCategoryEnum::isSavings)
+                                        .orElse(false))
+
+                                .mapToDouble(t -> t.getAmount().doubleValue())
+                                .sum();
+                        return Stream.of(new MonthlyDataDTO(yearMonth, 0,
+                                BigDecimal.valueOf(totalIncome).abs(), BigDecimal.valueOf(totalExpenses).abs(), BigDecimal.valueOf(totalSavings).abs()));
+                    }
                 })
                 .sorted(Comparator.comparing(MonthlyDataDTO::yearMonth))
                 .toList();
@@ -435,7 +482,7 @@ public class TransactionService {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Start date cannot be after end date");
         }
-        if(startDate.getYear() != endDate.getYear()) {
+        if (startDate.getYear() != endDate.getYear()) {
             throw new IllegalArgumentException("Start date and end date must be in the same year");
         }
         Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
@@ -506,10 +553,12 @@ public class TransactionService {
     }
 
     public List<MacroCategoryMonthlyDataDTO> getExpensesMacroCategoriesMonthlyBudgets(String username, LocalDate startDate, LocalDate endDate) {
-        Map<YearMonth, List<Transaction>> transactionsByMonth = transactionRepository.findAllIncludedCategorizedByUserAndYear(
+        boolean groupingByMonth = startDate.getYear() == endDate.getYear() && startDate.getMonth() == endDate.getMonth();
+        Map<YearMonth, Map<Integer, List<Transaction>>> transactionsByMonth = transactionRepository.findAllIncludedCategorizedByUserAndYear(
                         username,
                         startDate, endDate)
-                .collect(Collectors.groupingBy(transaction -> YearMonth.from(transaction.getDate())));
+                .collect(Collectors.groupingBy(transaction -> YearMonth.from(transaction.getDate()),
+                        Collectors.groupingBy(transaction -> ((transaction.getDate().getDayOfMonth()) / 7) + 1, Collectors.toList())));
 
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
@@ -518,33 +567,76 @@ public class TransactionService {
                 .entrySet()
                 .stream()
                 .flatMap(entry -> {
-                    YearMonth yearMonth = entry.getKey();
-                    Map<MacroCategoryEnum, BigDecimal> partialsMap = entry.getValue()
-                            .stream()
-                            .map(t -> Pair.of(categories.get(t.getCategoryId()).getMacroCategory(), t.getAmount()))
-                            .filter(p -> p.getLeft().isExpense())
-                            .map(p -> new MacroCategoryMonthlyDataDTO(
-                                    yearMonth.getYear(),
-                                    yearMonth.getMonthValue(),
-                                    p.getLeft(),
-                                    p.getRight()))
-                            .collect(Collectors.groupingBy(
-                                    MacroCategoryMonthlyDataDTO::macroCategory,
-                                    Collectors.reducing(
-                                            BigDecimal.ZERO,
-                                            MacroCategoryMonthlyDataDTO::total,
-                                            BigDecimal::add
-                                    )));
+                    if (groupingByMonth) {
+                        YearMonth yearMonth = entry.getKey();
+                        Map<MacroCategoryEnum, Map<Integer, BigDecimal>> partialMap = entry
+                                .getValue()
+                                .entrySet()
+                                .stream()
+                                .flatMap(e -> {
+                                    int week = e.getKey();
+                                    return e.getValue()
+                                            .stream()
+                                            .filter(t -> categories.get(t.getCategoryId()).getMacroCategory().isExpense())
+                                            .map(t -> new MacroCategoryMonthlyDataDTO(
+                                                    yearMonth.getYear(),
+                                                    yearMonth.getMonthValue(),
+                                                    week,
+                                                    categories.get(t.getCategoryId()).getMacroCategory(),
+                                                    t.getAmount().abs()
+                                            ));
+                                })
+                                .collect(Collectors.groupingBy(MacroCategoryMonthlyDataDTO::macroCategory,
+                                        Collectors.groupingBy(MacroCategoryMonthlyDataDTO::week, Collectors.reducing(
+                                                BigDecimal.ZERO,
+                                                MacroCategoryMonthlyDataDTO::total,
+                                                BigDecimal::add
+                                        ))));
+                        return partialMap.entrySet()
+                                .stream()
+                                .flatMap(entry1 -> entry1.getValue()
+                                        .entrySet()
+                                        .stream()
+                                        .map(e -> new MacroCategoryMonthlyDataDTO(
+                                                yearMonth.getYear(),
+                                                yearMonth.getMonthValue(),
+                                                e.getKey(),
+                                                entry1.getKey(),
+                                                e.getValue().abs())));
+                    } else {
+                        YearMonth yearMonth = entry.getKey();
+                        Map<MacroCategoryEnum, BigDecimal> partialsMap = entry.getValue()
+                                .values()
+                                .stream()
+                                .flatMap(Collection::stream)
+                                .map(t -> Pair.of(categories.get(t.getCategoryId()).getMacroCategory(), t))
+                                .filter(p -> p.getLeft().isExpense())
+                                .map(p -> new MacroCategoryMonthlyDataDTO(
+                                        yearMonth.getYear(),
+                                        yearMonth.getMonthValue(),
+                                        p.getRight().getDate().get(WeekFields.of(Locale.getDefault()).weekOfMonth()),
+                                        p.getLeft(),
+                                        p.getRight().getAmount()))
+                                .collect(Collectors.groupingBy(
+                                        MacroCategoryMonthlyDataDTO::macroCategory,
+                                        Collectors.reducing(
+                                                BigDecimal.ZERO,
+                                                MacroCategoryMonthlyDataDTO::total,
+                                                BigDecimal::add
+                                        )));
 
-                    return partialsMap.entrySet()
-                            .stream()
-                            .map(e -> new MacroCategoryMonthlyDataDTO(
-                                    yearMonth.getYear(),
-                                    yearMonth.getMonthValue(),
-                                    e.getKey(),
-                                    e.getValue().abs()));
+                        return partialsMap.entrySet()
+                                .stream()
+                                .map(e -> new MacroCategoryMonthlyDataDTO(
+                                        yearMonth.getYear(),
+                                        yearMonth.getMonthValue(),
+                                        0, // week is not applicable when grouping by month
+                                        e.getKey(),
+                                        e.getValue().abs()));
+
+                    }
                 })
-                .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::month))
+                .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::macroCategory).thenComparing(MacroCategoryMonthlyDataDTO::month).thenComparing(MacroCategoryMonthlyDataDTO::week))
                 .toList();
     }
 }
