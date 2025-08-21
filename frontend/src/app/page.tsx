@@ -190,6 +190,41 @@ export default function HomePage() {
   // --- 50-30-20 Budget Fake Data ---
   type BudgetKey = 'needs' | 'wants' | 'savingsDebts';
   type BudgetKeyWithTotal = BudgetKey | 'total';
+
+  const budget502010Map = categorySpending
+    .filter(c => c.categoryType)
+    .reduce((acc, curr) => {
+      if (curr.categoryType) {
+        acc[curr.categoryType] = {
+          totalSpent: curr.totalSpent + acc[curr.categoryType]?.totalSpent || 0,
+          budget: curr.budgetedAmount || 0 + acc[curr.categoryType]?.budget || 0
+        }
+        acc['TOTAL'] = {
+          totalSpent: (acc['TOTAL']?.totalSpent || 0) + (curr.totalSpent || 0),
+          budget: (acc['TOTAL']?.budget || 0) + (curr.budgetedAmount || 0)
+        }
+      }
+      return acc;
+    }, {
+      'TOTAL': {
+        totalSpent: 0,
+        budget: 0
+
+      },
+      'NEEDS': {
+        totalSpent: 0,
+        budget: 0
+      },
+      'WANTS': {
+        totalSpent: 0,
+        budget: 0
+      },
+      'SAVINGS_DEBTS': {
+        totalSpent: 0,
+        budget: 0
+      }
+    });
+
   const budget502010 = {
     goal: {
       needs: 50,
@@ -197,17 +232,29 @@ export default function HomePage() {
       savingsDebts: 20,
     },
     actual: {
-      needs: 22.08,
-      wants: 75.91,
-      savingsDebts: 24.23,
+      needs: Math.round(((budget502010Map['NEEDS']?.totalSpent || 0) * 100 / (budget502010Map['TOTAL']?.totalSpent || 1)) * 100) / 100,
+      wants: Math.round(((budget502010Map['WANTS']?.totalSpent || 0) * 100 / (budget502010Map['TOTAL']?.totalSpent || 1)) * 100) / 100,
+      savingsDebts: Math.round(((budget502010Map['SAVINGS_DEBTS']?.totalSpent || 0) * 100 / (budget502010Map['TOTAL']?.totalSpent || 1)) * 100) / 100,
     },
     amount: {
-      needs: { budget: 1488, actual: 656.99 },
-      wants: { budget: 892.8, actual: 2259.06 },
-      savingsDebts: { budget: 595.2, actual: 721.07 },
-      total: { budget: 2976, actual: 3637.12 },
+      needs: { 
+        budget: budget502010Map['NEEDS']?.budget || 0, 
+        actual: budget502010Map['NEEDS']?.totalSpent || 0
+      },
+      wants: { 
+        budget: budget502010Map['WANTS']?.budget || 0, 
+        actual: budget502010Map['WANTS']?.totalSpent || 0
+      },
+      savingsDebts: { 
+        budget: budget502010Map['SAVINGS_DEBTS']?.budget || 0, 
+        actual: budget502010Map['SAVINGS_DEBTS']?.totalSpent || 0
+      },
+      total: { 
+        budget: budget502010Map['TOTAL']?.budget || 0, 
+        actual: budget502010Map['TOTAL']?.totalSpent || 0
+      },
     },
-  };
+  }; 
 
   return (
     <Layout>
@@ -331,40 +378,40 @@ export default function HomePage() {
         </Box>
 
         {/* Middle Row: Money Flow Chart */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-            {/* Money Flow Card */}
-            <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <MuiBarChart color="success" sx={{ mr: 1 }} />
-                <Typography color="success.dark" fontWeight={700} variant="subtitle1">
-                  Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `- ${selectedYear}`}
-                </Typography>
-              </Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+          {/* Money Flow Card */}
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <MuiBarChart color="success" sx={{ mr: 1 }} />
+              <Typography color="success.dark" fontWeight={700} variant="subtitle1">
+                Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `- ${selectedYear}`}
+              </Typography>
+            </Box>
 
-              <Box sx={{ width: '100%', height: 220, mb: 2 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(value) => `€${value.toLocaleString()}`} />
-                    <Legend verticalAlign="top" height={36} />
-                    <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
-                    <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
-                    <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            </Paper>
-          </Box>
+            <Box sx={{ width: '100%', height: 220, mb: 2 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => `€${value.toLocaleString()}`} />
+                  <Legend verticalAlign="top" height={36} />
+                  <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
+                  <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
+                  <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Macro Category Trends Chart */}
 
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-            <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Timeline color="warning" sx={{ mr: 1 }} />
-                <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Timeline color="warning" sx={{ mr: 1 }} />
+              <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
                 Macro Category Trends
               </Typography>
             </Box>

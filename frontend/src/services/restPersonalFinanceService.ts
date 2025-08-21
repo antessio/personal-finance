@@ -104,6 +104,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
       percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
     }));
   }
 

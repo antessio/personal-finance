@@ -66,6 +66,7 @@ export interface CategorySpending{
   totalSpent: number;
   budgetedAmount?: number;
   percentage: number;
+  categoryType?: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS'; 
 }
 
 export interface MonthlyData {

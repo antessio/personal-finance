@@ -19,6 +19,7 @@ export interface CategoryRest {
     name: string;
     macroCategory: string;
     emoji: string;
+    type: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS';
     userOwner: string;
     matchers: string[];
     insertedAt: string;
