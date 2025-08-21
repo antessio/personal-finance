@@ -14,7 +14,14 @@ import { se } from 'date-fns/locale';
 export default function HomePage() {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number | undefined>(undefined); // Empty string means show all year data
+
+  // Year options for the selector (current year and 4 years back)
+  const yearOptions = [];
+  for (let year = currentYear; year >= currentYear - 4; year--) {
+    yearOptions.push({ value: year, label: year.toString() });
+  }
 
   // Month options for the selector
   const monthOptions = [
@@ -35,24 +42,24 @@ export default function HomePage() {
 
   // Fetch data with month filtering
   const { data: totalIncome = 0 } = useQuery({
-    queryKey: ['totalIncome', currentYear, selectedMonth],
+    queryKey: ['totalIncome', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getTotalIncome(currentYear, selectedMonth)
-      : service.getTotalIncome(currentYear),
+      ? service.getTotalIncome(selectedYear, selectedMonth)
+      : service.getTotalIncome(selectedYear),
   });
 
   const { data: totalExpenses = 0 } = useQuery({
-    queryKey: ['totalExpenses', currentYear, selectedMonth],
+    queryKey: ['totalExpenses', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getTotalExpenses(currentYear, selectedMonth)
-      : service.getTotalExpenses(currentYear),
+      ? service.getTotalExpenses(selectedYear, selectedMonth)
+      : service.getTotalExpenses(selectedYear),
   });
 
   const { data: totalSavings = 0 } = useQuery({
-    queryKey: ['totalSavings', currentYear, selectedMonth],
+    queryKey: ['totalSavings', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getTotalSavings(currentYear, selectedMonth)
-      : service.getTotalSavings(currentYear),
+      ? service.getTotalSavings(selectedYear, selectedMonth)
+      : service.getTotalSavings(selectedYear),
   });
 
   // const { data: categories = [] } = useQuery({
@@ -66,48 +73,48 @@ export default function HomePage() {
   // });
 
   const { data: incomeBudget = 0 } = useQuery({
-    queryKey: ['incomeBudget', currentYear, selectedMonth],
+    queryKey: ['incomeBudget', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getIncomeBudget(currentYear, selectedMonth)
-      : service.getIncomeBudget(currentYear),
+      ? service.getIncomeBudget(selectedYear, selectedMonth)
+      : service.getIncomeBudget(selectedYear),
   });
 
   const { data: expenseBudget = 0 } = useQuery({
-    queryKey: ['expenseBudget', currentYear, selectedMonth],
+    queryKey: ['expenseBudget', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getExpenseBudget(currentYear, selectedMonth)
-      : service.getExpenseBudget(currentYear),
+      ? service.getExpenseBudget(selectedYear, selectedMonth)
+      : service.getExpenseBudget(selectedYear),
   });
 
   const { data: savingsBudget = 0 } = useQuery({
-    queryKey: ['savingsBudget', currentYear, selectedMonth],
+    queryKey: ['savingsBudget', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getSavingsBudget(currentYear, selectedMonth)
-      : service.getSavingsBudget(currentYear),
+      ? service.getSavingsBudget(selectedYear, selectedMonth)
+      : service.getSavingsBudget(selectedYear),
   });
 
 
   // Calculate budget data
   const totalBudget = incomeBudget + expenseBudget + savingsBudget;
   const { data: categorySpending = [] } = useQuery({
-    queryKey: ['categorySpending', currentYear, selectedMonth],
+    queryKey: ['categorySpending', selectedYear, selectedMonth],
     queryFn: () => selectedMonth
-      ? service.getCategorySpending(currentYear, selectedMonth)
-      : service.getCategorySpending(currentYear),
+      ? service.getCategorySpending(selectedYear, selectedMonth)
+      : service.getCategorySpending(selectedYear),
   });
 
   // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const { data: monthlyData = [] } = useQuery({
-    queryKey: ['monthlyData', currentYear, selectedMonth],
-    queryFn: () => service.getMonthlyData(currentYear, selectedMonth)
+    queryKey: ['monthlyData', selectedYear, selectedMonth],
+    queryFn: () => service.getMonthlyData(selectedYear, selectedMonth)
   });
 
   // Generate chart data based on selection
   const monthTransactions = selectedMonth
     ? (() => {
       // For monthly view, show weeks or days of the selected month
-      const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
       const monthData = monthlyData.filter((tx: MonthlyData) => Number(tx.month) === selectedMonth);
       const weekData = [];
       for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
@@ -132,15 +139,15 @@ export default function HomePage() {
     });
 
   const { data: macroCategoryTrends = [] } = useQuery({
-    queryKey: ['macroCategoryTrends', currentYear, selectedMonth],
-    queryFn: () => service.getMacroCategoriesMontlyData(currentYear, selectedMonth)
+    queryKey: ['macroCategoryTrends', selectedYear, selectedMonth],
+    queryFn: () => service.getMacroCategoriesMontlyData(selectedYear, selectedMonth)
   });
 
   // Transform macro category data for line chart
   const transformedMacroData = selectedMonth
     ? (() => {
       // For monthly view, show weekly progression within the month
-      const daysInMonth = new Date(currentYear, selectedMonth, 0).getDate();
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
       const weekData = [];
       for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
         const w = macroCategoryTrends.filter(data => data.month === selectedMonth && data.week === week);
@@ -205,8 +212,24 @@ export default function HomePage() {
   return (
     <Layout>
       <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', p: { xs: 1, md: 4 } }}>
-        {/* Month Selector */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Year and Month Selectors */}
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel id="year-selector-label">Year</InputLabel>
+            <Select
+              labelId="year-selector-label"
+              value={selectedYear}
+              label="Year"
+              onChange={(e) => setSelectedYear(e.target.value as number)}
+              sx={{ bgcolor: 'white' }}
+            >
+              {yearOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel id="month-selector-label">Filter by Month</InputLabel>
             <Select
@@ -314,7 +337,7 @@ export default function HomePage() {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <MuiBarChart color="success" sx={{ mr: 1 }} />
                 <Typography color="success.dark" fontWeight={700} variant="subtitle1">
-                  Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${currentYear}` : `- ${currentYear}`}
+                  Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `- ${selectedYear}`}
                 </Typography>
               </Box>
 
