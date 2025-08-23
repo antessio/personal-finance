@@ -2,10 +2,7 @@ package antessio.personalfinance.domain.service;
 
 import antessio.personalfinance.domain.dto.CategoryDTO;
 import antessio.personalfinance.domain.dto.CreateCategoryDTO;
-import antessio.personalfinance.domain.model.AutomaticSkip;
-import antessio.personalfinance.domain.model.Category;
-import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.MacroCategoryEnum;
+import antessio.personalfinance.domain.model.*;
 import antessio.personalfinance.domain.ports.AutomaticSkipRepository;
 import antessio.personalfinance.domain.ports.CategoryRepository;
 
@@ -16,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class CategoryService {
-    private final static int BATCH_SIZE = 20;
+    private static final int BATCH_SIZE = 20;
 
     private final CategoryRepository categoryRepository;
     private final AutomaticSkipRepository automaticSkipRepository;
@@ -27,15 +24,22 @@ public class CategoryService {
     }
 
     public CategoryDTO createCategory(String userOwner, CreateCategoryDTO createCategoryDTO) {
-        return createCategory(userOwner, createCategoryDTO.name(), createCategoryDTO.macroCategory(), createCategoryDTO.emoji());
+        return createCategory(userOwner, createCategoryDTO.name(), createCategoryDTO.macroCategory(), createCategoryDTO.type(), createCategoryDTO.emoji());
     }
 
-    public CategoryDTO createCategory(String userId, String name, MacroCategoryEnum macroCategory, String emoji) {
-        Category category = new Category(null, name, macroCategory, emoji, userId, null, Instant.now(), null);
+    public CategoryDTO createCategory(String userId, String name, MacroCategoryEnum macroCategory, CategoryType type, String emoji) {
+        Category category = new Category(null, name, macroCategory, type, emoji, userId, null, Instant.now(), null);
         Category savedCategory = categoryRepository.save(category);
         return toDTO(savedCategory);
     }
 
+    public void updateCategoryType(String userOwner, CategoryId categoryId, CategoryType type) {
+        Category category = categoryRepository.findById(categoryId)
+                .filter(c -> c.getUserOwner().equals(userOwner))
+                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+        category.setCategoryType(type);
+        categoryRepository.update(category);
+    }
     public void updateCategoryMatchers(String userOwner, CategoryId categoryId, Set<String> matchers) {
         Category category = categoryRepository.findById(categoryId)
                 .filter(c -> c.getUserOwner().equals(userOwner))
@@ -123,6 +127,7 @@ public class CategoryService {
                 category.getId(),
                 category.getName(),
                 category.getMacroCategory(),
+                category.getType(),
                 category.getEmoji(),
                 category.getUserOwner(),
                 category.getMatchers(),

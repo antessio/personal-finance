@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
@@ -104,6 +104,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
       percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
     }));
   }
 
@@ -133,6 +134,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalExpenses: data.totalExpenses,
       totalSavings: data.totalSavings,
     }));
+  }
+
+  async getAccountFlowData(year: number, month?: number): Promise<AccountFlowData[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<AccountFlowDataRest[]>(`/api/accounts/flow-data?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
+  }
+
+  async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<CategoryTrendsDataRest[]>(`/api/categories/trends?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
   }
 
   async getTotalIncome(year: number, month?: number | undefined): Promise<number> {
@@ -186,10 +201,12 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
           name: transaction.category.name,
           macroCategory: transaction.category.macroCategory,
           regexPatterns: transaction.category.matchers,
+          type: transaction.category.type
         } : undefined,
         amount: transaction.amount,
         account: transaction.source,
-        included: !transaction.skip
+        included: !transaction.skip,
+        type: transaction.category?.type
       })),
       hasMore: response.data.hasNext,
       nextCursor: response.data.data.length > 0 ? response.data.data[response.data.data.length - 1].id : undefined
@@ -265,6 +282,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
         name: category.name,
         macroCategory: category.macroCategory,
         regexPatterns: category.matchers,
+        type: category.type
       })),
       hasMore: response.data.hasNext,
       nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined

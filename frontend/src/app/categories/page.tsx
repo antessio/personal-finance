@@ -37,6 +37,7 @@ export default function CategoriesPage() {
     name: '',
     macroCategory: '',
     regexPatterns: [],
+    type: 'NEEDS',
   });
   const queryClient = useQueryClient();
   const [needWantMap, setNeedWantMap] = useState<{ [categoryId: string]: 'Need' | 'Want' }>({});
@@ -119,6 +120,7 @@ export default function CategoriesPage() {
         name: category.name,
         macroCategory: category.macroCategory,
         regexPatterns: category.regexPatterns,
+        type: category.type,
       });
     } else {
       setEditingCategory(null);
@@ -126,6 +128,7 @@ export default function CategoriesPage() {
         name: '',
         macroCategory: '',
         regexPatterns: [],
+        type: 'NEEDS',
       });
     }
     setOpen(true);
@@ -138,6 +141,7 @@ export default function CategoriesPage() {
       name: '',
       macroCategory: '',
       regexPatterns: [],
+      type: 'NEEDS',
     });
   };
 
@@ -186,44 +190,119 @@ export default function CategoriesPage() {
           </Button>
         </Box>
       </Box>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        {allCategories.map((category: Category) => (
-          <Box key={category.id} sx={{ flex: '1 1 320px', minWidth: 280, maxWidth: 400 }}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', position: 'relative', minHeight: 170 }}>
-              <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
-                <IconButton onClick={() => handleOpen(category)} size="small" color="info">
-                  <EditIcon fontSize="small" />
-                </IconButton>
-                <IconButton onClick={() => handleDelete(category.id)} size="small" color="error">
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-              <Typography variant="h6" fontWeight={700} mb={1}>
-                {category.name}
-              </Typography>
-              <Chip label={category.macroCategory} color="primary" sx={{ mb: 2, fontWeight: 700, fontSize: 14 }} />
-              {/* Need/Want selector for EXPENSE categories */}
-              {category.macroCategory.toUpperCase() === 'EXPENSE' && (
-                <RadioGroup
-                  row
-                  value={needWantMap[category.id] || 'Need'}
-                  onChange={(e) => handleNeedWantChange(category.id, e.target.value as 'Need' | 'Want')}
-                  sx={{ mb: 1 }}
+
+      {/* Categories Table */}
+      <Paper elevation={4} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'grey.100' }}>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Macro Category</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Regex Patterns</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary', textAlign: 'center' }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {allCategories.map((category: Category, index: number) => (
+                <TableRow 
+                  key={category.id} 
+                  sx={{ 
+                    '&:nth-of-type(odd)': { bgcolor: 'grey.50' },
+                    '&:hover': { bgcolor: 'grey.100' },
+                    transition: 'background-color 0.2s'
+                  }}
                 >
-                  <FormControlLabel value="Need" control={<Radio color="success" />} label="Need" />
-                  <FormControlLabel value="Want" control={<Radio color="warning" />} label="Want" />
-                </RadioGroup>
+                  <TableCell>
+                    <Typography variant="body1" fontWeight={600}>
+                      {category.name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={category.macroCategory} 
+                      variant="outlined"
+                      size="small"
+                      sx={{ fontWeight: 600, fontSize: 12, borderColor: 'grey.400', color: 'text.secondary' }} 
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={category.type} 
+                      variant="outlined"
+                      size="small"
+                      sx={{ fontWeight: 600, fontSize: 12, borderColor: 'grey.400', color: 'text.secondary' }} 
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, maxWidth: 300 }}>
+                      {category.regexPatterns.length > 0 ? (
+                        category.regexPatterns.map((pattern: string, idx: number) => (
+                          <Chip 
+                            key={idx} 
+                            label={pattern} 
+                            variant="outlined" 
+                            size="small"
+                            sx={{ fontSize: 11, height: 24, borderColor: 'grey.300', color: 'text.secondary' }}
+                          />
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                          No patterns
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                      <IconButton 
+                        onClick={() => handleOpen(category)} 
+                        size="small" 
+                        sx={{ 
+                          color: 'grey.600',
+                          '&:hover': { bgcolor: 'grey.200', color: 'primary.main' },
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton 
+                        onClick={() => handleDelete(category.id)} 
+                        size="small" 
+                        sx={{ 
+                          color: 'grey.600',
+                          '&:hover': { bgcolor: 'error.50', color: 'error.main' },
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {allCategories.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No categories found. Add your first category to get started.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
               )}
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                {category.regexPatterns.map((pattern: string, idx: number) => (
-                  <Chip key={idx} label={pattern} variant="outlined" color="primary" size="small" />
-                ))}
-              </Box>
-            </Paper>
-          </Box>
-        ))}
-      </Box>
-      
+              {isLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress />
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
       {/* Load More Button */}
       {paginatedData?.hasMore && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

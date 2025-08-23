@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Set;
 
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.CategoryType;
 import antessio.personalfinance.domain.model.MacroCategoryEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,6 +15,7 @@ public class CategoryDTO {
     private CategoryId id;
     private String name;
     private MacroCategoryEnum macroCategory;
+    private CategoryType type;
     private String emoji;
     private String userOwner;
     private Set<String> matchers;

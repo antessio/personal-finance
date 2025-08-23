@@ -1,6 +1,7 @@
 package antessio.personalfinance.infrastructure.persistence.entity;
 
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.CategoryType;
 import antessio.personalfinance.domain.model.MacroCategoryEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -28,6 +29,10 @@ public class CategoryEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "macro_category", nullable = false)
     private MacroCategoryEnum macroCategory;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private CategoryType type;
 
     @Column(name = "emoji")
     private String emoji;

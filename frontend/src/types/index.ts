@@ -14,6 +14,7 @@ export interface Category {
   name: string;
   macroCategory: string;
   regexPatterns: string[];
+  type: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS';
 }
 
 export interface Budget {
@@ -60,12 +61,22 @@ export interface Account{
   name: string;
 }
 
+export interface AccountFlowData {
+  accountName: string;
+  period: string;
+  expenses: number;
+  savings: number;
+  income: number;
+  total: number;
+}
 
 export interface CategorySpending{
   categoryName: string;
   totalSpent: number;
   budgetedAmount?: number;
   percentage: number;
+  categoryType?: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS'; 
+  macroCategory?: string;
 }
 
 export interface MonthlyData {
@@ -79,6 +90,14 @@ export interface MonthlyData {
 
 export interface MacroCategoryMonthlyData{
   macroCategory: string;
+  year: number;
+  month: number;
+  week: number;
+  total: number;
+}
+
+export interface CategoryTrendsData{
+  categoryName: string;
   year: number;
   month: number;
   week: number;
