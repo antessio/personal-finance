@@ -187,10 +187,12 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
           name: transaction.category.name,
           macroCategory: transaction.category.macroCategory,
           regexPatterns: transaction.category.matchers,
+          type: transaction.category.type
         } : undefined,
         amount: transaction.amount,
         account: transaction.source,
-        included: !transaction.skip
+        included: !transaction.skip,
+        type: transaction.category?.type
       })),
       hasMore: response.data.hasNext,
       nextCursor: response.data.data.length > 0 ? response.data.data[response.data.data.length - 1].id : undefined
@@ -266,6 +268,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
         name: category.name,
         macroCategory: category.macroCategory,
         regexPatterns: category.matchers,
+        type: category.type
       })),
       hasMore: response.data.hasNext,
       nextCursor: response.data.hasNext ? response.data.data[response.data.data.length - 1].id : undefined

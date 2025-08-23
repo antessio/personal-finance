@@ -115,7 +115,10 @@ export default function HomePage() {
     ? (() => {
       // For monthly view, show weeks or days of the selected month
       const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-      const monthData = monthlyData.filter((tx: MonthlyData) => Number(tx.month) === selectedMonth);
+      const monthData = monthlyData.filter((tx: MonthlyData) => {
+        const [year, month] = tx.month.split('-');
+        return Number(year) === selectedYear && Number(month) === selectedMonth;
+      });
       const weekData = [];
       for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
         const wd = monthData.find(m => m.week === week);
@@ -129,7 +132,10 @@ export default function HomePage() {
       return weekData;
     })()
     : months.map((month, index) => {
-      const monthData = monthlyData.find((tx: MonthlyData) => Number(tx.month) === index + 1);
+      const monthData = monthlyData.find((tx: MonthlyData) => {
+        const [year, monthStr] = tx.month.split('-');
+        return Number(year) === selectedYear && Number(monthStr) === index + 1;
+      });
       return {
         month,
         Income: monthData ? monthData.totalIncome : 0,
