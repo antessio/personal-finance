@@ -61,6 +61,14 @@ export interface Account{
   name: string;
 }
 
+export interface AccountFlowData {
+  accountName: string;
+  period: string;
+  expenses: number;
+  savings: number;
+  income: number;
+  total: number;
+}
 
 export interface CategorySpending{
   categoryName: string;
@@ -82,6 +90,14 @@ export interface MonthlyData {
 
 export interface MacroCategoryMonthlyData{
   macroCategory: string;
+  year: number;
+  month: number;
+  week: number;
+  total: number;
+}
+
+export interface CategoryTrendsData{
+  categoryName: string;
   year: number;
   month: number;
   week: number;

@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
@@ -88,6 +88,78 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return monthlyData;
   }
 
+  async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
+    await simulateDelay();
+    
+    const categoryTrendsData: CategoryTrendsData[] = [];
+    
+    if (month !== undefined) {
+      // Monthly view - show weekly data for each category
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const weeksInMonth = Math.ceil(daysInMonth / 7);
+      
+      // Get top spending categories for better visualization
+      const topCategories = this.categories
+        .filter(cat => cat.macroCategory === 'EXPENSE')
+        .slice(0, 8); // Limit to top 8 categories for readability
+      
+      for (const category of topCategories) {
+        for (let week = 1; week <= weeksInMonth; week++) {
+          // Calculate start and end dates for this week
+          const weekStart = new Date(year, month - 1, (week - 1) * 7 + 1);
+          const weekEnd = new Date(year, month - 1, Math.min(week * 7, daysInMonth));
+          
+          const weekTransactions = this.transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return tx.included && 
+                   tx.categoryId === category.id &&
+                   txDate >= weekStart && 
+                   txDate <= weekEnd;
+          });
+          
+          const total = weekTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          
+          categoryTrendsData.push({
+            categoryName: category.name,
+            year,
+            month,
+            week,
+            total
+          });
+        }
+      }
+    } else {
+      // Yearly view - show monthly data for each category
+      const topCategories = this.categories
+        .filter(cat => cat.macroCategory === 'EXPENSE')
+        .slice(0, 8); // Limit to top 8 categories for readability
+      
+      for (const category of topCategories) {
+        for (let monthNum = 1; monthNum <= 12; monthNum++) {
+          const monthStr = `${year}-${monthNum.toString().padStart(2, '0')}`;
+          
+          const monthTransactions = this.transactions.filter(tx => {
+            return tx.included && 
+                   tx.categoryId === category.id &&
+                   tx.date.startsWith(monthStr);
+          });
+          
+          const total = monthTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          
+          categoryTrendsData.push({
+            categoryName: category.name,
+            year,
+            month: monthNum,
+            week: 1, // Not used in yearly view
+            total
+          });
+        }
+      }
+    }
+    
+    return categoryTrendsData;
+  }
+
   // Category spending methods
   async getCategorySpending(year: number, month?: number): Promise<CategorySpending[]> {
     await simulateDelay();
@@ -169,6 +241,111 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       });
     }
     return monthlyData;
+  }
+
+  async getAccountFlowData(year: number, month?: number): Promise<AccountFlowData[]> {
+    await simulateDelay();
+    
+    // Get all accounts
+    const accounts = await this.getAccounts();
+    
+    // Get category IDs for different types
+    const expenseCategoryIds = this.categories.filter(c => c.macroCategory === 'EXPENSE').map(c => c.id);
+    const savingsCategoryIds = this.categories.filter(c => c.macroCategory === 'SAVINGS').map(c => c.id);
+    const incomeCategoryIds = this.categories.filter(c => c.macroCategory === 'INCOME').map(c => c.id);
+    
+    const accountFlowData: AccountFlowData[] = [];
+    
+    if (month !== undefined) {
+      // Monthly view - show weekly data for the selected month
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const weeksInMonth = Math.ceil(daysInMonth / 7);
+      
+      for (const account of accounts) {
+        for (let week = 1; week <= weeksInMonth; week++) {
+          // Calculate start and end dates for this week
+          const weekStart = new Date(year, month - 1, (week - 1) * 7 + 1);
+          const weekEnd = new Date(year, month - 1, Math.min(week * 7, daysInMonth));
+          
+          const weekTransactions = this.transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return tx.included && 
+                   tx.account === account.id &&
+                   txDate >= weekStart && 
+                   txDate <= weekEnd;
+          });
+          
+          // Expenses: negative amounts from expense categories
+          const expenses = weekTransactions
+            .filter(tx => tx.categoryId && expenseCategoryIds.includes(tx.categoryId) && tx.amount < 0)
+            .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+            
+          // Savings: positive amounts from savings categories  
+          const savings = weekTransactions
+            .filter(tx => tx.categoryId && savingsCategoryIds.includes(tx.categoryId) && tx.amount > 0)
+            .reduce((sum, tx) => sum + tx.amount, 0);
+            
+          // Income: positive amounts from income categories
+          const income = weekTransactions
+            .filter(tx => tx.categoryId && incomeCategoryIds.includes(tx.categoryId) && tx.amount > 0)
+            .reduce((sum, tx) => sum + tx.amount, 0);
+          
+          const total = income + savings - expenses;
+          
+          accountFlowData.push({
+            accountName: account.name,
+            period: `Week ${week}`,
+            expenses,
+            savings,
+            income,
+            total
+          });
+        }
+      }
+    } else {
+      // Yearly view - show monthly data for all months
+      for (const account of accounts) {
+        for (let monthNum = 1; monthNum <= 12; monthNum++) {
+          const monthStr = `${year}-${monthNum.toString().padStart(2, '0')}`;
+          
+          const monthTransactions = this.transactions.filter(tx => {
+            return tx.included && 
+                   tx.account === account.id &&
+                   tx.date.startsWith(monthStr);
+          });
+          
+          // Expenses: negative amounts from expense categories
+          const expenses = monthTransactions
+            .filter(tx => tx.categoryId && expenseCategoryIds.includes(tx.categoryId) && tx.amount < 0)
+            .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+            
+          // Savings: positive amounts from savings categories
+          const savings = monthTransactions
+            .filter(tx => tx.categoryId && savingsCategoryIds.includes(tx.categoryId) && tx.amount > 0)
+            .reduce((sum, tx) => sum + tx.amount, 0);
+            
+          // Income: positive amounts from income categories
+          const income = monthTransactions
+            .filter(tx => tx.categoryId && incomeCategoryIds.includes(tx.categoryId) && tx.amount > 0)
+            .reduce((sum, tx) => sum + tx.amount, 0);
+          
+          const total = income + savings - expenses;
+          
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          
+          accountFlowData.push({
+            accountName: account.name,
+            period: monthNames[monthNum - 1],
+            expenses,
+            savings,
+            income,
+            total
+          });
+        }
+      }
+    }
+    
+    return accountFlowData;
   }
 
   async getTotalIncome(year: number, month?: number): Promise<number> {
@@ -724,20 +901,20 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     await simulateDelay();
     const accounts: Account[] = [
         {
-          id: "widiba",
-          name: "Widiba"
+          id: "account-1",
+          name: "Main Checking"
         },
         {
-          id: "intesa",
-          name: "Intesa",
+          id: "account-2",
+          name: "Savings Account",
         },
         {
-          id: "satispay",
-          name: "Satispay",
+          id: "account-3",
+          name: "Credit Card",
         },
         {
-          id: "paypal",
-          name: "PayPal"
+          id: "account-4",
+          name: "Investment Account"
         }
     ]
     return accounts;

@@ -110,6 +110,24 @@ export default function HomePage() {
     queryFn: () => service.getMonthlyData(selectedYear, selectedMonth)
   });
 
+  // Account Flow data
+  const { data: accountFlowData = [] } = useQuery({
+    queryKey: ['accountFlowData', selectedYear, selectedMonth],
+    queryFn: () => service.getAccountFlowData(selectedYear, selectedMonth)
+  });
+
+  // Fetch accounts from API
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => service.getAccounts()
+  });
+
+  // Fetch individual category trends data
+  const { data: categoryTrendsData = [] } = useQuery({
+    queryKey: ['categoryTrendsData', selectedYear, selectedMonth],
+    queryFn: () => service.getCategoryTrendsData(selectedYear, selectedMonth)
+  });
+
   // Generate chart data based on selection
   const monthTransactions = selectedMonth
     ? (() => {
@@ -182,16 +200,112 @@ export default function HomePage() {
     });
 
   // Define colors for each macro category
-  const macroCategoryColors = {
+  const macroCategoryColors: { [key: string]: string } = {
     'EXPENSE': '#f44336',
     'BILLS': '#ff9800',
     'SAVINGS': '#2196f3',
     'SUBSCRIPTIONS': '#9c27b0',
-    'DEBTS': '#795548'
+    'DEBTS': '#795548',
+    'INCOME': '#4caf50'
   };
 
   // Get unique macro categories from the data
   const uniqueMacroCategories = [...new Set(macroCategoryTrends.map(item => item.macroCategory))];
+
+  // Transform account flow data for chart
+  const transformedAccountData = (() => {
+    if (!accountFlowData || accountFlowData.length === 0) return [];
+    
+    // Group data by period and aggregate by account
+    const periodGroups: { [period: string]: { [account: string]: { expenses: number; savings: number; income: number; total: number } } } = {};
+    
+    accountFlowData.forEach(item => {
+      if (!periodGroups[item.period]) {
+        periodGroups[item.period] = {};
+      }
+      periodGroups[item.period][item.accountName] = {
+        expenses: item.expenses,
+        savings: item.savings,
+        income: item.income,
+        total: item.total
+      };
+    });
+    
+    // Convert to chart format
+    return Object.keys(periodGroups).map(period => {
+      const result: any = { period };
+      Object.keys(periodGroups[period]).forEach(account => {
+        result[`${account}_Expenses`] = periodGroups[period][account].expenses;
+        result[`${account}_Savings`] = periodGroups[period][account].savings;
+        result[`${account}_Income`] = periodGroups[period][account].income;
+        result[`${account}_Total`] = periodGroups[period][account].total;
+      });
+      return result;
+    });
+  })();
+
+  // Get unique accounts for the account chart
+  const uniqueAccounts = [...new Set(accountFlowData.map(item => item.accountName))];
+  
+  // Generate dynamic colors for accounts based on API data
+  const generateAccountColors = (accounts: any[]) => {
+    const colors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#795548', '#607d8b'];
+    const accountColors: { [key: string]: string } = {};
+    accounts.forEach((account, index) => {
+      accountColors[account.name] = colors[index % colors.length];
+    });
+    return accountColors;
+  };
+  
+  const accountColors = generateAccountColors(accounts);
+
+  // Transform trends data for line chart
+  const trendsChartData = (() => {
+    if (!categoryTrendsData || categoryTrendsData.length === 0) return [];
+    
+    if (selectedMonth !== undefined) {
+      // Monthly view - show weekly trends
+      const weeks = [...new Set(categoryTrendsData.map(item => item.week))].sort();
+      return weeks.map(week => {
+        const weekData: any = { period: `Week ${week}` };
+        const weekItems = categoryTrendsData.filter(item => item.week === week);
+        
+        weekItems.forEach(item => {
+          weekData[item.categoryName] = item.total;
+        });
+        
+        return weekData;
+      });
+    } else {
+      // Yearly view - show monthly trends
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months.map((monthName, index) => {
+        const monthData: any = { period: monthName };
+        const monthItems = categoryTrendsData.filter(item => item.month === index + 1);
+        
+        monthItems.forEach(item => {
+          monthData[item.categoryName] = item.total;
+        });
+        
+        return monthData;
+      });
+    }
+  })();
+
+  // Get unique categories for trends chart
+  const uniqueCategories = [...new Set(categoryTrendsData.map(item => item.categoryName))];
+
+  // Generate colors for categories
+  const generateCategoryColors = (categories: string[]) => {
+    const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+    const categoryColors: { [key: string]: string } = {};
+    categories.forEach((category, index) => {
+      categoryColors[category] = colors[index % colors.length];
+    });
+    return categoryColors;
+  };
+
+  const categoryColors = generateCategoryColors(uniqueCategories);
 
   // --- 50-30-20 Budget Fake Data ---
   type BudgetKey = 'needs' | 'wants' | 'savingsDebts';
@@ -446,6 +560,49 @@ export default function HomePage() {
           </Paper>
         </Box>
 
+        {/* Account Flow Chart */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
+          {/* Account Total Flow */}
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <MuiBarChart color="secondary" sx={{ mr: 1 }} />
+              <Typography color="secondary.dark" fontWeight={700} variant="h6">
+                Account Total Balance - {selectedMonth ? `${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `${selectedYear}`}
+              </Typography>
+            </Box>
+            <Box sx={{ width: '100%', height: 400, mb: 2 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={transformedAccountData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="period" 
+                    tick={{ fontSize: 11 }} 
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                    interval={0}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                  <Tooltip formatter={(value) => `$${value?.toLocaleString()}`} />
+                  <Legend verticalAlign="top" height={40} />
+                  {uniqueAccounts.map((account) => (
+                    <Bar
+                      key={`${account}_Total`}
+                      dataKey={`${account}_Total`}
+                      fill={accountColors[account] || '#666666'}
+                      radius={[4, 4, 0, 0]}
+                      name={`${account} Total`}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+              Total balance (income + savings - expenses) per account
+            </Typography>
+          </Paper>
+        </Box>
+
         {/* Category Breakdown - Full Width */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -634,53 +791,55 @@ export default function HomePage() {
                 </Table>
               </TableContainer>
             </Box>
-
-            {/* Pie Charts */}
-            <Box sx={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Typography variant="subtitle2" fontWeight={600}>Goal Breakdown</Typography>
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Needs', value: budget502010.goal.needs },
-                      { name: 'Wants', value: budget502010.goal.wants },
-                      { name: 'Savings+Debts', value: budget502010.goal.savingsDebts },
-                    ]}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={60}
-                    label
-                  >
-                    <Cell fill="#43a047" />
-                    <Cell fill="#ffa726" />
-                    <Cell fill="#29b6f6" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <Typography variant="subtitle2" fontWeight={600}>Actual Breakdown</Typography>
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Needs', value: budget502010.actual.needs },
-                      { name: 'Wants', value: budget502010.actual.wants },
-                      { name: 'Savings+Debts', value: budget502010.actual.savingsDebts },
-                    ]}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={60}
-                    label
-                  >
-                    <Cell fill="#43a047" />
-                    <Cell fill="#ffa726" />
-                    <Cell fill="#29b6f6" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </Box>
           </Box>
+        </Paper>
+
+        {/* Category Trends Over Time */}
+        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Timeline color="warning" sx={{ mr: 1 }} />
+            <Typography color="warning.dark" fontWeight={700} variant="h6">
+              Category Trends Over Time - {selectedMonth ? `${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `${selectedYear}`}
+            </Typography>
+          </Box>
+          <Box sx={{ width: '100%', height: 400, mb: 2 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendsChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="period" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
+                  fontSize={12}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  width={80}
+                />
+                <Tooltip 
+                  formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+                  labelFormatter={(label) => `Period: ${label}`}
+                />
+                <Legend />
+                {uniqueCategories.map((category) => (
+                  <Line
+                    key={category}
+                    type="monotone"
+                    dataKey={category}
+                    stroke={categoryColors[category] || '#666666'}
+                    strokeWidth={3}
+                    dot={{ r: 6 }}
+                    name={category}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            Track spending trends across different categories over time
+          </Typography>
         </Paper>
       </Box>
     </Layout>

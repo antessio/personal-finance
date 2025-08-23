@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
@@ -134,6 +134,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalExpenses: data.totalExpenses,
       totalSavings: data.totalSavings,
     }));
+  }
+
+  async getAccountFlowData(year: number, month?: number): Promise<AccountFlowData[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<AccountFlowDataRest[]>(`/api/accounts/flow-data?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
+  }
+
+  async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<CategoryTrendsDataRest[]>(`/api/categories/trends?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
   }
 
   async getTotalIncome(year: number, month?: number | undefined): Promise<number> {

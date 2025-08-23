@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
 
 export interface PersonalFinanceService {
 
@@ -6,6 +6,8 @@ export interface PersonalFinanceService {
   getCategorySpending(year: number, month?: number): Promise<CategorySpending[]>;
   getMonthlyData(year: number, month?: number): Promise<MonthlyData[]>;
   getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]>;
+  getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]>;
+  getAccountFlowData(year: number, month?: number): Promise<AccountFlowData[]>;
 
   // Transaction methods
   getTotalIncome(year: number, month: number | undefined): Promise<number>;
