@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { AccountFlowDataRest, BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
@@ -155,6 +155,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     // For now, return empty array as this would need to be implemented on the backend
     // In a real implementation, this would call something like:
     // const response = await this.api.get<CategoryTrendsDataRest[]>(`/api/categories/trends?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
+  }
+
+  async getCumulativeSpendingData(year: number, month?: number): Promise<CumulativeSpendingData[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<CumulativeSpendingDataRest[]>(`/api/categories/cumulative?year=${year}&month=${month || ''}`);
+    return Promise.resolve([]);
+  }
+
+  async getLargestExpenses(year: number, month?: number, limit: number = 10): Promise<LargestExpenseItem[]> {
+    // For now, return empty array as this would need to be implemented on the backend
+    // In a real implementation, this would call something like:
+    // const response = await this.api.get<LargestExpenseItemRest[]>(`/api/transactions/largest?year=${year}&month=${month || ''}&limit=${limit}`);
     return Promise.resolve([]);
   }
 
