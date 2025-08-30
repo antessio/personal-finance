@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
-import { AccountFlowDataRest, BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
+import { AccountFlowDataRest, BudgetRest, CategoryFlowDataRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
@@ -152,10 +152,20 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
-    // For now, return empty array as this would need to be implemented on the backend
-    // In a real implementation, this would call something like:
-    // const response = await this.api.get<CategoryTrendsDataRest[]>(`/api/categories/trends?year=${year}&month=${month || ''}`);
-    return Promise.resolve([]);
+    let fromDate = `${year}-01-01`;
+    let toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategoryFlowDataRest[]>(`/api/transactions/category-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      year: spending.year,
+      month: spending.month,
+      week: spending.week,
+      total: spending.total,
+    }));
   }
 
   async getCumulativeSpendingData(year: number, month?: number): Promise<CumulativeSpendingData[]> {

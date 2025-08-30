@@ -121,7 +121,7 @@ public class TransactionQueryService {
 
                         return new AccountMonthlyDataDTO(yearMonth.getYear(), yearMonth.getMonthValue(), week, accountType, t.getAmount());
                     })
-                    .forEach(data ->{
+                    .forEach(data -> {
                         YearMonth key = YearMonth.of(data.year(), data.month());
                         if (!result.containsKey(key)) {
                             result.put(key, new EnumMap<>(AccountType.class));
@@ -488,5 +488,73 @@ public class TransactionQueryService {
                 })
                 .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::macroCategory).thenComparing(MacroCategoryMonthlyDataDTO::month).thenComparing(MacroCategoryMonthlyDataDTO::week))
                 .toList();
+    }
+
+    public List<CategoryMonthlyDataDTO> getCategoryMonthlyData(String username, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+        if (startDate.isEqual(endDate)) {
+            throw new IllegalArgumentException("Start date and end date cannot be the same");
+        }
+        boolean groupingByMonth = isGroupingByMonth(startDate, endDate);
+        Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
+                .stream()
+                .filter(c -> c.getMacroCategory().isExpense())
+                .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
+        Stream<CategoryMonthlyDataDTO> categoryMonthlyDataDTOStream = transactionRepository.findAllIncludedCategorizedByUserAndYear(username, startDate, endDate)
+                .filter(t -> t.getCategoryId() != null && categories.containsKey(t.getCategoryId()))
+                .map(t -> {
+                    YearMonth yearMonth = YearMonth.from(t.getDate());
+                    int week = t.getDate().get(WeekFields.ISO.weekOfMonth());
+
+                    return new CategoryMonthlyDataDTO(categories.get(t.getCategoryId()),
+                            week,
+                            yearMonth.getYear(),
+                            yearMonth.getMonthValue(),
+                            t.getAmount());
+                });
+        if (groupingByMonth) {
+            Map<YearMonth, Map<Integer, Map<CategoryId, CategoryMonthlyDataDTO>>> transactionsByYearMonthAndWeek = categoryMonthlyDataDTOStream
+                    .collect(Collectors.groupingBy(a -> YearMonth.of(a.year(), a.month()),
+                            Collectors.groupingBy(CategoryMonthlyDataDTO::week,
+                                    Collectors.groupingBy(d -> d.category().getId(),
+                                            Collectors.reducing(new CategoryMonthlyDataDTO(null, 0, 0, null, BigDecimal.ZERO),
+                                                    Function.identity(),
+                                                    (a, b) -> new CategoryMonthlyDataDTO(a.category(), a.week(), a.year(), a.month(),
+                                                            a.total().add(b.total())))))));
+
+            return transactionsByYearMonthAndWeek.entrySet().stream()
+                    .flatMap(yearEntry -> yearEntry.getValue().entrySet().stream()
+                            .flatMap(weekEntry -> weekEntry.getValue().values().stream()))
+                    .map(t -> new CategoryMonthlyDataDTO(t.category(), t.week(), t.year(), t.month(), t.total().abs()))
+                    .sorted(Comparator.comparing(CategoryMonthlyDataDTO::year))
+                    .toList();
+        } else {
+
+            Map<YearMonth, Map<CategoryId, CategoryMonthlyDataDTO>> result = new HashMap<>();
+            categoryMonthlyDataDTOStream
+                    .forEach(data -> {
+                        YearMonth key = YearMonth.of(data.year(), data.month());
+                        if (!result.containsKey(key)) {
+                            result.put(key, new HashMap<>());
+                        }
+                        Map<CategoryId, CategoryMonthlyDataDTO> accountTypeMap = result.get(key);
+                        if (accountTypeMap.containsKey(data.category().getId())) {
+                            accountTypeMap.computeIfPresent(data.category().getId(),
+                                    (k, existing) -> new CategoryMonthlyDataDTO(existing.category(),
+                                            0,
+                                            existing.year(),
+                                            existing.month(),
+                                            existing.total().add(data.total())));
+                        } else {
+                            accountTypeMap.put(data.category().getId(), new CategoryMonthlyDataDTO(data.category(), 0, data.year(), data.month(), data.total()));
+                        }
+
+
+                    });
+            return result.values().stream().flatMap(m -> m.values().stream())
+                    .map(t -> new CategoryMonthlyDataDTO(t.category(), t.week(), t.year(), t.month(), t.total().abs())).toList();
+        }
     }
 }

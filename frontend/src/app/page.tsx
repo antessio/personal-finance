@@ -294,7 +294,19 @@ export default function HomePage() {
 
   // Generate colors for categories
   const generateCategoryColors = (categories: string[]) => {
-    const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+    const colors = [
+      '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', 
+      '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722',
+      '#795548', '#607d8b', '#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6',
+      '#4fc3f7', '#4dd0e1', '#4db6ac', '#81c784', '#aed581', '#dce775', '#fff176', '#ffb74d',
+      '#ff8a65', '#a1887f', '#90a4ae', '#ef5350', '#ec407a', '#ab47bc', '#7e57c2', '#5c6bc0',
+      '#42a5f5', '#29b6f6', '#26c6da', '#26a69a', '#66bb6a', '#9ccc65', '#d4e157', '#ffee58',
+      '#ffca28', '#ffa726', '#ff7043', '#8d6e63', '#78909c', '#b71c1c', '#880e4f', '#4a148c',
+      '#311b92', '#1a237e', '#0d47a1', '#01579b', '#006064', '#004d40', '#1b5e20', '#33691e',
+      '#827717', '#f57f17', '#ff6f00', '#e65100', '#bf360c', '#3e2723', '#263238', '#c62828',
+      '#ad1457', '#6a1b9a', '#4527a0', '#283593', '#1565c0', '#0277bd', '#00838f', '#00695c',
+      '#2e7d32', '#558b2f', '#9e9d24', '#f9a825', '#ff8f00', '#ef6c00', '#d84315', '#5d4037'
+    ];
     const categoryColors: { [key: string]: string } = {};
     categories.forEach((category, index) => {
       categoryColors[category] = colors[index % colors.length];
