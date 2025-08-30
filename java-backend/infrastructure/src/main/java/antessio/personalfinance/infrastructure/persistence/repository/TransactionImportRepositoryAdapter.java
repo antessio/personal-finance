@@ -1,9 +1,7 @@
 package antessio.personalfinance.infrastructure.persistence.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -53,6 +51,14 @@ public class TransactionImportRepositoryAdapter implements TransactionImportRepo
                 .map(TransactionImportId::id)
                 .map(cursor -> transactionImportSpringDataRepository.findByUserOwnerAfterIdWithLimit(userId, cursor, limit))
                 .orElseGet(()-> transactionImportSpringDataRepository.findByUserOwnerWithLimit(userId, limit))
+                .stream()
+                .map(TransactionImportRepositoryAdapter::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<TransactionImport> findByIds(List<TransactionImportId> ids) {
+        return transactionImportSpringDataRepository.findByIds(ids.stream().map(TransactionImportId::id).toList())
                 .stream()
                 .map(TransactionImportRepositoryAdapter::toDomain)
                 .toList();

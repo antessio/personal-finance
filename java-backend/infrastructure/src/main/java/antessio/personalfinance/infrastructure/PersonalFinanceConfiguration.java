@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 import antessio.personalfinance.common.Id;
 import antessio.personalfinance.domain.ports.BudgetRepository;
-import antessio.personalfinance.domain.service.BudgetService;
+import antessio.personalfinance.domain.service.*;
 import antessio.personalfinance.infrastructure.eventpublisher.SpringEventPublisher;
 import antessio.personalfinance.infrastructure.persistence.repository.AutomaticSkipSpringDataRepositoryAdapter;
 import antessio.personalfinance.infrastructure.web.controller.common.IdSerializer;
@@ -18,9 +18,6 @@ import org.springframework.context.annotation.Configuration;
 import antessio.personalfinance.common.DateProvider;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
 import antessio.personalfinance.domain.ports.TransactionRepository;
-import antessio.personalfinance.domain.service.CategoryService;
-import antessio.personalfinance.domain.service.TransactionImportService;
-import antessio.personalfinance.domain.service.TransactionService;
 import antessio.personalfinance.infrastructure.persistence.repository.CategoryRepositoryAdapter;
 import org.springframework.context.annotation.PropertySource;
 
@@ -73,9 +70,16 @@ public class PersonalFinanceConfiguration {
     public TransactionService transactionService(TransactionRepository transactionRepository,
                                                  DateProvider dateProvider,
                                                  CategoryService categoryService,
-                                                 BudgetService budgetService,
                                                  SpringEventPublisher eventPublisher) {
-        return new TransactionService(transactionRepository, dateProvider, categoryService, budgetService, eventPublisher);
+        return new TransactionService(transactionRepository, dateProvider, categoryService, eventPublisher);
+    }
+
+    @Bean
+    public TransactionQueryService transactionQueryService(TransactionRepository transactionRepository,
+                                                         DateProvider dateProvider,
+                                                         CategoryService categoryService,
+                                                         BudgetService budgetService, TransactionImportService transactionImportService) {
+        return new TransactionQueryService(transactionRepository, categoryService, budgetService);
     }
 
     @Bean

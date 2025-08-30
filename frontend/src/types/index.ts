@@ -61,12 +61,9 @@ export interface Account{
   name: string;
 }
 
-export interface AccountFlowData {
+export interface  AccountFlowData {
   accountName: string;
   period: string;
-  expenses: number;
-  savings: number;
-  income: number;
   total: number;
 }
 

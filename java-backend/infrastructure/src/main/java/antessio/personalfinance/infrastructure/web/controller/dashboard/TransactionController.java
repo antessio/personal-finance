@@ -1,13 +1,9 @@
 package antessio.personalfinance.infrastructure.web.controller.dashboard;
 
 import antessio.personalfinance.domain.dto.*;
-import antessio.personalfinance.domain.model.CategoryId;
-import antessio.personalfinance.domain.model.MacroCategoryMonthlyDataDTO;
-import antessio.personalfinance.domain.model.MonthlyDataDTO;
-import antessio.personalfinance.domain.model.TransactionId;
+import antessio.personalfinance.domain.model.*;
+import antessio.personalfinance.domain.service.TransactionQueryService;
 import antessio.personalfinance.domain.service.TransactionService;
-import antessio.personalfinance.infrastructure.persistence.repository.BudgetSpringDataRepository;
-import antessio.personalfinance.infrastructure.persistence.repository.TransactionSpringDataRepository;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
@@ -31,10 +27,8 @@ import java.util.stream.Stream;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final TransactionQueryService transactionQueryService;
     private final SecurityUtils securityUtils;
-
-    private final BudgetSpringDataRepository budgetSpringDataRepository;
-    private final TransactionSpringDataRepository transactionSpringDataRepository;
 
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionDTO>> getTransactions(
@@ -51,7 +45,7 @@ public class TransactionController {
         }
 
         limit = Optional.ofNullable(limit).orElse(20);
-        List<TransactionDTO> results = transactionService.findTransactions(
+        List<TransactionDTO> results = transactionQueryService.findTransactions(
                 TransactionsQueryDTO.builder()
                         .month(Optional.ofNullable(targetDate)
                                 .map(date -> YearMonth.of(date.getYear(), date.getMonthValue()))
@@ -149,7 +143,7 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         YearMonth ym = YearMonth.parse(yearMonth);
-        List<TransactionExportDTO> transactions = transactionService.exportTransactions(ym, user.getUsername());
+        List<TransactionExportDTO> transactions = transactionQueryService.exportTransactions(ym, user.getUsername());
         StringBuilder csv = new StringBuilder();
         csv.append("date,type,macro_category,category,currency,amount,description\n");
         for (TransactionExportDTO t : transactions) {
@@ -174,7 +168,7 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         YearMonth ym = YearMonth.parse(yearMonth);
-        List<SavingsExportDTO> transactions = transactionService.exportSavings(ym, user.getUsername());
+        List<SavingsExportDTO> transactions = transactionQueryService.exportSavings(ym, user.getUsername());
         StringBuilder csv = new StringBuilder();
         csv.append("date,category,currency,amount\n");
         for (SavingsExportDTO t : transactions) {
@@ -197,7 +191,7 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        List<CategorySpendingDTO> categorySpending = transactionService.getCategorySpending(user.getUsername(), fromDate, toDate);
+        List<CategorySpendingDTO> categorySpending = transactionQueryService.getCategorySpending(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(categorySpending);
     }
 
@@ -209,7 +203,7 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        List<MonthlyDataDTO> monthlyData = transactionService.getMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        List<MonthlyDataDTO> monthlyData = transactionQueryService.getMonthlyBudgets(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(monthlyData);
     }
 
@@ -221,7 +215,19 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        List<MacroCategoryMonthlyDataDTO> monthlyData = transactionService.getExpensesMacroCategoriesMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        List<MacroCategoryMonthlyDataDTO> monthlyData = transactionQueryService.getExpensesMacroCategoriesMonthlyBudgets(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(monthlyData);
+    }
+
+    @GetMapping("/account-monthly-data")
+    public ResponseEntity<List<AccountMonthlyDataDTO>> getAccountMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<AccountMonthlyDataDTO> monthlyData = transactionQueryService.getAccountMonthlyData(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(monthlyData);
     }
 
@@ -234,7 +240,7 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        BigDecimal totalSavings = transactionService.getTotalSavings(user.getUsername(), fromDate, toDate);
+        BigDecimal totalSavings = transactionQueryService.getTotalSavings(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(totalSavings);
     }
 
@@ -245,7 +251,7 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        BigDecimal totalIncome = transactionService.getTotalIncome(user.getUsername(), fromDate, toDate);
+        BigDecimal totalIncome = transactionQueryService.getTotalIncome(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(totalIncome);
     }
 
@@ -256,7 +262,7 @@ public class TransactionController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        BigDecimal totalExpenses = transactionService.getTotalExpenses(user.getUsername(), fromDate, toDate);
+        BigDecimal totalExpenses = transactionQueryService.getTotalExpenses(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(totalExpenses);
     }
 

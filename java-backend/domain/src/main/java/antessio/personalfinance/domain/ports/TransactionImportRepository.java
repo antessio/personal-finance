@@ -10,16 +10,16 @@ import antessio.personalfinance.domain.model.TransactionImportId;
 public interface TransactionImportRepository {
     Optional<TransactionImport> findById(TransactionImportId id);
 
-    TransactionImport save(TransactionImport TransactionImport);
+    TransactionImport save(TransactionImport transactionImport);
 
-    void delete(TransactionImport TransactionImport);
+    void delete(TransactionImport transactionImport);
 
-    void update(TransactionImport TransactionImport);
+    void update(TransactionImport transactionImport);
 
     List<TransactionImport> findAllByUser(String userId,
                                               int limit,
                                               TransactionImportId startingAfterId);
 
 
-
+    List<TransactionImport> findByIds(List<TransactionImportId> ids);
 }

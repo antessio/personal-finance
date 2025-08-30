@@ -98,4 +98,11 @@ public class TransactionImportService {
         return transactionImportRepository.findById(id)
                 .map(this::toDTO);
     }
+
+    public List<TransactionImportDTO> findByIds(List<TransactionImportId> list) {
+        return transactionImportRepository.findByIds(list)
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
 }

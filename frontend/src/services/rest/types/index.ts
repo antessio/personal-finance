@@ -67,3 +67,11 @@ export interface MonthlyDataRest {
   totalExpenses: number;
   totalSavings: number;
 }
+
+export interface AccountFlowDataRest{
+  accountType: string;
+  year: number;
+  month: number;
+  week: number;
+  total: number;
+}

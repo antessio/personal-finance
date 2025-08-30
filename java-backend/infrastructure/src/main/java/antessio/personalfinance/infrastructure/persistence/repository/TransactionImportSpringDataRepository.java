@@ -49,4 +49,12 @@ public interface TransactionImportSpringDataRepository extends JpaRepository<Tra
       @Param("limit") int limit
   );
 
+    @Query(value = """
+        SELECT *
+            FROM transaction_imports t
+         WHERE t.id IN :ids
+        """,
+        nativeQuery = true)
+  List<TransactionImportEntity> findByIds(List<Long> ids);
+
 } 

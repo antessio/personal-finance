@@ -295,9 +295,6 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
           accountFlowData.push({
             accountName: account.name,
             period: `Week ${week}`,
-            expenses,
-            savings,
-            income,
             total
           });
         }
@@ -336,9 +333,6 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
           accountFlowData.push({
             accountName: account.name,
             period: monthNames[monthNum - 1],
-            expenses,
-            savings,
-            income,
             total
           });
         }

@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
-import { BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
+import { AccountFlowDataRest, BudgetRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
@@ -137,10 +137,18 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async getAccountFlowData(year: number, month?: number): Promise<AccountFlowData[]> {
-    // For now, return empty array as this would need to be implemented on the backend
-    // In a real implementation, this would call something like:
-    // const response = await this.api.get<AccountFlowDataRest[]>(`/api/accounts/flow-data?year=${year}&month=${month || ''}`);
-    return Promise.resolve([]);
+    let fromDate = `${year}-01-01`;
+    let toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<AccountFlowDataRest[]>(`/api/transactions/account-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(data => ({
+      accountName: data.accountType,
+      period: `${data.year}-${data.month.toString().padStart(2, '0')}-W${data.week}`,
+      total: data.total,
+    }));
   }
 
   async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
@@ -345,7 +353,6 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   async createBudget(budget: Omit<Budget, 'id'>): Promise<Budget> {
     var response: any;
-    console.log("Creating budget", budget);
     if (budget.period && budget.period == 'monthly') {
       response = await this.api.post<Budget>('/api/budgets/monthly', {
         amount: budget.amount,
@@ -471,7 +478,10 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async getAccounts(): Promise<Account[]> {
-    const response = await this.api.get("/api/configurations/accounts");
-    return response.data;
+    const response = await this.api.get<PaginatedResponseRest<string>>("/api/accounts");
+    return response.data.data.map(account => ({
+      id: account,
+      name: account
+    }));
   }
 } 

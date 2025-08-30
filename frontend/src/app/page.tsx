@@ -134,12 +134,13 @@ export default function HomePage() {
       // For monthly view, show weeks or days of the selected month
       const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
       const monthData = monthlyData.filter((tx: MonthlyData) => {
-        const [year, month] = tx.month.split('-');
-        return Number(year) === selectedYear && Number(month) === selectedMonth;
+      
+        return Number(tx.year) === selectedYear && Number(tx.month) === selectedMonth;
       });
       const weekData = [];
       for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
         const wd = monthData.find(m => m.week === week);
+      
         weekData.push({
           month: `Week ${week}`,
           Income: wd ? wd.totalIncome / 4 : 0,
@@ -151,8 +152,8 @@ export default function HomePage() {
     })()
     : months.map((month, index) => {
       const monthData = monthlyData.find((tx: MonthlyData) => {
-        const [year, monthStr] = tx.month.split('-');
-        return Number(year) === selectedYear && Number(monthStr) === index + 1;
+    
+        return Number(tx.year) === selectedYear && Number(tx.month) === index + 1;
       });
       return {
         month,
@@ -161,6 +162,7 @@ export default function HomePage() {
         Savings: monthData ? monthData.totalSavings : 0,
       };
     });
+  
 
   const { data: macroCategoryTrends = [] } = useQuery({
     queryKey: ['macroCategoryTrends', selectedYear, selectedMonth],
@@ -184,6 +186,7 @@ export default function HomePage() {
           SUBSCRIPTIONS: w.find(data => data.macroCategory === 'SUBSCRIPTIONS')?.total || 0,
           DEBTS: w.find(data => data.macroCategory === 'DEBTS')?.total || 0,
         });
+    
       }
       return weekData;
     })()
@@ -217,16 +220,13 @@ export default function HomePage() {
     if (!accountFlowData || accountFlowData.length === 0) return [];
     
     // Group data by period and aggregate by account
-    const periodGroups: { [period: string]: { [account: string]: { expenses: number; savings: number; income: number; total: number } } } = {};
-    
+    const periodGroups: { [period: string]: { [account: string]: { total: number } } } = {};
+
     accountFlowData.forEach(item => {
       if (!periodGroups[item.period]) {
         periodGroups[item.period] = {};
       }
       periodGroups[item.period][item.accountName] = {
-        expenses: item.expenses,
-        savings: item.savings,
-        income: item.income,
         total: item.total
       };
     });
@@ -235,9 +235,6 @@ export default function HomePage() {
     return Object.keys(periodGroups).map(period => {
       const result: any = { period };
       Object.keys(periodGroups[period]).forEach(account => {
-        result[`${account}_Expenses`] = periodGroups[period][account].expenses;
-        result[`${account}_Savings`] = periodGroups[period][account].savings;
-        result[`${account}_Income`] = periodGroups[period][account].income;
         result[`${account}_Total`] = periodGroups[period][account].total;
       });
       return result;

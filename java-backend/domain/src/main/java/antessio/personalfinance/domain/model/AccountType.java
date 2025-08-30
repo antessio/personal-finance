@@ -8,6 +8,12 @@ public enum AccountType {
 
     private final String description;
 
+    public static AccountType fromString(String accountType) {
+        if (accountType == null) {
+            throw new IllegalArgumentException("Account type cannot be null");
+        }
+        return AccountType.valueOf(accountType.toUpperCase());
+    }
     AccountType(String description) {
         this.description = description;
     }
