@@ -146,7 +146,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.get<AccountFlowDataRest[]>(`/api/transactions/account-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(data => ({
       accountName: data.accountType,
-      period: month?`${data.year}-${data.month.toString().padStart(2, '0')}-W${data.week}`: `${data.year}-${data.month.toString().padStart(2, '0')}`,
+      period: `${data.year}-${data.month.toString().padStart(2, '0')}-W${data.week}`,
       total: data.total,
     }));
   }
@@ -166,20 +166,6 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       week: spending.week,
       total: spending.total,
     }));
-  }
-
-  async getCumulativeSpendingData(year: number, month?: number): Promise<CumulativeSpendingData[]> {
-    // For now, return empty array as this would need to be implemented on the backend
-    // In a real implementation, this would call something like:
-    // const response = await this.api.get<CumulativeSpendingDataRest[]>(`/api/categories/cumulative?year=${year}&month=${month || ''}`);
-    return Promise.resolve([]);
-  }
-
-  async getLargestExpenses(year: number, month?: number, limit: number = 10): Promise<LargestExpenseItem[]> {
-    // For now, return empty array as this would need to be implemented on the backend
-    // In a real implementation, this would call something like:
-    // const response = await this.api.get<LargestExpenseItemRest[]>(`/api/transactions/largest?year=${year}&month=${month || ''}&limit=${limit}`);
-    return Promise.resolve([]);
   }
 
   async getCumulativeSpendingData(year: number, month?: number): Promise<CumulativeSpendingData[]> {
