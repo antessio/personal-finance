@@ -65,6 +65,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const menuItems = [
     { text: 'Dashboard', icon: <HomeIcon />, path: '/' },
+    { text: 'Analytics', icon: <PieChartIcon />, path: '/analytics' },
     { text: 'Transactions', icon: <ListIcon />, path: '/transactions' },
     { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
     { text: 'Budgets', icon: <AccountBalanceIcon />, path: '/budgets' },

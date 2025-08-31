@@ -195,6 +195,18 @@ public class TransactionController {
         return ResponseEntity.ok(categorySpending);
     }
 
+    @GetMapping("/category-monthly-data")
+    public ResponseEntity<List<CategoryMonthlyDataDTO>> getCategoryMonthlyData(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategoryMonthlyDataDTO> categorySpending = transactionQueryService.getCategoryMonthlyData(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categorySpending);
+    }
+
     @GetMapping("/monthly-data")
     public ResponseEntity<List<MonthlyDataDTO>> getMonthlyData(
             @RequestParam LocalDate fromDate,

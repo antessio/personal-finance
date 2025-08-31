@@ -75,3 +75,11 @@ export interface AccountFlowDataRest{
   week: number;
   total: number;
 }
+
+export interface CategoryFlowDataRest{
+  category: CategoryRest;
+  year: number;
+  month: number;
+  week: number;
+  total: number;
+}

@@ -1,4 +1,4 @@
-package antessio.personalfinance.domain.model;
+package antessio.personalfinance.domain.dto;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;

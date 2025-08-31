@@ -74,6 +74,24 @@ export interface CategorySpending{
   percentage: number;
   categoryType?: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS'; 
   macroCategory?: string;
+  percentageOfIncome?: number; // New field for % of income
+}
+
+export interface CumulativeSpendingData {
+  categoryName: string;
+  period: string; // "Day 1", "Day 2", etc. for monthly view or "Week 1", "Week 2" for yearly
+  cumulativeAmount: number;
+  budgetCumulative: number;
+  percentageOfBudget: number;
+}
+
+export interface LargestExpenseItem {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  categoryName?: string;
+  account: string;
 }
 
 export interface MonthlyData {

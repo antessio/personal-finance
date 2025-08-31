@@ -1,4 +1,6 @@
-package antessio.personalfinance.domain.model;
+package antessio.personalfinance.domain.dto;
+
+import antessio.personalfinance.domain.model.MacroCategoryEnum;
 
 import java.math.BigDecimal;
 

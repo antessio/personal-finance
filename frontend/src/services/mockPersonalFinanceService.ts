@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
@@ -160,12 +160,148 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return categoryTrendsData;
   }
 
+  async getCumulativeSpendingData(year: number, month?: number): Promise<CumulativeSpendingData[]> {
+    await simulateDelay();
+    
+    const cumulativeData: CumulativeSpendingData[] = [];
+    
+    if (month !== undefined) {
+      // Monthly view - show daily cumulative spending
+      const daysInMonth = new Date(year, month, 0).getDate();
+      
+      // Get top spending categories for this month
+      const monthlyCategories = await this.getCategorySpendingByMonth(year, month);
+      const topCategories = monthlyCategories
+        .filter(cat => cat.totalSpent > 0)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 6); // Top 6 categories for readability
+      
+      for (const category of topCategories) {
+        let cumulativeAmount = 0;
+        const dailyBudget = (category.budgetedAmount || 0) / daysInMonth;
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          // Get transactions for this day
+          const dayTransactions = this.transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return tx.included && 
+                   tx.categoryId === this.categories.find(c => c.name === category.categoryName)?.id &&
+                   txDate.getFullYear() === year &&
+                   txDate.getMonth() + 1 === month &&
+                   txDate.getDate() === day;
+          });
+          
+          const dayAmount = dayTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          cumulativeAmount += dayAmount;
+          
+          const budgetCumulative = dailyBudget * day;
+          
+          cumulativeData.push({
+            categoryName: category.categoryName,
+            period: `Day ${day}`,
+            cumulativeAmount,
+            budgetCumulative,
+            percentageOfBudget: budgetCumulative > 0 ? (cumulativeAmount / budgetCumulative * 100) : 0
+          });
+        }
+      }
+    } else {
+      // Yearly view - show weekly cumulative spending
+      const weeksInYear = 52;
+      
+      // Get yearly category data
+      const yearlyCategories = await this.getCategorySpending(year);
+      const topCategories = yearlyCategories
+        .filter(cat => cat.totalSpent > 0)
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 6); // Top 6 categories for readability
+      
+      for (const category of topCategories) {
+        let cumulativeAmount = 0;
+        const weeklyBudget = (category.budgetedAmount || 0) / weeksInYear;
+        
+        for (let week = 1; week <= weeksInYear; week++) {
+          // Calculate week start and end dates
+          const weekStart = new Date(year, 0, (week - 1) * 7 + 1);
+          const weekEnd = new Date(year, 0, week * 7);
+          
+          // Get transactions for this week
+          const weekTransactions = this.transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return tx.included && 
+                   tx.categoryId === this.categories.find(c => c.name === category.categoryName)?.id &&
+                   txDate >= weekStart &&
+                   txDate <= weekEnd;
+          });
+          
+          const weekAmount = weekTransactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+          cumulativeAmount += weekAmount;
+          
+          const budgetCumulative = weeklyBudget * week;
+          
+          cumulativeData.push({
+            categoryName: category.categoryName,
+            period: `Week ${week}`,
+            cumulativeAmount,
+            budgetCumulative,
+            percentageOfBudget: budgetCumulative > 0 ? (cumulativeAmount / budgetCumulative * 100) : 0
+          });
+        }
+      }
+    }
+    
+    return cumulativeData;
+  }
+
+  async getLargestExpenses(year: number, month?: number, limit: number = 10): Promise<LargestExpenseItem[]> {
+    await simulateDelay();
+    
+    // Filter transactions by year and optional month
+    let filteredTransactions = this.transactions.filter(tx => {
+      if (!tx.included) return false;
+      
+      const txDate = new Date(tx.date);
+      const txYear = txDate.getFullYear();
+      
+      if (txYear !== year) return false;
+      
+      if (month !== undefined) {
+        const txMonth = txDate.getMonth() + 1;
+        if (txMonth !== month) return false;
+      }
+      
+      // Only include expenses (negative amounts)
+      return tx.amount < 0;
+    });
+    
+    // Sort by amount (largest expenses first - most negative values)
+    filteredTransactions.sort((a, b) => a.amount - b.amount);
+    
+    // Take the top N and convert to LargestExpenseItem format
+    return filteredTransactions.slice(0, limit).map(tx => {
+      const category = this.categories.find(c => c.id === tx.categoryId);
+      
+      return {
+        id: tx.id,
+        date: tx.date,
+        description: tx.description,
+        amount: Math.abs(tx.amount), // Convert to positive for display
+        categoryName: category?.name,
+        account: tx.account
+      };
+    });
+  }
+
   // Category spending methods
   async getCategorySpending(year: number, month?: number): Promise<CategorySpending[]> {
     await simulateDelay();
     if(month){
       return this.getCategorySpendingByMonth(year, month);
     }
+    
+    // Calculate total income for the period to compute percentage of income
+    const totalIncome = await this.getTotalIncome(year, month);
+    
     const categorySpending: CategorySpending[] = this.categories.map(category => {
       const totalSpent = this.transactions
         .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year.toString()) && tx.included)
@@ -179,6 +315,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
         totalSpent,
         budgetedAmount: budget?.amount || 0,
         percentage: totalSpent / (budget?.amount || 1) * 100,
+        percentageOfIncome: totalIncome > 0 ? (totalSpent / totalIncome * 100) : 0,
         categoryType: category.type, // Add category type for 50-30-20 breakdown
         macroCategory: category.macroCategory, // Add macro category for additional filtering
       };
@@ -462,6 +599,10 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
 
   async getCategorySpendingByMonth(year: number, month: number): Promise<CategorySpending[]> {
     await simulateDelay();
+    
+    // Calculate total income for the month to compute percentage of income
+    const totalIncome = await this.getTotalIncome(year, month);
+    
     const monthlyTransactions = this.transactions.filter(tx => {
       const transactionDate = new Date(tx.date);
       const transactionMonth = transactionDate.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
@@ -506,6 +647,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       totalSpent: data.totalSpent,
       budgetedAmount: data.budgetedAmount,
       percentage: (data.totalSpent / data.budgetedAmount) * 100,
+      percentageOfIncome: totalIncome > 0 ? (data.totalSpent / totalIncome * 100) : 0,
       categoryType: data.category.type, // Add category type for 50-30-20 breakdown
       macroCategory: data.category.macroCategory, // Add macro category for additional filtering
     }));
