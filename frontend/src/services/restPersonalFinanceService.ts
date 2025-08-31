@@ -146,7 +146,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.get<AccountFlowDataRest[]>(`/api/transactions/account-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(data => ({
       accountName: data.accountType,
-      period: `${data.year}-${data.month.toString().padStart(2, '0')}-W${data.week}`,
+      period: month?`${data.year}-${data.month.toString().padStart(2, '0')}-W${data.week}`: `${data.year}-${data.month.toString().padStart(2, '0')}`,
       total: data.total,
     }));
   }

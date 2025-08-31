@@ -3,11 +3,12 @@
 import { Box, Paper, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
-import { Timeline } from '@mui/icons-material';
-import { XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
+import { Timeline, BarChart as MuiBarChart } from '@mui/icons-material';
+import { XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, BarChart, Bar } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { useState } from 'react';
+import { MonthlyData } from '@/types';
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
@@ -37,6 +38,45 @@ export default function AnalyticsPage() {
     { value: 11, label: 'November' },
     { value: 12, label: 'December' },
   ];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const { data: monthlyData = [] } = useQuery({
+    queryKey: ['monthlyData', selectedYear, selectedMonth],
+    queryFn: () => service.getMonthlyData(selectedYear, selectedMonth)
+  });
+
+  const monthTransactions = selectedMonth
+    ? (() => {
+      // For monthly view, show weeks or days of the selected month
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const monthData = monthlyData.filter((tx: MonthlyData) => {
+
+        return Number(tx.year) === selectedYear && Number(tx.month) === selectedMonth;
+      });
+      const weekData = [];
+      for (let week = 1; week <= Math.ceil(daysInMonth / 7); week++) {
+        const wd = monthData.find(m => m.week === week);
+
+        weekData.push({
+          month: `Week ${week}`,
+          Income: wd ? wd.totalIncome / 4 : 0,
+          Expense: wd ? wd.totalExpenses / 4 : 0,
+          Savings: wd ? wd.totalSavings / 4 : 0,
+        });
+      }
+      return weekData;
+    })()
+    : months.map((month, index) => {
+      const monthData = monthlyData.find((tx: MonthlyData) => {
+
+        return Number(tx.year) === selectedYear && Number(tx.month) === index + 1;
+      });
+      return {
+        month,
+        Income: monthData ? monthData.totalIncome : 0,
+        Expense: monthData ? monthData.totalExpenses : 0,
+        Savings: monthData ? monthData.totalSavings : 0,
+      };
+    });
 
 
   // Fetch individual category trends data
@@ -49,18 +89,18 @@ export default function AnalyticsPage() {
   // Transform trends data for line chart
   const trendsChartData = (() => {
     if (!categoryTrendsData || categoryTrendsData.length === 0) return [];
-    
+
     if (selectedMonth !== undefined) {
       // Monthly view - show weekly trends
       const weeks = [...new Set(categoryTrendsData.map(item => item.week))].sort();
       return weeks.map(week => {
         const weekData: any = { period: `Week ${week}` };
         const weekItems = categoryTrendsData.filter(item => item.week === week);
-        
+
         weekItems.forEach(item => {
           weekData[item.categoryName] = item.total;
         });
-        
+
         return weekData;
       });
     } else {
@@ -69,11 +109,11 @@ export default function AnalyticsPage() {
       return months.map((monthName, index) => {
         const monthData: any = { period: monthName };
         const monthItems = categoryTrendsData.filter(item => item.month === index + 1);
-        
+
         monthItems.forEach(item => {
           monthData[item.categoryName] = item.total;
         });
-        
+
         return monthData;
       });
     }
@@ -85,7 +125,7 @@ export default function AnalyticsPage() {
   // Generate colors for categories
   const generateCategoryColors = (categories: string[]) => {
     const colors = [
-      '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', 
+      '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
       '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722',
       '#795548', '#607d8b', '#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6',
       '#4fc3f7', '#4dd0e1', '#4db6ac', '#81c784', '#aed581', '#dce775', '#fff176', '#ffb74d',
@@ -106,7 +146,7 @@ export default function AnalyticsPage() {
 
   const categoryColors = generateCategoryColors(uniqueCategories);
 
-  
+
 
   return (
     <Layout>
@@ -146,69 +186,35 @@ export default function AnalyticsPage() {
             </Select>
           </FormControl>
         </Box>
-
-
-    
-
-        {/* Remaining Monthly Card */}
-        {/* <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <PieChart color="success" sx={{ mr: 1 }} />
-            <Typography color="success.dark" fontWeight={700} variant="subtitle1">
-              Remaining Monthly
-            </Typography>
-          </Box>
-          <Box sx={{ position: 'relative', width: 120, height: 120, mb: 2 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[{ name: 'Remaining', value: 69 }, { name: 'Used', value: 31 }]}
-                  dataKey="value"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={55}
-                  startAngle={90}
-                  endAngle={-270}
-                  paddingAngle={0}
-                >
-                  <Cell key="remaining" fill="#43a047" />
-                  <Cell key="used" fill="#e0e0e0" />
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <Box sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              pointerEvents: 'none',
-            }}>
-              <Typography variant="h3" fontWeight={800} color="success.main" sx={{ lineHeight: 1 }}>
-                69%
+        {/* Global Money Flow Card */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+          {/* Money Flow Card */}
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <MuiBarChart color="success" sx={{ mr: 1 }} />
+              <Typography color="success.dark" fontWeight={700} variant="subtitle1">
+                Money Flow {selectedMonth ? `- ${monthOptions.find(m => m.value === selectedMonth)?.label} ${selectedYear}` : `- ${selectedYear}`}
               </Typography>
-              <Chip icon={<ArrowUpward sx={{ color: 'success.main' }} />} label={'+2.4%'} size="small" sx={{ bgcolor: 'success.light', color: 'success.dark', mt: 1, fontWeight: 700 }} />
             </Box>
-          </Box>
-          <Typography variant="subtitle2" color="success.dark" align="center" mb={1} fontWeight={600}>
-            You're in great shape
-          </Typography>
-          <Typography variant="body2" color="text.secondary" align="center" mb={2}>
-            Your monthly usage is still very safe
-          </Typography>
-          <Box sx={{ width: '100%', display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Chip icon={<TrendingUp sx={{ color: 'success.main' }} />} label={<Box component="span" sx={{ fontWeight: 700 }}>89% Needs</Box>} sx={{ bgcolor: 'success.light', color: 'success.dark', fontWeight: 700, borderRadius: 2, px: 1.5, py: 0.5, fontSize: 16 }} />
-            <Chip icon={<TrendingUp sx={{ color: 'warning.main' }} />} label={<Box component="span" sx={{ fontWeight: 700 }}>78% Food</Box>} sx={{ bgcolor: 'warning.light', color: 'warning.dark', fontWeight: 700, borderRadius: 2, px: 1.5, py: 0.5, fontSize: 16 }} />
-            <Chip icon={<TrendingUp sx={{ color: 'info.main' }} />} label={<Box component="span" sx={{ fontWeight: 700 }}>42% Education</Box>} sx={{ bgcolor: 'info.light', color: 'info.dark', fontWeight: 700, borderRadius: 2, px: 1.5, py: 0.5, fontSize: 16 }} />
-          </Box>
-        </Paper> */}
 
-    
+            <Box sx={{ width: '100%', height: 220, mb: 2 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthTransactions} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => `€${value.toLocaleString()}`} />
+                  <Legend verticalAlign="top" height={36} />
+                  <Bar dataKey="Income" fill="#43a047" radius={[6, 6, 0, 0]} barSize={18} name="Income" />
+                  <Bar dataKey="Expense" fill="#e53935" radius={[6, 6, 0, 0]} barSize={18} name="Expense" />
+                  <Bar dataKey="Savings" fill="#3541e5ff" radius={[6, 6, 0, 0]} barSize={18} name="Savings" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Box>
+
+
         {/* Category Trends Over Time */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -221,19 +227,19 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendsChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="period" 
+                <XAxis
+                  dataKey="period"
                   angle={-45}
                   textAnchor="end"
                   height={80}
                   interval={0}
                   fontSize={12}
                 />
-                <YAxis 
+                <YAxis
                   tickFormatter={(value) => `$${value.toLocaleString()}`}
                   width={80}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
                   labelFormatter={(label) => `Period: ${label}`}
                 />
@@ -257,6 +263,8 @@ export default function AnalyticsPage() {
           </Typography>
         </Paper>
       </Box>
+
+
     </Layout>
   );
 }
