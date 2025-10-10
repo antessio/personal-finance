@@ -44,7 +44,7 @@ public class SatispayTransactionParser implements TransactionParser {
             Sheet sheet = workbook.getSheetAt(0);
             int rowCount = sheet.getLastRowNum();
 
-            for (int i = 0; i <= rowCount; i++) {
+            for (int i = 1; i <= rowCount; i++) {
                 Row row = sheet.getRow(i);
                 if (row != null ) {
                     parseRow(row, userOwner, id)
@@ -60,8 +60,8 @@ public class SatispayTransactionParser implements TransactionParser {
 
             LocalDate transactionDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
             String shopName = row.getCell(1).getStringCellValue();
-            String type = row.getCell(3).getStringCellValue();
-            double amount = row.getCell(5).getNumericCellValue();
+            double amount = row.getCell(3).getNumericCellValue();
+            String type = row.getCell(4).getStringCellValue();
 
             String description = shopName + " " + type;
             
