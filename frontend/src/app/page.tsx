@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
 import Layout from '../components/Layout';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline } from '@mui/icons-material';
 import { Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
@@ -10,6 +10,8 @@ import { MonthlyData } from '../types';
 import { useState } from 'react';
 
 export default function HomePage() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   // const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -425,18 +427,31 @@ export default function HomePage() {
             <Box sx={{ width: '100%', height: 400, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={transformedAccountData} margin={{ top: 40, right: 30, left: 20, bottom: 100 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="period"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: theme.palette.text.primary }}
                     angle={-45}
                     textAnchor="end"
                     height={100}
                     interval={0}
+                    stroke={theme.palette.text.secondary}
                   />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => `$${value?.toLocaleString()}`} />
-                  <Legend verticalAlign="top" height={40} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `$${value?.toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend verticalAlign="top" height={40} wrapperStyle={{ color: theme.palette.text.primary }} />
                   {uniqueAccounts.map((account) => (
                     <Bar
                       key={`${account}_Total`}
@@ -449,9 +464,9 @@ export default function HomePage() {
                   <Line
                     type="monotone"
                     dataKey="Total_All_Accounts"
-                    stroke={'#000000ff'}
+                    stroke={isDark ? '#ffffff' : '#000000'}
                     strokeWidth={2}
-                    dot={{ r: 2, fill: '#000000ff', stroke: '#000000ff', strokeWidth: 1 }}
+                    dot={{ r: 2, fill: isDark ? '#ffffff' : '#000000', stroke: isDark ? '#ffffff' : '#000000', strokeWidth: 1 }}
                     name="Total All Accounts"
                   >
                     <LabelList
@@ -500,11 +515,26 @@ export default function HomePage() {
             <Box sx={{ width: '100%', height: 280, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value) => `€${value?.toLocaleString()}`} />
-                  <Legend verticalAlign="top" height={36} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `€${value?.toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
                   {uniqueMacroCategories.map((category) => (
                     <Line
                       key={category}

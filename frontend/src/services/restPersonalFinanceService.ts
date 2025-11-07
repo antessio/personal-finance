@@ -454,8 +454,8 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.post('/public/api/users/login', { username: email, password });
 
     // Extract token from response (adjust based on your API response structure)
-    const token = response.data.token || response.headers['authorization']?.replace('Bearer ', '');
-
+    const token = response.data.token || response.headers['authorization']?.replace('Bearer ', '') || response.data;
+    console.log('Login response token:', token);
     if (token) {
       this.setAuthToken(token);
     }
@@ -469,7 +469,12 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async signup(userData: { email: string; password: string; name: string }): Promise<void> {
-    await this.api.post('/public/api/users/register', userData);
+    await this.api.post('/public/api/users/register', {
+      username: userData.email,
+      password: userData.password,
+      firstName: userData.name.split(' ')[0],
+      lastName: userData.name.split(' ')[1],
+    });
   }
 
   async getCurrentUser(): Promise<{ id: string; name: string; email: string }> {

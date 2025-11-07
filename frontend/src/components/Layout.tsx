@@ -29,8 +29,11 @@ import {
   Home as HomeIcon,
   AccountBalance as AccountBalanceIcon,
   PieChart as PieChartIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeContext } from '../contexts/ThemeContext';
 import { isAuthEnabled } from '../config/auth';
 
 const drawerWidth = 240;
@@ -45,6 +48,7 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { mode, toggleTheme } = useThemeContext();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -114,6 +118,14 @@ export default function Layout({ children }: LayoutProps) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Personal Expenses
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={toggleTheme}
+            sx={{ mr: 2 }}
+            aria-label="toggle theme"
+          >
+            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
           {isAuthEnabled() && (
             <>
               <Button

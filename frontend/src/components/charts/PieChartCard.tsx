@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface PieChartData {
@@ -15,6 +15,9 @@ interface PieChartCardProps {
 }
 
 export default function PieChartCard({ title, data, colors }: PieChartCardProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   // Custom label to show only percentage for slices > 5%
   const renderLabel = (entry: any) => {
     const percent = (entry.percent * 100).toFixed(0);
@@ -45,10 +48,16 @@ export default function PieChartCard({ title, data, colors }: PieChartCardProps)
             </Pie>
             <Tooltip
               formatter={(value: number, name: string) => [`€${value.toLocaleString()}`, name]}
-              contentStyle={{ fontSize: '14px', borderRadius: '8px' }}
+              contentStyle={{
+                fontSize: '14px',
+                borderRadius: '8px',
+                backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                color: isDark ? '#ffffff' : '#000000'
+              }}
             />
             <Legend
-              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+              wrapperStyle={{ fontSize: '12px', paddingTop: '10px', color: theme.palette.text.primary }}
               iconType="circle"
               iconSize={8}
             />

@@ -73,7 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await service.login(email, password);
       setUser(response.user);
-      router.push('/');
+
+      // Check if there's a redirect URL stored
+      const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectUrl) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        router.push(redirectUrl);
+      } else {
+        router.push('/');
+      }
     } catch (error) {
       console.error("Login error:", error);
       throw error;

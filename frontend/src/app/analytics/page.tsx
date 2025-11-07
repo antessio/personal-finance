@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
+import { Box, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
 import Layout from '../../components/Layout';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../../services/api';
@@ -11,6 +11,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 import { se } from 'date-fns/locale';
 
 export default function AnalyticsPage() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11, we need 1-12
 
@@ -116,7 +118,6 @@ export default function AnalyticsPage() {
   // Prepare monthly income data for table
   const monthlyIncomeData = months.map((month, index) => {
     const monthNumber = monthNumberMap[month].toString().padStart(2, '0');
-    console.log('monthlyData', monthlyData);
     const monthData = monthlyData.find(d => d.month === monthNumber.toString() && d.year === selectedYear.toString());
     return {
       month: `${month}-${selectedYear}`,
@@ -146,9 +147,6 @@ export default function AnalyticsPage() {
       actual: monthDataSavings ? Math.abs(monthDataSavings.totalSavings) : 0  
     };
   });
-  console.log('monthlyData', monthlyData);
-
-  console.log('monthlySavingsData', monthlySavingsData);
 
   // Calculate totals
   const totalIncomeBudget = monthlyIncomeData.reduce((sum, d) => sum + d.budget, 0);
@@ -395,11 +393,27 @@ export default function AnalyticsPage() {
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `€${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => `€${Number(value).toLocaleString()}`} />
-                  <Legend />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `€${value.toLocaleString()}`}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `€${Number(value).toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                   <Bar dataKey="Income" fill="#4caf50" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Savings" fill="#2196f3" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -521,11 +535,27 @@ export default function AnalyticsPage() {
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `€${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => `€${Number(value).toLocaleString()}`} />
-                  <Legend />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `€${value.toLocaleString()}`}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `€${Number(value).toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
                   <Bar dataKey="Income" fill="#4caf50" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Expense" fill="#f44336" radius={[4, 4, 0, 0]} />
                 </BarChart>
