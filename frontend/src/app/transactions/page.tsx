@@ -261,7 +261,7 @@ export default function TransactionsPage() {
               variant="contained"
               color="primary"
               onClick={() => handleBulkUpdate({ included: true })}
-              sx={{ mr: 1 }}
+              sx={{ mr: 1, borderRadius: 2, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             >
               Include Selected
             </Button>
@@ -269,7 +269,7 @@ export default function TransactionsPage() {
               variant="contained"
               color="secondary"
               onClick={() => handleBulkUpdate({ included: false })}
-              sx={{ mr: 1 }}
+              sx={{ mr: 1, borderRadius: 2, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             >
               Exclude Selected
             </Button>
@@ -277,7 +277,7 @@ export default function TransactionsPage() {
               variant="contained"
               color="success"
               onClick={handleCategorize}
-              sx={{ mr: 1 }}
+              sx={{ mr: 1, borderRadius: 2, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             >
               Categorize Selected
             </Button>
@@ -285,25 +285,26 @@ export default function TransactionsPage() {
               variant="contained"
               color="info"
               onClick={handleOpenBulkUpdateModal}
+              sx={{ borderRadius: 2, fontWeight: 600, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
             >
               Bulk Update Selected
             </Button>
           </Box>
         )}
       </Box>
-      <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', p: 2 }}>
+      <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', p: 2, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
             {allTransactions.length} transactions showing
           </Typography>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
             Total: <span style={{ color: totalAmount < 0 ? 'red' : 'green' }}>€{totalAmount.toLocaleString()}</span>
           </Typography>
         </Box>
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.100' }}>
+              <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
                 <TableCell padding="checkbox">
                   <Checkbox
                     indeterminate={selected.length > 0 && selected.length < allTransactions.length}
@@ -311,13 +312,13 @@ export default function TransactionsPage() {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>ID</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Account</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Account</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

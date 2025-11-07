@@ -208,29 +208,30 @@ export default function BudgetsPage() {
         </Box>
       </Box>
 
-      <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33' }}>
+      <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
         <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Category</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Period</TableCell>
-                <TableCell>Month</TableCell>
-                <TableCell>Year</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Category</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Period</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Month</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Year</TableCell>
+                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {budgets.map((budget) => (
-                <TableRow key={budget.id}>
-                  <TableCell>{getCategoryName(budget.categoryId)}</TableCell>
-                  <TableCell>€{budget.amount.toLocaleString()}</TableCell>
+                <TableRow key={budget.id} sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+                  <TableCell sx={{ fontWeight: 600 }}>{getCategoryName(budget.categoryId)}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>€{budget.amount.toLocaleString()}</TableCell>
                   <TableCell>
                     <Chip
                       label={budget.period}
                       color={budget.period === 'annual' ? 'primary' : 'secondary'}
                       size="small"
+                      sx={{ fontWeight: 600 }}
                     />
                   </TableCell>
                   <TableCell>{budget.month || '-'}</TableCell>
@@ -242,6 +243,7 @@ export default function BudgetsPage() {
                         variant="outlined"
                         color="primary"
                         onClick={() => handleOpen(budget)}
+                        sx={{ borderRadius: 2, fontWeight: 600 }}
                       >
                         Edit
                       </Button>
@@ -250,6 +252,7 @@ export default function BudgetsPage() {
                         variant="outlined"
                         color="error"
                         onClick={() => handleDelete(budget.id)}
+                        sx={{ borderRadius: 2, fontWeight: 600 }}
                       >
                         Delete
                       </Button>

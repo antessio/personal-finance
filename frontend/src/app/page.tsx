@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid } from '@mui/material';
 import Layout from '../components/Layout';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline } from '@mui/icons-material';
 import { Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
@@ -18,23 +18,6 @@ export default function HomePage() {
   for (let year = currentYear; year >= currentYear - 4; year--) {
     yearOptions.push({ value: year, label: year.toString() });
   }
-
-  // Month options for the selector
-  // const monthOptions = [
-  //   { value: undefined, label: 'All Year' },
-  //   { value: 1, label: 'January' },
-  //   { value: 2, label: 'February' },
-  //   { value: 3, label: 'March' },
-  //   { value: 4, label: 'April' },
-  //   { value: 5, label: 'May' },
-  //   { value: 6, label: 'June' },
-  //   { value: 7, label: 'July' },
-  //   { value: 8, label: 'August' },
-  //   { value: 9, label: 'September' },
-  //   { value: 10, label: 'October' },
-  //   { value: 11, label: 'November' },
-  //   { value: 12, label: 'December' },
-  // ];
 
   // Fetch data with month filtering
   const { data: totalIncome = 0 } = useQuery({
@@ -93,21 +76,6 @@ export default function HomePage() {
     queryKey: ['accounts'],
     queryFn: () => service.getAccounts()
   });
-
-  // Generate chart data based on selection
-  // const monthTransactions = months.map((month, index) => {
-  //   const monthData = monthlyData.find((tx: MonthlyData) => {
-  //
-  //     return Number(tx.year) === selectedYear && Number(tx.month) === index + 1;
-  //   });
-  //   return {
-  //     month,
-  //     Income: monthData ? monthData.totalIncome : 0,
-  //     Expense: monthData ? monthData.totalExpenses : 0,
-  //     Savings: monthData ? monthData.totalSavings : 0,
-  //   };
-  // });
-
 
   const { data: macroCategoryTrends = [] } = useQuery({
     queryKey: ['macroCategoryTrends', selectedYear],
@@ -189,9 +157,6 @@ export default function HomePage() {
 
   const accountColors = generateAccountColors(accounts);
 
-  // Determine line color based on overall trend
-  
-
   // --- 50-30-20 Budget Fake Data ---
   type BudgetKey = 'needs' | 'wants' | 'savingsDebts';
   type BudgetKeyWithTotal = BudgetKey | 'total';
@@ -261,10 +226,15 @@ export default function HomePage() {
     },
   };
 
+  // Calculate left to spend
+  const totalBudgetAmount = incomeBudget;
+  const totalActualSpent = Math.abs(totalExpenses) + Math.abs(totalSavings);
+  const leftToSpend = totalBudgetAmount - totalActualSpent;
+
   return (
     <Layout>
       <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', p: { xs: 1, md: 4 } }}>
-        {/* Year and Month Selectors */}
+        {/* Year Selector */}
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel id="year-selector-label">Year</InputLabel>
@@ -283,6 +253,82 @@ export default function HomePage() {
             </Select>
           </FormControl>
         </Box>
+
+        {/* NEW: Annual Summary Section */}
+        <Paper
+          elevation={6}
+          sx={{
+            p: 4,
+            mb: 4,
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }}
+        >
+          <Typography variant="h5" fontWeight={700} mb={3} textAlign="center">
+            ANNUAL SUMMARY {selectedYear}
+          </Typography>
+          <Grid container spacing={3}>
+            {/* Budget Breakdown */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
+                  BUDGET
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Income</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{incomeBudget.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Expenses</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(expenseBudget).toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Savings</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(savingsBudget).toLocaleString()}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Actual Breakdown */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
+                  ACTUAL
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Income</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{totalIncome.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Expenses</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalExpenses).toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Savings</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalSavings).toLocaleString()}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Left to Spend */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.25)', p: 3, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={1} textAlign="center">
+                  LEFT TO SPEND
+                </Typography>
+                <Typography variant="h3" fontWeight={700} textAlign="center">
+                  €{leftToSpend.toLocaleString()}
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
         {/* Top Cards */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
           {/* My Income Card */}
@@ -497,12 +543,18 @@ export default function HomePage() {
             {categorySpending.map((category) => (
               <Box key={category.categoryName} sx={{
                 p: 2,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.7)',
+                borderRadius: 3,
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
                 border: '1px solid',
-                borderColor: 'grey.200'
+                borderColor: 'grey.200',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                }
               }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                   <Typography variant="subtitle2" fontWeight={700} noWrap>
                     {category.categoryName}
                   </Typography>
@@ -513,7 +565,8 @@ export default function HomePage() {
                       bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
                       color: category.percentage > 100 ? 'error.dark' : 'success.dark',
                       fontWeight: 700,
-                      minWidth: 45
+                      minWidth: 50,
+                      height: 24
                     }}
                   />
                 </Box>
@@ -521,29 +574,30 @@ export default function HomePage() {
                   variant="determinate"
                   value={Math.min(100, category.percentage)}
                   sx={{
-                    height: 8,
-                    borderRadius: 4,
+                    height: 10,
+                    borderRadius: 5,
                     bgcolor: 'grey.200',
-                    mb: 1,
+                    mb: 1.5,
                     '& .MuiLinearProgress-bar': {
                       bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
+                      borderRadius: 5,
                     },
                   }}
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
-                    <Typography variant="body2" fontWeight={600} color="text.primary">
+                    <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
                       €{category.totalSpent.toLocaleString()}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                       Spent
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight={600} color="text.secondary">
+                    <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
                       €{(category.budgetedAmount || 0).toLocaleString()}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                       Budget
                     </Typography>
                   </Box>

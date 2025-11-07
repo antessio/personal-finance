@@ -66,6 +66,9 @@ export interface MonthlyDataRest {
   totalIncome: number;
   totalExpenses: number;
   totalSavings: number;
+  incomeBudget: number;
+  expensesBudget: number;
+  savingsBudget: number;
 }
 
 export interface AccountFlowDataRest{

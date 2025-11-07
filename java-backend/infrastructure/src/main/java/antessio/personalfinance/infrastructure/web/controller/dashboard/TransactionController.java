@@ -194,6 +194,29 @@ public class TransactionController {
         List<CategorySpendingDTO> categorySpending = transactionQueryService.getCategorySpending(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(categorySpending);
     }
+    @GetMapping("/category-income")
+    public ResponseEntity<List<CategorySpendingDTO>> getCategoryIncome(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategorySpendingDTO> categorySpending = transactionQueryService.getCategoryIncome(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categorySpending);
+    }
+
+    @GetMapping("/category-savings")
+    public ResponseEntity<List<CategorySpendingDTO>> getCategorySavings(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategorySpendingDTO> categorySpending = transactionQueryService.getCategorySavings(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categorySpending);
+    }
 
     @GetMapping("/category-monthly-data")
     public ResponseEntity<List<CategoryMonthlyDataDTO>> getCategoryMonthlyData(

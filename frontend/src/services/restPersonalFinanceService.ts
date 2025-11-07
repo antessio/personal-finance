@@ -103,6 +103,41 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
+    }));
+  }
+  async getCategoryIncome(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-income?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
+    }));
+  }
+  async getCategorySavings(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-savings?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
       percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
       categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
     }));
@@ -133,6 +168,9 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalIncome: data.totalIncome,
       totalExpenses: data.totalExpenses,
       totalSavings: data.totalSavings,
+      incomeBudget: data.incomeBudget,
+      expensesBudget: data.expensesBudget,
+      savingsBudget: data.savingsBudget,
     }));
   }
 

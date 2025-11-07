@@ -7,5 +7,8 @@ public record MonthlyDataDTO(YearMonth yearMonth,
                              Integer week,
                              BigDecimal totalIncome,
                              BigDecimal totalExpenses,
-                             BigDecimal totalSavings) {
+                             BigDecimal totalSavings,
+                             BigDecimal incomeBudget,
+                             BigDecimal expensesBudget,
+                             BigDecimal savingsBudget) {
 }
