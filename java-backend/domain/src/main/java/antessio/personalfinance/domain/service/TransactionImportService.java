@@ -14,6 +14,7 @@ import antessio.personalfinance.domain.ports.TransactionImportEventPublisher;
 import antessio.personalfinance.domain.ports.TransactionImportRepository;
 import antessio.personalfinance.domain.service.transactionparser.PayPalTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser;
+import antessio.personalfinance.domain.service.transactionparser.TradeRepublicTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
 
 public class TransactionImportService {
@@ -36,7 +37,8 @@ public class TransactionImportService {
                 new antessio.personalfinance.domain.service.transactionparser.WidibaTransactionParser(),
                 new SatispayTransactionParser(),
                 new antessio.personalfinance.domain.service.transactionparser.IntesaTransactionParser(),
-                new PayPalTransactionParser()
+                new PayPalTransactionParser(),
+                new TradeRepublicTransactionParser()
         );
     }
 

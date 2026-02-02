@@ -4,7 +4,8 @@ public enum AccountType {
     WIDIBA("Widiba"),
     INTESA("Intesa"),
     PAYPAL("PayPal"),
-    SATISPAY("Satispay");
+    SATISPAY("Satispay"),
+    TRADE_REPUBLIC("Trade Republic");
 
     private final String description;
 

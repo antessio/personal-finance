@@ -190,7 +190,7 @@ export default function UploadPage() {
                 <input
                   type="file"
                   hidden
-                  accept=".csv,.xlsx"
+                  accept=".csv,.xlsx,.pdf"
                   onChange={handleFileChange}
                 />
               </Button>
