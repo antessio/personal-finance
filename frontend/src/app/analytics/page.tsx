@@ -1,14 +1,13 @@
 'use client';
 
-import { Box, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
+import { Box, Paper, Typography, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, Chip, LinearProgress } from '@mui/material';
 import Layout from '../../components/Layout';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { useState } from 'react';
 import MonthlyDataTable from '../../components/charts/MonthlyDataTable';
-import HorizontalBarChart from '../../components/charts/HorizontalBarChart';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { se } from 'date-fns/locale';
+import { CheckCircle, Warning } from '@mui/icons-material';
 
 export default function AnalyticsPage() {
   const theme = useTheme();
@@ -54,7 +53,7 @@ export default function AnalyticsPage() {
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthNumberMap: { [key: string]: number } = {
-    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 
+    'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
   };
   // Fetch data
   const { data: monthlyData = [] } = useQuery({
@@ -93,27 +92,25 @@ export default function AnalyticsPage() {
 
     .map(cat => ({
       name: cat.categoryName,
-      value: cat.totalSpent
+      value: cat.totalSpent,
+      budget: cat.budgetedAmount || 0
     }));
 
   // Prepare pie chart data for Expenses
   const expenseData = categorySpending
     .map(cat => ({
       name: cat.categoryName,
-      value: Math.abs(cat.totalSpent)
+      value: Math.abs(cat.totalSpent),
+      budget: cat.budgetedAmount || 0
     }));
 
   // Prepare pie chart data for Savings
   const savingsData = categorySavings
     .map(cat => ({
       name: cat.categoryName,
-      value: Math.abs(cat.totalSpent)
+      value: Math.abs(cat.totalSpent),
+      budget: cat.budgetedAmount || 0
     }));
-
-  // Colors for pie charts
-  const incomeColors = ['#4caf50', '#66bb6a', '#81c784', '#a5d6a7', '#c8e6c9'];
-  const expenseColors = ['#f44336', '#e57373', '#ef5350', '#ff5252', '#ff1744', '#d32f2f', '#c62828'];
-  const savingsColors = ['#2196f3', '#42a5f5', '#64b5f6', '#90caf9', '#bbdefb'];
 
   // Prepare monthly income data for table
   const monthlyIncomeData = months.map((month, index) => {
@@ -132,7 +129,7 @@ export default function AnalyticsPage() {
     const monthData = monthlyData.find(d => d.month === monthNumber.toString() && d.year === selectedYear.toString());
     return {
       month: `${month}-${selectedYear}`,
-      budget: monthData?.expensesBudget || 0, 
+      budget: monthData?.expensesBudget || 0,
       actual: monthData ? Math.abs(monthData.totalExpenses) : 0
     };
   });
@@ -140,11 +137,11 @@ export default function AnalyticsPage() {
   const monthlySavingsData = months.map((month, index) => {
     const monthNumber = monthNumberMap[month].toString().padStart(2, '0');
     const monthDataSavings = monthlyData.find(d => d.month === monthNumber && d.year === selectedYear.toString());
-    
+
     return {
       month: `${month}-${selectedYear}`,
       budget: monthDataSavings?.savingsBudget || 0,
-      actual: monthDataSavings ? Math.abs(monthDataSavings.totalSavings) : 0  
+      actual: monthDataSavings ? Math.abs(monthDataSavings.totalSavings) : 0
     };
   });
 
@@ -156,62 +153,27 @@ export default function AnalyticsPage() {
   const totalSavingsBudget = monthlySavingsData.reduce((sum, d) => sum + d.budget, 0);
   const totalSavingsActual = monthlySavingsData.reduce((sum, d) => sum + d.actual, 0);
 
-  // Prepare expense budget vs actual data for horizontal bar chart
-  const expenseBudgetVsActual = categorySpending
-    .map(cat => ({
-      name: cat.categoryName,
-      value: Math.abs(cat.totalSpent),
-      budget: cat.budgetedAmount || 0
-    }))
-    .sort((a, b) => b.value - a.value);
+  // Prepare income vs savings bar chart data - monthly only
+  const incomeVsSavingsData = months.map((month, index) => {
+    const monthStr = monthNumberMap[month].toString().padStart(2, '0');
+    const monthData = monthlyData.find(d => d.month === monthStr && d.year === selectedYear.toString());
+    return {
+      month,
+      Income: monthData ? monthData.totalIncome : 0,
+      Savings: monthData ? Math.abs(monthData.totalSavings) : 0
+    };
+  });
 
-  // Prepare income vs savings bar chart data
-  const incomeVsSavingsData = selectedMonth
-    ? // Weekly data for selected month
-      Array.from({ length: 4 }, (_, weekIndex) => {
-        const weekNum = weekIndex + 1;
-        const monthNumber = selectedMonth;
-        const monthData = monthlyData.find(d => d.month === monthNumber.toString() && d.year === selectedYear.toString() && d.week === weekNum);
-        return {
-          month: `Week ${weekNum}`,
-          Income: monthData ? monthData.totalIncome : 0,
-          Savings: monthData ? Math.abs(monthData.totalSavings) : 0
-        };
-      })
-    : // Monthly data for full year
-      months.map((month, index) => {
-        const monthStr = monthNumberMap[month].toString().padStart(2, '0');
-        const monthData = monthlyData.find(d => d.month === monthStr && d.year === selectedYear.toString());
-        return {
-          month,
-          Income: monthData ? monthData.totalIncome : 0,
-          Savings: monthData ? Math.abs(monthData.totalSavings) : 0
-        };
-      });
-
-  // Prepare income vs expense bar chart data
-  const incomeVsExpenseData = selectedMonth
-    ? // Weekly data for selected month
-      Array.from({ length: 4 }, (_, weekIndex) => {
-        const weekNum = weekIndex + 1;
-        const monthData = monthlyData.find(d => d.month === selectedMonth.toString() && d.year === selectedYear.toString() && d.week === weekNum);
-      
-        return {
-          month: `Week ${weekNum}`,
-          Income: monthData ? monthData.totalIncome : 0,
-          Expense: monthData ? Math.abs(monthData.totalExpenses) : 0
-        };
-      })
-    : // Monthly data for full year
-      months.map((month, index) => {
-        const monthStr = monthNumberMap[month].toString().padStart(2, '0');
-        const monthData = monthlyData.find(d => d.month === monthStr && d.year === selectedYear.toString());
-        return {
-          month,
-          Income: monthData ? monthData.totalIncome : 0,
-          Expense: monthData ? Math.abs(monthData.totalExpenses) : 0
-        };
-      });
+  // Prepare income vs expense bar chart data - monthly only
+  const incomeVsExpenseData = months.map((month, index) => {
+    const monthStr = monthNumberMap[month].toString().padStart(2, '0');
+    const monthData = monthlyData.find(d => d.month === monthStr && d.year === selectedYear.toString());
+    return {
+      month,
+      Income: monthData ? monthData.totalIncome : 0,
+      Expense: monthData ? Math.abs(monthData.totalExpenses) : 0
+    };
+  });
 
   // Prepare Bills, Debts, Subscriptions data
   const billsData = categorySpending
@@ -222,6 +184,12 @@ export default function AnalyticsPage() {
 
   const subscriptionsData = categorySpending
     .filter(cat => cat.macroCategory === 'SUBSCRIPTIONS');
+
+  const calculatePercentage = (actual: number, budget: number, isExpense: boolean) => {
+    if (budget === 0) return 0;
+    var percentage = isExpense ? (actual / budget) * 100 : (budget / actual) * 100;
+    return isExpense ? percentage : 100 - percentage;
+  };
 
   return (
     <Layout>
@@ -272,123 +240,139 @@ export default function AnalyticsPage() {
           </Box>
         </Box>
 
-        {/* Category Breakdown Charts */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', height: '100%' }}>
-              <Typography variant="h6" fontWeight={700} color="success.main" mb={2} textAlign="center">
-                INCOME BY CATEGORY
-              </Typography>
-              <Box sx={{ width: '100%', height: 400, overflowY: 'auto' }}>
-                {incomeData.sort((a, b) => b.value - a.value).map((item, index) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '60%' }}>
-                        {item.name}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700} color="success.main">
-                        €{item.value.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{
-                      width: '100%',
-                      height: 8,
-                      bgcolor: 'grey.200',
-                      borderRadius: 1,
-                      overflow: 'hidden'
-                    }}>
-                      <Box sx={{
-                        width: `${(item.value / Math.max(...incomeData.map(d => d.value))) * 100}%`,
-                        height: '100%',
-                        bgcolor: incomeColors[index % incomeColors.length],
-                        borderRadius: 1,
-                        transition: 'width 0.3s'
-                      }} />
-                    </Box>
+        {/* Category Budget Comparison Widget */}
+        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
+          <Typography variant="h6" fontWeight={700} color="text.primary" mb={3} textAlign="center">
+            CATEGORY BUDGET COMPARISON
+          </Typography>
+          {(() => {
+            // Group categories by macro category
+            const allCategories = [...categoryIncome, ...categorySpending, ...categorySavings];
+
+            const groupedByMacro = allCategories.reduce((acc, cat) => {
+              const macro = cat.macroCategory || 'OTHER';
+              if (!acc[macro]) acc[macro] = [];
+              acc[macro].push(cat);
+              return acc;
+            }, {} as { [key: string]: typeof allCategories });
+
+            // Define macro category colors and labels
+            const macroCategoryConfig: { [key: string]: { color: string; label: string; bgcolor: string } } = {
+              'INCOME': { color: '#4caf50', label: 'Income', bgcolor: 'rgba(76, 175, 80, 0.08)' },
+              'EXPENSE': { color: '#f44336', label: 'Expenses', bgcolor: 'rgba(244, 67, 54, 0.08)' },
+              'BILLS': { color: '#ff9800', label: 'Bills', bgcolor: 'rgba(255, 152, 0, 0.08)' },
+              'SUBSCRIPTIONS': { color: '#9c27b0', label: 'Subscriptions', bgcolor: 'rgba(156, 39, 176, 0.08)' },
+              'DEBTS': { color: '#795548', label: 'Debts', bgcolor: 'rgba(121, 85, 72, 0.08)' },
+              'SAVINGS': { color: '#2196f3', label: 'Savings', bgcolor: 'rgba(33, 150, 243, 0.08)' },
+              'OTHER': { color: '#607d8b', label: 'Other', bgcolor: 'rgba(96, 125, 139, 0.08)' }
+            };
+
+            return Object.entries(groupedByMacro).map(([macroCategory, categories]) => {
+              const config = macroCategoryConfig[macroCategory] || macroCategoryConfig['OTHER'];
+
+              return (
+                <Box key={macroCategory} sx={{ mb: 3 }}>
+                  <Box sx={{
+                    bgcolor: config.color,
+                    p: 1.5,
+                    mb: 1,
+                    borderRadius: 2
+                  }}>
+                    <Typography variant="subtitle1" fontWeight={700} color="white">
+                      {config.label}
+                    </Typography>
                   </Box>
-                ))}
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', height: '100%' }}>
-              <Typography variant="h6" fontWeight={700} color="error.main" mb={2} textAlign="center">
-                EXPENSES BY CATEGORY
-              </Typography>
-              <Box sx={{ width: '100%', height: 400, overflowY: 'auto' }}>
-                {expenseData.sort((a, b) => b.value - a.value).map((item, index) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '60%' }}>
-                        {item.name}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700} color="error.main">
-                        €{item.value.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{
-                      width: '100%',
-                      height: 8,
-                      bgcolor: 'grey.200',
-                      borderRadius: 1,
-                      overflow: 'hidden'
-                    }}>
-                      <Box sx={{
-                        width: `${(item.value / Math.max(...expenseData.map(d => d.value))) * 100}%`,
-                        height: '100%',
-                        bgcolor: expenseColors[index % expenseColors.length],
-                        borderRadius: 1,
-                        transition: 'width 0.3s'
-                      }} />
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', height: '100%' }}>
-              <Typography variant="h6" fontWeight={700} color="info.main" mb={2} textAlign="center">
-                SAVINGS BY CATEGORY
-              </Typography>
-              <Box sx={{ width: '100%', height: 400, overflowY: 'auto' }}>
-                {savingsData.sort((a, b) => b.value - a.value).map((item, index) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '60%' }}>
-                        {item.name}
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700} color="info.main">
-                        €{item.value.toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{
-                      width: '100%',
-                      height: 8,
-                      bgcolor: 'grey.200',
-                      borderRadius: 1,
-                      overflow: 'hidden'
-                    }}>
-                      <Box sx={{
-                        width: `${(item.value / Math.max(...savingsData.map(d => d.value))) * 100}%`,
-                        height: '100%',
-                        bgcolor: savingsColors[index % savingsColors.length],
-                        borderRadius: 1,
-                        transition: 'width 0.3s'
-                      }} />
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
+                  {categories.sort((a, b) => b.totalSpent - a.totalSpent).map((category) => {
+                    const isExpense = categorySpending.some(c => c.categoryName === category.categoryName);
+
+                    const actualAmount = Math.abs(category.totalSpent);
+                    const budgetAmount = category.budgetedAmount || 0;
+
+                    // Check if budget is zero
+                    const targetedBudget = budgetAmount === 0;
+
+                    // For expenses: under budget is good (green)
+                    // For income/savings: over budget is good (green)
+                    const difference = isExpense ? (budgetAmount - actualAmount) : (actualAmount - budgetAmount);
+                    const isGood = !targetedBudget && difference > 0;
+                    const percentage = calculatePercentage(actualAmount, budgetAmount, isExpense);
+
+                    return (
+                      <Box key={category.categoryName} sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        p: 2,
+                        mb: 1,
+                        borderRadius: 2,
+                        bgcolor: 'white',
+                        borderLeft: `4px solid ${targetedBudget ? '#9e9e9e' : (isGood ? '#4caf50' : '#f44336')}`,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateX(4px)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        }
+                      }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="body1" fontWeight={600} noWrap>
+                            {category.categoryName}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Actual: <strong>€{actualAmount.toLocaleString()}</strong>
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Budget: <strong>{targetedBudget ? 'N/A' : `€${budgetAmount.toLocaleString()}`}</strong>
+                            </Typography>
+                            {!targetedBudget && (
+                              <Typography variant="caption" color={isGood ? '#4caf50' : '#f44336'}>
+                                <strong>{Math.round(percentage)}%</strong>
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                        <Box sx={{ ml: 2 }}>
+                          {targetedBudget ? (
+                            <Chip
+                              label="Targeted Budget"
+                              size="small"
+                              sx={{
+                                bgcolor: '#9e9e9e',
+                                color: 'white',
+                                fontWeight: 600
+                              }}
+                            />
+                          ) : (
+                            <Chip
+                              icon={isGood ? <CheckCircle /> : <Warning />}
+                              label={`€${Math.abs(difference).toLocaleString()}`}
+                              size="small"
+                              sx={{
+                                bgcolor: isGood ? '#4caf50' : '#f44336',
+                                color: 'white',
+                                fontWeight: 600,
+                                '& .MuiChip-icon': {
+                                  color: 'white'
+                                }
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              );
+            });
+          })()}
+        </Paper>
 
         {/* Income vs Savings Bar Chart */}
         <Box sx={{ mb: 4 }}>
           <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
-              INCOME vs SAVINGS {selectedMonth ? '(Weekly)' : '(Monthly)'}
+              INCOME vs SAVINGS (Monthly)
             </Typography>
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -419,6 +403,144 @@ export default function AnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
             </Box>
+          </Paper>
+        </Box>
+
+        {/* Savings Breakdown Section */}
+        <Box sx={{ mb: 4 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(33,150,243,0.15)', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+            <Typography variant="h6" fontWeight={700} color="info.main" mb={3} textAlign="center">
+              SAVINGS BY CATEGORY
+            </Typography>
+
+            {savingsData.length > 0 ? (
+              <>
+                {/* Total Savings Summary */}
+                <Box sx={{
+                  bgcolor: '#2196f3',
+                  p: 3,
+                  borderRadius: 3,
+                  mb: 3,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  textAlign: 'center'
+                }}>
+                  <Typography variant="h6" fontWeight={700} color="white">
+                    TOTAL SAVINGS
+                  </Typography>
+                  <Typography variant="h4" fontWeight={700} color="white" mt={1}>
+                    € {savingsData.reduce((sum, cat) => sum + cat.value, 0).toLocaleString()}
+                  </Typography>
+                </Box>
+
+                {/* Savings Categories Grid */}
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                  },
+                  gap: 2
+                }}>
+                  {savingsData.sort((a, b) => b.value - a.value).map((item, index) => {
+                    const difference = item.value - item.budget;
+                    const isOverBudget = difference > 0;
+                    const percentage = item.budget > 0 ? (item.value / item.budget) * 100 : 0;
+
+                    return (
+                      <Box key={index} sx={{
+                        p: 2,
+                        bgcolor: 'white',
+                        borderRadius: 2,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
+                      }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '60%' }}>
+                            {item.name}
+                          </Typography>
+                          <Chip
+                            label={`${Math.round(percentage)}%`}
+                            size="small"
+                            sx={{
+                              bgcolor: percentage >= 100 ? 'success.light' : 'warning.light',
+                              color: percentage >= 100 ? 'success.dark' : 'warning.dark',
+                              fontWeight: 700,
+                              height: 20,
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        </Box>
+
+                        <Box sx={{ mb: 1.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">Saved</Typography>
+                            <Typography variant="body2" fontWeight={700} color="info.main">
+                              €{item.value.toLocaleString()}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Goal</Typography>
+                            <Typography variant="body2" fontWeight={600} color="text.secondary">
+                              €{item.budget.toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {item.budget > 0 && (
+                          <>
+                            <LinearProgress
+                              variant="determinate"
+                              value={Math.min(100, percentage)}
+                              sx={{
+                                height: 8,
+                                borderRadius: 1,
+                                bgcolor: 'grey.200',
+                                mb: 1,
+                                '& .MuiLinearProgress-bar': {
+                                  bgcolor: percentage >= 100 ? 'success.main' : 'info.main',
+                                },
+                              }}
+                            />
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <Chip
+                                icon={isOverBudget ? <CheckCircle /> : <Warning />}
+                                label={`€${Math.abs(difference).toLocaleString()}`}
+                                size="small"
+                                sx={{
+                                  bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
+                                  color: 'white',
+                                  fontWeight: 600,
+                                  height: 20,
+                                  '& .MuiChip-icon': {
+                                    color: 'white',
+                                    fontSize: '0.9rem'
+                                  },
+                                  '& .MuiChip-label': {
+                                    fontSize: '0.7rem',
+                                    px: 1
+                                  }
+                                }}
+                              />
+                            </Box>
+                          </>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  No savings data available for this period
+                </Typography>
+              </Box>
+            )}
           </Paper>
         </Box>
 
@@ -457,80 +579,11 @@ export default function AnalyticsPage() {
             </Grid>
           </Grid>
         )}
-
-        {/* Category Tables Row */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(255,152,0,0.15)' }}>
-              <Box sx={{ bgcolor: '#ff9800', p: 2, borderRadius: 3, mb: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <Typography variant="h6" fontWeight={700} color="white" textAlign="center">
-                  BILLS
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="white" textAlign="center" mt={1}>
-                  € {billsData.reduce((sum, cat) => sum + Math.abs(cat.totalSpent), 0).toLocaleString()}
-                </Typography>
-              </Box>
-              {billsData.map((cat, index) => (
-                <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, p: 1.5, borderRadius: 2, bgcolor: '#fafafa', '&:hover': { bgcolor: '#f5f5f5' } }}>
-                  <Typography variant="body2" fontWeight={500}>{cat.categoryName}</Typography>
-                  <Typography variant="body2" fontWeight={700}>€ {Math.abs(cat.totalSpent).toLocaleString()}</Typography>
-                </Box>
-              ))}
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(121,85,72,0.15)' }}>
-              <Box sx={{ bgcolor: '#795548', p: 2, borderRadius: 3, mb: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <Typography variant="h6" fontWeight={700} color="white" textAlign="center">
-                  DEBTS
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="white" textAlign="center" mt={1}>
-                  € {debtsData.reduce((sum, cat) => sum + Math.abs(cat.totalSpent), 0).toLocaleString()}
-                </Typography>
-              </Box>
-              {debtsData.map((cat, index) => (
-                <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, p: 1.5, borderRadius: 2, bgcolor: '#fafafa', '&:hover': { bgcolor: '#f5f5f5' } }}>
-                  <Typography variant="body2" fontWeight={500}>{cat.categoryName}</Typography>
-                  <Typography variant="body2" fontWeight={700}>€ {Math.abs(cat.totalSpent).toLocaleString()}</Typography>
-                </Box>
-              ))}
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(156,39,176,0.15)' }}>
-              <Box sx={{ bgcolor: '#9c27b0', p: 2, borderRadius: 3, mb: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <Typography variant="h6" fontWeight={700} color="white" textAlign="center">
-                  SUBSCRIPTIONS
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="white" textAlign="center" mt={1}>
-                  € {subscriptionsData.reduce((sum, cat) => sum + Math.abs(cat.totalSpent), 0).toLocaleString()}
-                </Typography>
-              </Box>
-              {subscriptionsData.map((cat, index) => (
-                <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, p: 1.5, borderRadius: 2, bgcolor: '#fafafa', '&:hover': { bgcolor: '#f5f5f5' } }}>
-                  <Typography variant="body2" fontWeight={500}>{cat.categoryName}</Typography>
-                  <Typography variant="body2" fontWeight={700}>€ {Math.abs(cat.totalSpent).toLocaleString()}</Typography>
-                </Box>
-              ))}
-            </Paper>
-          </Grid>
-        </Grid>
-
-        {/* Expense Budget vs Actual Chart */}
-        <Box sx={{ mb: 4 }}>
-          <HorizontalBarChart
-            title="EXPENSE BUDGET vs ACTUAL"
-            data={expenseBudgetVsActual}
-            color="#f44336"
-            showBudget={true}
-          />
-        </Box>
-
         {/* Income vs Expense Chart */}
         <Box sx={{ mb: 4 }}>
           <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
-              INCOME vs EXPENSE {selectedMonth ? '(Weekly)' : '(Monthly)'}
+              INCOME vs EXPENSE (Monthly)
             </Typography>
             <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -564,31 +617,17 @@ export default function AnalyticsPage() {
           </Paper>
         </Box>
 
-        {/* Expenses Table */}
+        {/* Total Expenses */}
         <Box sx={{ mb: 4 }}>
           <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(255,87,34,0.15)' }}>
-            <Box sx={{ bgcolor: '#ff5722', p: 2, borderRadius: 3, mb: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Box sx={{ bgcolor: '#ff5722', p: 3, borderRadius: 3, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               <Typography variant="h6" fontWeight={700} color="white" textAlign="center">
-                EXPENSES
+                TOTAL EXPENSES
               </Typography>
-              <Typography variant="h5" fontWeight={700} color="white" textAlign="center" mt={1}>
+              <Typography variant="h4" fontWeight={700} color="white" textAlign="center" mt={1}>
                 € {expenseData.reduce((sum, cat) => sum + cat.value, 0).toLocaleString()}
               </Typography>
             </Box>
-            <Grid container spacing={2}>
-              {expenseData.map((cat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <Box sx={{ p: 2, bgcolor: '#fafafa', borderRadius: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.05)', transition: 'all 0.2s', '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' } }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom fontWeight={500}>
-                      {cat.name}
-                    </Typography>
-                    <Typography variant="h6" fontWeight={700}>
-                      € {cat.value.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
           </Paper>
         </Box>
       </Box>
