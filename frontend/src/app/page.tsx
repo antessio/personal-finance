@@ -1,8 +1,8 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
 import Layout from '../components/Layout';
-import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline } from '@mui/icons-material';
+import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
 import { Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
@@ -10,6 +10,8 @@ import { MonthlyData } from '../types';
 import { useState } from 'react';
 
 export default function HomePage() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   // const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -18,23 +20,6 @@ export default function HomePage() {
   for (let year = currentYear; year >= currentYear - 4; year--) {
     yearOptions.push({ value: year, label: year.toString() });
   }
-
-  // Month options for the selector
-  // const monthOptions = [
-  //   { value: undefined, label: 'All Year' },
-  //   { value: 1, label: 'January' },
-  //   { value: 2, label: 'February' },
-  //   { value: 3, label: 'March' },
-  //   { value: 4, label: 'April' },
-  //   { value: 5, label: 'May' },
-  //   { value: 6, label: 'June' },
-  //   { value: 7, label: 'July' },
-  //   { value: 8, label: 'August' },
-  //   { value: 9, label: 'September' },
-  //   { value: 10, label: 'October' },
-  //   { value: 11, label: 'November' },
-  //   { value: 12, label: 'December' },
-  // ];
 
   // Fetch data with month filtering
   const { data: totalIncome = 0 } = useQuery({
@@ -75,6 +60,11 @@ export default function HomePage() {
     queryFn: () => service.getCategorySpending(selectedYear),
   });
 
+  const { data: categorySavings = [] } = useQuery({
+    queryKey: ['categorySavings', selectedYear],
+    queryFn: () => service.getCategorySavings(selectedYear),
+  });
+
   // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const { data: monthlyData = [] } = useQuery({
@@ -93,21 +83,6 @@ export default function HomePage() {
     queryKey: ['accounts'],
     queryFn: () => service.getAccounts()
   });
-
-  // Generate chart data based on selection
-  // const monthTransactions = months.map((month, index) => {
-  //   const monthData = monthlyData.find((tx: MonthlyData) => {
-  //
-  //     return Number(tx.year) === selectedYear && Number(tx.month) === index + 1;
-  //   });
-  //   return {
-  //     month,
-  //     Income: monthData ? monthData.totalIncome : 0,
-  //     Expense: monthData ? monthData.totalExpenses : 0,
-  //     Savings: monthData ? monthData.totalSavings : 0,
-  //   };
-  // });
-
 
   const { data: macroCategoryTrends = [] } = useQuery({
     queryKey: ['macroCategoryTrends', selectedYear],
@@ -189,9 +164,6 @@ export default function HomePage() {
 
   const accountColors = generateAccountColors(accounts);
 
-  // Determine line color based on overall trend
-  
-
   // --- 50-30-20 Budget Fake Data ---
   type BudgetKey = 'needs' | 'wants' | 'savingsDebts';
   type BudgetKeyWithTotal = BudgetKey | 'total';
@@ -261,10 +233,14 @@ export default function HomePage() {
     },
   };
 
+  // Calculate left to spend
+  
+  const leftToSpend = totalIncome + totalSavings - totalExpenses;
+
   return (
     <Layout>
       <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', p: { xs: 1, md: 4 } }}>
-        {/* Year and Month Selectors */}
+        {/* Year Selector */}
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel id="year-selector-label">Year</InputLabel>
@@ -283,6 +259,102 @@ export default function HomePage() {
             </Select>
           </FormControl>
         </Box>
+
+        {/* NEW: Annual Summary Section */}
+        <Paper
+          elevation={6}
+          sx={{
+            p: 4,
+            mb: 4,
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }}
+        >
+          <Typography variant="h5" fontWeight={700} mb={3} textAlign="center">
+            ANNUAL SUMMARY {selectedYear}
+          </Typography>
+          <Grid container spacing={3}>
+            {/* Budget Breakdown */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
+                  BUDGET
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Income</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{incomeBudget.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Expenses</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(expenseBudget).toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Savings</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(savingsBudget).toLocaleString()}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Actual Breakdown */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
+                  ACTUAL
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Income</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{totalIncome.toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">Expenses</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalExpenses).toLocaleString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2">Savings</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalSavings).toLocaleString()}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Left to Spend */}
+            <Grid item xs={12} md={4}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.25)', p: 3, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={1} textAlign="center">
+                  LEFT TO SPEND
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    icon={leftToSpend > 0 ? <CheckCircle /> : <Warning />}
+                    label={`€${Math.abs(leftToSpend).toLocaleString()}`}
+                    sx={{
+                      bgcolor: leftToSpend > 0 ? '#4caf50' : '#f44336',
+                      color: 'white',
+                      fontSize: '2rem',
+                      fontWeight: 700,
+                      height: 'auto',
+                      py: 2,
+                      px: 3,
+                      '& .MuiChip-icon': {
+                        color: 'white',
+                        fontSize: '2.5rem'
+                      },
+                      '& .MuiChip-label': {
+                        fontSize: '2rem',
+                        fontWeight: 700
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+
         {/* Top Cards */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
           {/* My Income Card */}
@@ -379,18 +451,31 @@ export default function HomePage() {
             <Box sx={{ width: '100%', height: 400, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={transformedAccountData} margin={{ top: 40, right: 30, left: 20, bottom: 100 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="period"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: theme.palette.text.primary }}
                     angle={-45}
                     textAnchor="end"
                     height={100}
                     interval={0}
+                    stroke={theme.palette.text.secondary}
                   />
-                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                  <Tooltip formatter={(value) => `$${value?.toLocaleString()}`} />
-                  <Legend verticalAlign="top" height={40} />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `$${value?.toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend verticalAlign="top" height={40} wrapperStyle={{ color: theme.palette.text.primary }} />
                   {uniqueAccounts.map((account) => (
                     <Bar
                       key={`${account}_Total`}
@@ -403,9 +488,9 @@ export default function HomePage() {
                   <Line
                     type="monotone"
                     dataKey="Total_All_Accounts"
-                    stroke={'#000000ff'}
+                    stroke={isDark ? '#ffffff' : '#000000'}
                     strokeWidth={2}
-                    dot={{ r: 2, fill: '#000000ff', stroke: '#000000ff', strokeWidth: 1 }}
+                    dot={{ r: 2, fill: isDark ? '#ffffff' : '#000000', stroke: isDark ? '#ffffff' : '#000000', strokeWidth: 1 }}
                     name="Total All Accounts"
                   >
                     <LabelList
@@ -454,11 +539,26 @@ export default function HomePage() {
             <Box sx={{ width: '100%', height: 280, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value) => `€${value?.toLocaleString()}`} />
-                  <Legend verticalAlign="top" height={36} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `€${value?.toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
                   {uniqueMacroCategories.map((category) => (
                     <Line
                       key={category}
@@ -494,65 +594,211 @@ export default function HomePage() {
             },
             gap: 3
           }}>
-            {categorySpending.map((category) => (
-              <Box key={category.categoryName} sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.7)',
-                border: '1px solid',
-                borderColor: 'grey.200'
-              }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="subtitle2" fontWeight={700} noWrap>
-                    {category.categoryName}
-                  </Typography>
-                  <Chip
-                    label={`${Math.round(category.percentage)}%`}
-                    size="small"
+            {categorySpending.map((category) => {
+              const difference = (category.budgetedAmount || 0) - category.totalSpent;
+              const isUnderBudget = difference > 0;
+
+              return (
+                <Box key={category.categoryName} sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid',
+                  borderColor: 'grey.200',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }
+                }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Typography variant="subtitle2" fontWeight={700} noWrap>
+                      {category.categoryName}
+                    </Typography>
+                    <Chip
+                      label={`${Math.round(category.percentage)}%`}
+                      size="small"
+                      sx={{
+                        bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
+                        color: category.percentage > 100 ? 'error.dark' : 'success.dark',
+                        fontWeight: 700,
+                        minWidth: 50,
+                        height: 24
+                      }}
+                    />
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(100, category.percentage)}
                     sx={{
-                      bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
-                      color: category.percentage > 100 ? 'error.dark' : 'success.dark',
-                      fontWeight: 700,
-                      minWidth: 45
+                      height: 10,
+                      borderRadius: 5,
+                      bgcolor: 'grey.200',
+                      mb: 1.5,
+                      '& .MuiLinearProgress-bar': {
+                        bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
+                        borderRadius: 5,
+                      },
                     }}
                   />
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.min(100, category.percentage)}
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    bgcolor: 'grey.200',
-                    mb: 1,
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
-                    },
-                  }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={600} color="text.primary">
-                      €{category.totalSpent.toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Spent
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                    <Box>
+                      <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
+                        €{category.totalSpent.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        Spent
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                        €{(category.budgetedAmount || 0).toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        Budget
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight={600} color="text.secondary">
-                      €{(category.budgetedAmount || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Budget
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                    <Chip
+                      icon={isUnderBudget ? <CheckCircle /> : <Warning />}
+                      label={`€${Math.abs(difference).toLocaleString()}`}
+                      size="small"
+                      sx={{
+                        bgcolor: isUnderBudget ? '#4caf50' : '#f44336',
+                        color: 'white',
+                        fontWeight: 600,
+                        '& .MuiChip-icon': {
+                          color: 'white'
+                        }
+                      }}
+                    />
                   </Box>
                 </Box>
-              </Box>
-            ))}
+              );
+            })}
           </Box>
         </Paper>
 
+        {/* Savings Breakdown Section */}
+        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Savings color="info" sx={{ mr: 1 }} />
+            <Typography color="info.dark" fontWeight={700} variant="h6">
+              Savings Breakdown
+            </Typography>
+          </Box>
+
+          {categorySavings.length > 0 ? (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(4, 1fr)'
+              },
+              gap: 3
+            }}>
+              {categorySavings.map((category) => {
+                const difference = Math.abs(category.totalSpent) - (category.budgetedAmount || 0);
+                const isOverBudget = difference > 0;
+                const percentage = (category.budgetedAmount || 0) > 0
+                  ? (Math.abs(category.totalSpent) / (category.budgetedAmount || 1)) * 100
+                  : 0;
+
+                return (
+                  <Box key={category.categoryName} sx={{
+                    p: 2,
+                    borderRadius: 3,
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }
+                  }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Typography variant="subtitle2" fontWeight={700} noWrap>
+                        {category.categoryName}
+                      </Typography>
+                      <Chip
+                        label={`${Math.round(percentage)}%`}
+                        size="small"
+                        sx={{
+                          bgcolor: percentage > 100 ? 'success.light' : 'info.light',
+                          color: percentage > 100 ? 'success.dark' : 'info.dark',
+                          fontWeight: 700,
+                          minWidth: 50,
+                          height: 24
+                        }}
+                      />
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(100, percentage)}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: 'grey.200',
+                        mb: 1.5,
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: percentage > 100 ? 'success.main' : 'info.main',
+                          borderRadius: 5,
+                        },
+                      }}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
+                          €{Math.abs(category.totalSpent).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Saved
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                          €{(category.budgetedAmount || 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Goal
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {(category.budgetedAmount || 0) > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                        <Chip
+                          icon={isOverBudget ? <CheckCircle /> : <Warning />}
+                          label={`€${Math.abs(difference).toLocaleString()}`}
+                          size="small"
+                          sx={{
+                            bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': {
+                              color: 'white'
+                            }
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                No savings data available for {selectedYear}
+              </Typography>
+            </Box>
+          )}
+        </Paper>
 
         {/* 50-30-20 Budget Section */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #f5f6fa 0%, #ffffff 100%)' }}>

@@ -253,6 +253,61 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     return cumulativeData;
   }
 
+  async getCategoryIncome(year: number, month?: number): Promise<CategorySpending[]> {
+    await simulateDelay();
+    if(month){
+      return this.getCategorySpendingByMonth(year, month);
+    }
+    // Calculate total income for the period to compute percentage of income
+    const totalIncome = await this.getTotalIncome(year, month);
+    const categoryIncome: CategorySpending[] = this.categories.map(category => {
+      const totalEarned = this.transactions
+        .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year.toString()) && tx.included)
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      const budget = this.budgets
+        .find(budget => budget.categoryId === category.id && budget.year === year.toString());
+      return {
+        categoryName: category.name,
+        totalSpent: totalEarned,
+        budgetedAmount: budget?.amount || 0,
+        percentage: totalEarned / (budget?.amount || 1) * 100,
+        percentageOfIncome: totalIncome > 0 ? (totalEarned / totalIncome * 100) : 0,
+        categoryType: category.type, // Add category type for 50-30-20 breakdown
+        macroCategory: category.macroCategory, // Add macro category for additional filtering
+      };
+    });
+    return categoryIncome;
+  }
+
+  async getCategorySavings(year: number, month?: number): Promise<CategorySpending[]> {
+    await simulateDelay();
+    if(month){
+      return this.getCategorySpendingByMonth(year, month);
+    }
+    // Calculate total income for the period to compute percentage of income
+    const totalIncome = await this.getTotalIncome(year, month);
+    const categorySavings: CategorySpending[] = this.categories.map(category => {
+      const totalSaved = this.transactions
+        .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year.toString()) && tx.included)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+      const budget = this.budgets
+        .find(budget => budget.categoryId === category.id && budget.year === year.toString());
+      return {
+        categoryName: category.name,
+        totalSpent: totalSaved,
+        budgetedAmount: budget?.amount || 0,
+        percentage: totalSaved / (budget?.amount || 1) * 100,
+        percentageOfIncome: totalIncome > 0 ? (totalSaved / totalIncome * 100) : 0,
+        categoryType: category.type, // Add category type for 50-30-20 breakdown
+        macroCategory: category.macroCategory, // Add macro category for additional filtering
+      };
+    });
+    return categorySavings;
+  }
+
+
+      
+
   async getLargestExpenses(year: number, month?: number, limit: number = 10): Promise<LargestExpenseItem[]> {
     await simulateDelay();
     
@@ -375,6 +430,9 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
         totalIncome,
         totalExpenses,
         totalSavings,
+        incomeBudget: 3000, // Mock budget data
+        expensesBudget: 2000, // Mock budget data
+        savingsBudget: 1000, // Mock budget data
       });
     }
     return monthlyData;

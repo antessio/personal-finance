@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { Box, CircularProgress } from '@mui/material';
 import { isAuthEnabled } from '../config/auth';
 
 interface ProtectedRouteProps {
@@ -11,6 +12,7 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
@@ -21,18 +23,31 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     // If auth is enabled and user is not authenticated, redirect to login
     if (!isLoading && !isAuthenticated) {
+      // Store the attempted URL to redirect back after login
+      sessionStorage.setItem('redirectAfterLogin', pathname);
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, pathname]);
 
   // If auth is disabled, always render children
   if (!isAuthEnabled()) {
     return <>{children}</>;
   }
 
-  // If loading, show loading state
+  // If loading, show loading spinner
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
   }
 
   // If not authenticated, don't render anything (redirect will happen)

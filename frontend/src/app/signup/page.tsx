@@ -10,27 +10,36 @@ import {
   Typography,
   Alert,
   Link,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+  useTheme,
 } from '@mui/material';
+import { Visibility, VisibilityOff, PersonAdd } from '@mui/icons-material';
 import { useMutation } from '@tanstack/react-query';
-import { signup } from '../../services/api';
+import { service } from '../../services/api';
 
 export default function SignupPage() {
   const router = useRouter();
+  const theme = useTheme();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const signupMutation = useMutation({
-    mutationFn: signup,
+    mutationFn: (userData: { name: string; email: string; password: string }) =>
+      service.signup(userData),
     onSuccess: () => {
       router.push('/login');
     },
-    onError: (error: Error) => {
-      setError(error.message);
+    onError: (error: any) => {
+      setError(error.response?.data?.message || error.message || 'Signup failed. Please try again.');
     },
   });
 
@@ -55,87 +64,167 @@ export default function SignupPage() {
   return (
     <Box
       sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
         minHeight: '100vh',
-        bgcolor: 'background.default',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: theme.palette.mode === 'dark'
+          ? 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 2,
       }}
     >
       <Paper
-        elevation={3}
+        elevation={8}
         sx={{
           p: 4,
-          maxWidth: 400,
+          maxWidth: 450,
           width: '100%',
+          borderRadius: 4,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         }}
       >
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Sign Up
-        </Typography>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <PersonAdd
+            sx={{
+              fontSize: 60,
+              color: 'primary.main',
+              mb: 2,
+            }}
+          />
+          <Typography variant="h4" fontWeight={700} color="text.primary" gutterBottom>
+            Create Account
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Join us to start managing your finances
+          </Typography>
+        </Box>
+
         <form onSubmit={handleSubmit}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+
           <TextField
-            fullWidth
-            label="Name"
+            label="Full Name"
             name="name"
+            fullWidth
+            required
             value={formData.name}
             onChange={handleChange}
-            margin="normal"
-            required
+            disabled={signupMutation.isPending}
+            sx={{ mb: 2 }}
+            autoComplete="name"
+            autoFocus
           />
+
           <TextField
-            fullWidth
-            label="Email"
+            label="Email or Username"
             name="email"
-            type="email"
+            type="text"
+            fullWidth
+            required
             value={formData.email}
             onChange={handleChange}
-            margin="normal"
-            required
+            disabled={signupMutation.isPending}
+            sx={{ mb: 2 }}
+            autoComplete="username"
           />
+
           <TextField
-            fullWidth
             label="Password"
             name="password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
+            fullWidth
+            required
             value={formData.password}
             onChange={handleChange}
-            margin="normal"
-            required
+            disabled={signupMutation.isPending}
+            sx={{ mb: 2 }}
+            autoComplete="new-password"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                    disabled={signupMutation.isPending}
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
+
           <TextField
-            fullWidth
             label="Confirm Password"
             name="confirmPassword"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
+            fullWidth
+            required
             value={formData.confirmPassword}
             onChange={handleChange}
-            margin="normal"
-            required
+            disabled={signupMutation.isPending}
+            sx={{ mb: 3 }}
+            autoComplete="new-password"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                    disabled={signupMutation.isPending}
+                  >
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
+
           <Button
             type="submit"
             variant="contained"
             fullWidth
-            sx={{ mt: 3 }}
+            size="large"
             disabled={signupMutation.isPending}
+            sx={{
+              mb: 2,
+              py: 1.5,
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '1rem',
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+            }}
           >
-            {signupMutation.isPending ? 'Signing up...' : 'Sign Up'}
+            {signupMutation.isPending ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'Create Account'
+            )}
           </Button>
+
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Already have an account?{' '}
+              <Link
+                href="/login"
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Sign in
+              </Link>
+            </Typography>
+          </Box>
         </form>
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography variant="body2">
-            Already have an account?{' '}
-            <Link href="/login" underline="hover">
-              Log in
-            </Link>
-          </Typography>
-        </Box>
       </Paper>
     </Box>
   );

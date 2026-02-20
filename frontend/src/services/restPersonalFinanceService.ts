@@ -99,10 +99,46 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
     }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
+    console.log(response.data);
     return response.data.map(spending => ({
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
+    }));
+  }
+  async getCategoryIncome(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-income?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
+    }));
+  }
+  async getCategorySavings(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-savings?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
       percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
       categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
     }));
@@ -133,6 +169,9 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       totalIncome: data.totalIncome,
       totalExpenses: data.totalExpenses,
       totalSavings: data.totalSavings,
+      incomeBudget: data.incomeBudget,
+      expensesBudget: data.expensesBudget,
+      savingsBudget: data.savingsBudget,
     }));
   }
 
@@ -416,8 +455,8 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.post('/public/api/users/login', { username: email, password });
 
     // Extract token from response (adjust based on your API response structure)
-    const token = response.data.token || response.headers['authorization']?.replace('Bearer ', '');
-
+    const token = response.data.token || response.headers['authorization']?.replace('Bearer ', '') || response.data;
+    console.log('Login response token:', token);
     if (token) {
       this.setAuthToken(token);
     }
@@ -431,7 +470,12 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
 
   async signup(userData: { email: string; password: string; name: string }): Promise<void> {
-    await this.api.post('/public/api/users/register', userData);
+    await this.api.post('/public/api/users/register', {
+      username: userData.email,
+      password: userData.password,
+      firstName: userData.name.split(' ')[0],
+      lastName: userData.name.split(' ')[1],
+    });
   }
 
   async getCurrentUser(): Promise<{ id: string; name: string; email: string }> {

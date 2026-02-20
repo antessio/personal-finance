@@ -6,11 +6,14 @@ import antessio.personalfinance.domain.ports.TransactionRepository;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -244,6 +247,9 @@ public class TransactionQueryService {
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
                 .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
+        int year = startDate.getYear();
+        List<BudgetDTO> annualBudget = budgetService.getAllBudgets(username, year);
+
         return transactionsByMonth
                 .entrySet()
                 .stream()
@@ -264,6 +270,20 @@ public class TransactionQueryService {
                                                     .orElse(false))
                                             .mapToDouble(t -> t.getAmount().doubleValue())
                                             .sum();
+                                    AtomicReference<BigDecimal> totalIncomeBudget = new AtomicReference<>(BigDecimal.ZERO);
+                                    AtomicReference<BigDecimal> totalSavingsBudget = new AtomicReference<>(BigDecimal.ZERO);
+                                    AtomicReference<BigDecimal> totalExpenseBudget = new AtomicReference<>(BigDecimal.ZERO);
+
+                                    annualBudget.forEach(budget -> Optional.ofNullable(categories.get(budget.getCategoryId()))
+                                            .ifPresent(c -> {
+                                                if (c.getMacroCategory().isSavings()) {
+                                                    totalSavingsBudget.getAndUpdate(a -> addBudget(budget, a).divide(new BigDecimal(4), 2, RoundingMode.HALF_UP));
+                                                } else if (c.getMacroCategory().isExpense()) {
+                                                    totalExpenseBudget.getAndUpdate(a -> addBudget(budget, a).divide(new BigDecimal(4), 2, RoundingMode.HALF_UP));
+                                                } else if (c.getMacroCategory().isIncome()) {
+                                                    totalIncomeBudget.getAndUpdate(a -> addBudget(budget, a).divide(new BigDecimal(4), 2, RoundingMode.HALF_UP));
+                                                }
+                                            }));
                                     double totalExpenses = e.getValue()
                                             .stream()
                                             .filter(t -> Optional.ofNullable(categories.get(t.getCategoryId()))
@@ -283,7 +303,10 @@ public class TransactionQueryService {
                                     return new MonthlyDataDTO(yearMonth, week,
                                             BigDecimal.valueOf(totalIncome).abs(),
                                             BigDecimal.valueOf(totalExpenses).abs(),
-                                            BigDecimal.valueOf(totalSavings).abs());
+                                            BigDecimal.valueOf(totalSavings).abs(),
+                                            totalIncomeBudget.get().abs(),
+                                            totalExpenseBudget.get().abs(),
+                                            totalSavingsBudget.get().abs());
                                 });
 
                     } else {
@@ -316,12 +339,40 @@ public class TransactionQueryService {
 
                                 .mapToDouble(t -> t.getAmount().doubleValue())
                                 .sum();
+
+                        AtomicReference<BigDecimal> totalIncomeBudget = new AtomicReference<>(BigDecimal.ZERO);
+                        AtomicReference<BigDecimal> totalSavingsBudget = new AtomicReference<>(BigDecimal.ZERO);
+                        AtomicReference<BigDecimal> totalExpenseBudget = new AtomicReference<>(BigDecimal.ZERO);
+
+                        annualBudget.forEach(budget -> Optional.ofNullable(categories.get(budget.getCategoryId()))
+                                .ifPresent(c -> {
+                                    if (c.getMacroCategory().isSavings()) {
+                                        totalSavingsBudget.getAndUpdate(a -> addBudget(budget, a));
+                                    } else if (c.getMacroCategory().isExpense()) {
+                                        totalExpenseBudget.getAndUpdate(a -> addBudget(budget, a));
+                                    } else if (c.getMacroCategory().isIncome()) {
+                                        totalIncomeBudget.getAndUpdate(a -> addBudget(budget, a));
+                                    }
+                                }));
                         return Stream.of(new MonthlyDataDTO(yearMonth, 0,
-                                BigDecimal.valueOf(totalIncome).abs(), BigDecimal.valueOf(totalExpenses).abs(), BigDecimal.valueOf(totalSavings).abs()));
+                                BigDecimal.valueOf(totalIncome).abs(),
+                                BigDecimal.valueOf(totalExpenses).abs(),
+                                BigDecimal.valueOf(totalSavings).abs(),
+                                totalIncomeBudget.get().abs(),
+                                totalExpenseBudget.get().abs(),
+                                totalSavingsBudget.get().abs()
+                                ));
                     }
                 })
                 .sorted(Comparator.comparing(MonthlyDataDTO::yearMonth))
                 .toList();
+    }
+
+    private static BigDecimal addBudget(BudgetDTO budget, BigDecimal a) {
+        return switch (budget.getType()) {
+            case YEARLY, DEFAULT -> a.add(budget.getAmount().divide(new BigDecimal(12), 2, RoundingMode.HALF_UP));
+            case MONTHLY -> a;
+        };
     }
 
     private static boolean isGroupingByMonth(LocalDate startDate, LocalDate endDate) {
@@ -336,14 +387,36 @@ public class TransactionQueryService {
             throw new IllegalArgumentException("Start date and end date must be in the same year");
         }
         Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
-        return getCategorySpending(username, startDate.getYear(), month);
+        return getCategorySpending(username, startDate.getYear(), month, c -> c.getMacroCategory().isExpense());
 
     }
 
-    public List<CategorySpendingDTO> getCategorySpending(String username, int year, Integer month) {
+    public List<CategorySpendingDTO> getCategoryIncome(String username, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+        if (startDate.getYear() != endDate.getYear()) {
+            throw new IllegalArgumentException("Start date and end date must be in the same year");
+        }
+        Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
+        return getCategorySpending(username, startDate.getYear(), month, c -> c.getMacroCategory().isIncome());
+    }
+
+    public List<CategorySpendingDTO> getCategorySavings(String username, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+        if (startDate.getYear() != endDate.getYear()) {
+            throw new IllegalArgumentException("Start date and end date must be in the same year");
+        }
+        Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
+        return getCategorySpending(username, startDate.getYear(), month, c -> c.getMacroCategory().isSavings());
+    }
+
+    private List<CategorySpendingDTO> getCategorySpending(String username, int year, Integer month, Predicate<CategoryDTO> categoryDTOPredicate) {
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
-                .filter(c -> c.getMacroCategory().isExpense())
+                .filter(categoryDTOPredicate)
                 .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
 
 
@@ -427,6 +500,7 @@ public class TransactionQueryService {
                                     int week = e.getKey();
                                     return e.getValue()
                                             .stream()
+                                            .filter(transaction -> categories.containsKey(transaction.getCategoryId()))
                                             .filter(t -> categories.get(t.getCategoryId()).getMacroCategory().isExpense())
                                             .map(t -> new MacroCategoryMonthlyDataDTO(
                                                     yearMonth.getYear(),
@@ -459,6 +533,8 @@ public class TransactionQueryService {
                                 .values()
                                 .stream()
                                 .flatMap(Collection::stream)
+                                .filter(transaction -> transaction.getCategoryId() != null)
+                                .filter(t -> categories.containsKey(t.getCategoryId()))
                                 .map(t -> Pair.of(categories.get(t.getCategoryId()).getMacroCategory(), t))
                                 .filter(p -> p.getLeft().isExpense())
                                 .map(p -> new MacroCategoryMonthlyDataDTO(

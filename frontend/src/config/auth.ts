@@ -1,5 +1,5 @@
 export const authConfig = {
-  enabled: false
+  enabled: true
 };
 
 export const isAuthEnabled = () => authConfig.enabled;

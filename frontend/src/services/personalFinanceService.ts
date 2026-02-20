@@ -4,6 +4,8 @@ export interface PersonalFinanceService {
 
 
   getCategorySpending(year: number, month?: number): Promise<CategorySpending[]>;
+  getCategoryIncome(year: number, month?: number): Promise<CategorySpending[]>;
+  getCategorySavings(year: number, month?: number): Promise<CategorySpending[]>;
   getMonthlyData(year: number, month?: number): Promise<MonthlyData[]>;
   getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]>;
   getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]>;

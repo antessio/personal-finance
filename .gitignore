@@ -82,3 +82,4 @@ frontend/.env.production.local
 */Thumbs.db
 */.turbo/
 .DS_Store
+.db_copy_env

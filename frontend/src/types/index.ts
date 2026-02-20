@@ -101,6 +101,9 @@ export interface MonthlyData {
   totalIncome: number;
   totalExpenses: number;
   totalSavings: number;
+  incomeBudget: number;
+  expensesBudget: number;
+  savingsBudget: number;
 }
 
 export interface MacroCategoryMonthlyData{
