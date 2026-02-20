@@ -99,6 +99,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
     }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
+    console.log(response.data);
     return response.data.map(spending => ({
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,

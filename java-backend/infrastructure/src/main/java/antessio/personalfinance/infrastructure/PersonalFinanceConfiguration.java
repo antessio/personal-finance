@@ -90,4 +90,10 @@ public class PersonalFinanceConfiguration {
         return new TransactionImportService(categoryRepository, dateProvider, transactionService, eventPublisher);
     }
 
+    @Bean
+    public ReportDataService reportDataService(TransactionQueryService transactionQueryService,
+                                               BudgetService budgetService) {
+        return new ReportDataService(transactionQueryService, budgetService);
+    }
+
 }
