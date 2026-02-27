@@ -85,6 +85,13 @@ export default function AnalyticsPage() {
       return data;
     },
   });
+  const { data: categoryInvestments = [] } = useQuery({
+    queryKey: ['categoryInvestments', selectedYear, selectedMonth],
+    queryFn: async () => {
+      const data = await service.getCategoryInvestments(selectedYear, selectedMonth);
+      return data;
+    },
+  });
 
 
   // Prepare pie chart data for Income
@@ -106,6 +113,14 @@ export default function AnalyticsPage() {
 
   // Prepare pie chart data for Savings
   const savingsData = categorySavings
+    .map(cat => ({
+      name: cat.categoryName,
+      value: Math.abs(cat.totalSpent),
+      budget: cat.budgetedAmount || 0
+    }));
+
+  // Prepare chart data for Investments
+  const investmentsData = categoryInvestments
     .map(cat => ({
       name: cat.categoryName,
       value: Math.abs(cat.totalSpent),
@@ -247,7 +262,7 @@ export default function AnalyticsPage() {
           </Typography>
           {(() => {
             // Group categories by macro category
-            const allCategories = [...categoryIncome, ...categorySpending, ...categorySavings];
+            const allCategories = [...categoryIncome, ...categorySpending, ...categorySavings, ...categoryInvestments];
 
             const groupedByMacro = allCategories.reduce((acc, cat) => {
               const macro = cat.macroCategory || 'OTHER';
@@ -264,6 +279,7 @@ export default function AnalyticsPage() {
               'SUBSCRIPTIONS': { color: '#9c27b0', label: 'Subscriptions', bgcolor: 'rgba(156, 39, 176, 0.08)' },
               'DEBTS': { color: '#795548', label: 'Debts', bgcolor: 'rgba(121, 85, 72, 0.08)' },
               'SAVINGS': { color: '#2196f3', label: 'Savings', bgcolor: 'rgba(33, 150, 243, 0.08)' },
+              'INVESTMENTS': { color: '#00897b', label: 'Investments', bgcolor: 'rgba(0, 137, 123, 0.08)' },
               'OTHER': { color: '#607d8b', label: 'Other', bgcolor: 'rgba(96, 125, 139, 0.08)' }
             };
 
@@ -538,6 +554,144 @@ export default function AnalyticsPage() {
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Typography variant="body1" color="text.secondary">
                   No savings data available for this period
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Box>
+
+        {/* Investments Breakdown Section */}
+        <Box sx={{ mb: 4 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
+            <Typography variant="h6" fontWeight={700} mb={3} textAlign="center" sx={{ color: '#00897b' }}>
+              INVESTMENTS BY CATEGORY
+            </Typography>
+
+            {investmentsData.length > 0 ? (
+              <>
+                {/* Total Investments Summary */}
+                <Box sx={{
+                  bgcolor: '#00897b',
+                  p: 3,
+                  borderRadius: 3,
+                  mb: 3,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  textAlign: 'center'
+                }}>
+                  <Typography variant="h6" fontWeight={700} color="white">
+                    TOTAL INVESTMENTS
+                  </Typography>
+                  <Typography variant="h4" fontWeight={700} color="white" mt={1}>
+                    € {investmentsData.reduce((sum, cat) => sum + cat.value, 0).toLocaleString()}
+                  </Typography>
+                </Box>
+
+                {/* Investments Categories Grid */}
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                  },
+                  gap: 2
+                }}>
+                  {investmentsData.sort((a, b) => b.value - a.value).map((item, index) => {
+                    const difference = item.value - item.budget;
+                    const isOverBudget = difference > 0;
+                    const percentage = item.budget > 0 ? (item.value / item.budget) * 100 : 0;
+
+                    return (
+                      <Box key={index} sx={{
+                        p: 2,
+                        bgcolor: 'white',
+                        borderRadius: 2,
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }
+                      }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '60%' }}>
+                            {item.name}
+                          </Typography>
+                          <Chip
+                            label={`${Math.round(percentage)}%`}
+                            size="small"
+                            sx={{
+                              bgcolor: percentage >= 100 ? 'success.light' : '#b2dfdb',
+                              color: percentage >= 100 ? 'success.dark' : '#00695c',
+                              fontWeight: 700,
+                              height: 20,
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        </Box>
+
+                        <Box sx={{ mb: 1.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">Invested</Typography>
+                            <Typography variant="body2" fontWeight={700} sx={{ color: '#00897b' }}>
+                              €{item.value.toLocaleString()}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="caption" color="text.secondary">Goal</Typography>
+                            <Typography variant="body2" fontWeight={600} color="text.secondary">
+                              €{item.budget.toLocaleString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {item.budget > 0 && (
+                          <>
+                            <LinearProgress
+                              variant="determinate"
+                              value={Math.min(100, percentage)}
+                              sx={{
+                                height: 8,
+                                borderRadius: 1,
+                                bgcolor: 'grey.200',
+                                mb: 1,
+                                '& .MuiLinearProgress-bar': {
+                                  bgcolor: percentage >= 100 ? 'success.main' : '#00897b',
+                                },
+                              }}
+                            />
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <Chip
+                                icon={isOverBudget ? <CheckCircle /> : <Warning />}
+                                label={`€${Math.abs(difference).toLocaleString()}`}
+                                size="small"
+                                sx={{
+                                  bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
+                                  color: 'white',
+                                  fontWeight: 600,
+                                  height: 20,
+                                  '& .MuiChip-icon': {
+                                    color: 'white',
+                                    fontSize: '0.9rem'
+                                  },
+                                  '& .MuiChip-label': {
+                                    fontSize: '0.7rem',
+                                    px: 1
+                                  }
+                                }}
+                              />
+                            </Box>
+                          </>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  No investments data available for this period
                 </Typography>
               </Box>
             )}

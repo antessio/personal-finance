@@ -31,6 +31,7 @@ export interface TransactionFilters {
   included?: boolean;
   account?: string;
   categoryId?: string;
+  macroCategory?: string;
   cursor?: string;
   limit?: number;
 }

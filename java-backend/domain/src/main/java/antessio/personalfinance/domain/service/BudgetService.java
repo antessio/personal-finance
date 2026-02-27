@@ -224,4 +224,12 @@ public class BudgetService {
                 .stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    public BigDecimal getTotalInvestments(String username, int year, Integer month) {
+
+        return getCategoryIdBigDecimalMap(username, year, month, category -> category.getMacroCategory().isInvestments())
+                .values()
+                .stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }

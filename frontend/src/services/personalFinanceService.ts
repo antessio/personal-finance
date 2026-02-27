@@ -6,6 +6,7 @@ export interface PersonalFinanceService {
   getCategorySpending(year: number, month?: number): Promise<CategorySpending[]>;
   getCategoryIncome(year: number, month?: number): Promise<CategorySpending[]>;
   getCategorySavings(year: number, month?: number): Promise<CategorySpending[]>;
+  getCategoryInvestments(year: number, month?: number): Promise<CategorySpending[]>;
   getMonthlyData(year: number, month?: number): Promise<MonthlyData[]>;
   getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]>;
   getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]>;
@@ -17,6 +18,7 @@ export interface PersonalFinanceService {
   getTotalIncome(year: number, month: number | undefined): Promise<number>;
   getTotalExpenses(year: number, month: number | undefined): Promise<number>;
   getTotalSavings(year: number, month: number | undefined): Promise<number>;
+  getTotalInvestments(year: number, month: number | undefined): Promise<number>;
   getTransactions(filters: TransactionFilters): Promise<PaginatedResponse<Transaction>>;
   uploadTransactions(file: File): Promise<void>;
   bulkUpdateTransactions(payload: BulkUpdatePayload): Promise<void>;
@@ -40,6 +42,7 @@ export interface PersonalFinanceService {
   getIncomeBudget(year: number, month: number | undefined): Promise<number>;
   getExpenseBudget(year: number, month: number | undefined): Promise<number>;
   getSavingsBudget(year: number, month: number | undefined): Promise<number>;
+  getInvestmentsBudget(year: number, month: number | undefined): Promise<number>;
 
   // Upload methods
   getUploads(filters?: { limit?: number; cursor?: string }): Promise<PaginatedResponse<UploadFile>>;

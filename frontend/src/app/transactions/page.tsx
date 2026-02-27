@@ -223,6 +223,25 @@ export default function TransactionsPage() {
               ))}
             </Select>
           </FormControl>
+          <FormControl sx={{ minWidth: 140 }}>
+            <InputLabel>Macro Category</InputLabel>
+            <Select
+              value={filters.macroCategory ?? ''}
+              label="Macro Category"
+              onChange={(e) =>
+                setFilters({ ...filters, macroCategory: e.target.value || undefined, cursor: undefined })
+              }
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="INCOME">Income</MenuItem>
+              <MenuItem value="EXPENSE">Expense</MenuItem>
+              <MenuItem value="BILLS">Bills</MenuItem>
+              <MenuItem value="SAVINGS">Savings</MenuItem>
+              <MenuItem value="SUBSCRIPTIONS">Subscriptions</MenuItem>
+              <MenuItem value="DEBTS">Debts</MenuItem>
+              <MenuItem value="INVESTMENTS">Investments</MenuItem>
+            </Select>
+          </FormControl>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Category</InputLabel>
             <Select

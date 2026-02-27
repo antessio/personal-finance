@@ -34,19 +34,26 @@ public class TransactionQueryService {
 
 
     public List<TransactionDTO> findTransactions(TransactionsQueryDTO query) {
+        List<CategoryId> categoryIds;
+        if (query.getUncategorized().orElse(false)) {
+            categoryIds = List.of();
+        } else if (query.getMacroCategory().isPresent()) {
+            categoryIds = categoryService.getAllCategories(query.getUserOwner(), Integer.MAX_VALUE, null)
+                    .stream()
+                    .filter(c -> c.getMacroCategory() == query.getMacroCategory().get())
+                    .map(CategoryDTO::getId)
+                    .toList();
+        } else {
+            categoryIds = query.getCategoryId().map(List::of).orElse(null);
+        }
         List<Transaction> allByUserAndFilters = transactionRepository.findAllByUserAndFilters(
                 query.getUserOwner(),
                 query.getLimit(),
                 query.getMonth().orElse(null),
                 query.getSkip().orElse(null),
                 query.getSource().orElse(null),
-                query.getUncategorized().orElse(false) ?
-                        List.of() :
-                        query.getCategoryId()
-                                .map(List::of)
-                                .orElse(null),
+                categoryIds,
                 query.getCursor().orElse(null)
-
         );
         Map<CategoryId, CategoryDTO> categoryIdCategoryDTOMap = categoryService.getCategoriesByIdsAndUser(
                         allByUserAndFilters.stream().map(Transaction::getCategoryId).filter(Objects::nonNull).toList(),
@@ -413,6 +420,17 @@ public class TransactionQueryService {
         return getCategorySpending(username, startDate.getYear(), month, c -> c.getMacroCategory().isSavings());
     }
 
+    public List<CategorySpendingDTO> getCategoryInvestments(String username, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Start date cannot be after end date");
+        }
+        if (startDate.getYear() != endDate.getYear()) {
+            throw new IllegalArgumentException("Start date and end date must be in the same year");
+        }
+        Integer month = startDate.getMonthValue() == endDate.getMonthValue() ? startDate.getMonthValue() : null;
+        return getCategorySpending(username, startDate.getYear(), month, c -> c.getMacroCategory().isInvestments());
+    }
+
     private List<CategorySpendingDTO> getCategorySpending(String username, int year, Integer month, Predicate<CategoryDTO> categoryDTOPredicate) {
         Map<CategoryId, CategoryDTO> categories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
                 .stream()
@@ -443,6 +461,18 @@ public class TransactionQueryService {
         List<CategoryId> categories = categoryService.getAllCategories(username, 1000, null)
                 .stream()
                 .filter(c -> c.getMacroCategory().isSavings())
+                .map(CategoryDTO::getId)
+                .toList();
+        return transactionRepository.findAllByUserAndYearAndCategories(username, fromDate, toDate, categories)
+                .reduce(BigDecimal.ZERO,
+                        (total, transaction) -> total.add(transaction.getAmount()),
+                        BigDecimal::add).abs();
+    }
+
+    public BigDecimal getTotalInvestments(String username, LocalDate fromDate, LocalDate toDate) {
+        List<CategoryId> categories = categoryService.getAllCategories(username, 1000, null)
+                .stream()
+                .filter(c -> c.getMacroCategory().isInvestments())
                 .map(CategoryDTO::getId)
                 .toList();
         return transactionRepository.findAllByUserAndYearAndCategories(username, fromDate, toDate, categories)

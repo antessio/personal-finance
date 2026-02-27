@@ -139,4 +139,17 @@ public class BudgetController {
         BigDecimal totalIncome = budgetService.getTotalSavings(user.getUsername(), year, month);
         return ResponseEntity.ok(totalIncome);
     }
+
+    @GetMapping("/total-investments")
+    public ResponseEntity<BigDecimal> getTotalInvestments(
+            @RequestParam int year,
+            @RequestParam(required = false) Integer month
+    ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalInvestments = budgetService.getTotalInvestments(user.getUsername(), year, month);
+        return ResponseEntity.ok(totalInvestments);
+    }
 }

@@ -38,7 +38,8 @@ public class TransactionController {
             @RequestParam(required = false) String source,
             @RequestParam(required = false) Boolean skip,
             @RequestParam(required = false) String cursor,
-            @RequestParam(required = false) Boolean uncategorized) {
+            @RequestParam(required = false) Boolean uncategorized,
+            @RequestParam(required = false) MacroCategoryEnum macroCategory) {
         User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -55,6 +56,7 @@ public class TransactionController {
                         .cursor(Optional.ofNullable(cursor).map(TransactionId::fromString).orElse(null))
                         .uncategorized(uncategorized)
                         .source(source)
+                        .macroCategory(macroCategory)
                         .userOwner(user.getUsername())
                         .limit(limit + 1)
                         .build()
@@ -218,6 +220,18 @@ public class TransactionController {
         return ResponseEntity.ok(categorySpending);
     }
 
+    @GetMapping("/category-investments")
+    public ResponseEntity<List<CategorySpendingDTO>> getCategoryInvestments(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate){
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<CategorySpendingDTO> categoryInvestments = transactionQueryService.getCategoryInvestments(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(categoryInvestments);
+    }
+
     @GetMapping("/category-monthly-data")
     public ResponseEntity<List<CategoryMonthlyDataDTO>> getCategoryMonthlyData(
             @RequestParam LocalDate fromDate,
@@ -277,6 +291,19 @@ public class TransactionController {
         }
         BigDecimal totalSavings = transactionQueryService.getTotalSavings(user.getUsername(), fromDate, toDate);
         return ResponseEntity.ok(totalSavings);
+    }
+
+    @GetMapping("/total-investments")
+    public ResponseEntity<BigDecimal> getTotalInvestments(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
+    ) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        BigDecimal totalInvestments = transactionQueryService.getTotalInvestments(user.getUsername(), fromDate, toDate);
+        return ResponseEntity.ok(totalInvestments);
     }
 
     @GetMapping("/total-income")

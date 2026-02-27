@@ -143,6 +143,23 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
       categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
     }));
   }
+  async getCategoryInvestments(year: number, month?: number): Promise<CategorySpending[]> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-investments?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data.map(spending => ({
+      categoryName: spending.category.name + ' ' + spending.category.emoji,
+      totalSpent: spending.totalSpent,
+      budgetedAmount: spending.budgetAmount || 0,
+      macroCategory: spending.category.macroCategory,
+      percentage: spending.budgetAmount ? (spending.totalSpent / spending.budgetAmount) * 100 : 0,
+      categoryType: spending.category.type as 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS',
+    }));
+  }
 
   async getMacroCategoriesMontlyData(year: number, month?: number): Promise<MacroCategoryMonthlyData[]> {
     let fromDate = `${year}-01-01`;
@@ -254,6 +271,17 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     return response.data;
   }
 
+  async getTotalInvestments(year: number, month?: number | undefined): Promise<number> {
+    var fromDate = `${year}-01-01`;
+    var toDate = `${year}-12-31`;
+    if (month !== undefined) {
+      fromDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      toDate = `${year}-${month.toString().padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+    }
+    const response = await this.api.get<number>(`/api/transactions/total-investments?fromDate=${fromDate}&toDate=${toDate}`);
+    return response.data;
+  }
+
 
 
 
@@ -298,6 +326,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
         params.categoryId = filters.categoryId;
       }
     }
+    if (filters.macroCategory) params.macroCategory = filters.macroCategory;
     if (filters.limit) params.limit = filters.limit;
     if (filters.cursor) params.cursor = filters.cursor;
     return params;
@@ -410,6 +439,10 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
   }
   async getSavingsBudget(year: number, month?: number): Promise<number> {
     const response = await this.api.get<number>(`/api/budgets/total-savings?`, { params: { year, month } });
+    return response.data;
+  }
+  async getInvestmentsBudget(year: number, month?: number): Promise<number> {
+    const response = await this.api.get<number>(`/api/budgets/total-investments?`, { params: { year, month } });
     return response.data;
   }
 

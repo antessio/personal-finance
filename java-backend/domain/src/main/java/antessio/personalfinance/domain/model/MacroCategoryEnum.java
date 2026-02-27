@@ -8,10 +8,12 @@ public enum MacroCategoryEnum {
     BILLS,
     SAVINGS,
     SUBSCRIPTIONS,
-    DEBTS;
+    DEBTS,
+    INVESTMENTS;
 
     private static List<MacroCategoryEnum> INCOME_MACRO_CATEGORIES = List.of(MacroCategoryEnum.INCOME);
     private static List<MacroCategoryEnum> SAVINGS_MACRO_CATEGORIES = List.of(MacroCategoryEnum.SAVINGS);
+    private static List<MacroCategoryEnum> INVESTMENTS_MACRO_CATEGORIES = List.of(MacroCategoryEnum.INVESTMENTS);
     private static List<MacroCategoryEnum> EXPENSE_MACRO_CATEGORIES = List.of(MacroCategoryEnum.EXPENSE,
             MacroCategoryEnum.BILLS,
             MacroCategoryEnum.DEBTS,
@@ -20,6 +22,10 @@ public enum MacroCategoryEnum {
 
     public boolean isSavings() {
         return SAVINGS_MACRO_CATEGORIES.contains(this);
+    }
+
+    public boolean isInvestments() {
+        return INVESTMENTS_MACRO_CATEGORIES.contains(this);
     }
 
     public boolean isIncome() {
