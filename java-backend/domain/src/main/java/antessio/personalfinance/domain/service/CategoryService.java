@@ -1,6 +1,7 @@
 package antessio.personalfinance.domain.service;
 
 import antessio.personalfinance.domain.dto.CategoryDTO;
+import antessio.personalfinance.domain.dto.CategoryMatcherDTO;
 import antessio.personalfinance.domain.dto.CreateCategoryDTO;
 import antessio.personalfinance.domain.model.*;
 import antessio.personalfinance.domain.ports.AutomaticSkipRepository;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CategoryService {
@@ -40,7 +42,8 @@ public class CategoryService {
         category.setCategoryType(type);
         categoryRepository.update(category);
     }
-    public void updateCategoryMatchers(String userOwner, CategoryId categoryId, Set<String> matchers) {
+
+    public void updateCategoryMatchers(String userOwner, CategoryId categoryId, Set<CategoryMatcher> matchers) {
         Category category = categoryRepository.findById(categoryId)
                 .filter(c -> c.getUserOwner().equals(userOwner))
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
@@ -130,7 +133,7 @@ public class CategoryService {
                 category.getType(),
                 category.getEmoji(),
                 category.getUserOwner(),
-                category.getMatchers(),
+                category.getMatchers().stream().map(cm -> new CategoryMatcherDTO(cm.getMatcher(), cm.getYear())).collect(Collectors.toSet()),
                 category.getInsertedAt(),
                 category.getUpdatedAt()
         );

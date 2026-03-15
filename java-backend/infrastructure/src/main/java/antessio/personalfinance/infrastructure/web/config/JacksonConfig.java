@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class JacksonConfig {
+
+
     @Bean
     public Module idModule() {
         SimpleModule module = new SimpleModule();
