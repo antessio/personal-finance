@@ -13,7 +13,7 @@ Note: The root pom.xml declares Java 24 compatibility, but the actual modules (d
 ### `domain/`
 Pure business logic module with **no framework dependencies** (except Lombok, logging, and test utilities).
 
-- **`model/`**: Core domain entities (`Transaction`, `Category`, `Budget`, `AutomaticSkip`, `TransactionImport`)
+- **`model/`**: Core domain entities (`Transaction`, `Category`, `CategoryMatcher`, `Budget`, `AutomaticSkip`, `TransactionImport`)
 - **`service/`**: Business logic services (`TransactionService`, `TransactionQueryService`, `CategoryService`, `BudgetService`, `TransactionImportService`)
 - **`ports/`**: Repository interfaces and event publishers that infrastructure must implement
 - **`dto/`**: Data transfer objects for service layer
@@ -115,6 +115,7 @@ Using **Flyway** for schema versioning. Migrations in `infrastructure/src/main/r
 - `V8__add_trgm_index_to_transactions.sql` (PostgreSQL trigram extension for similarity search)
 - `V9__create_budgets_table.sql`
 - `V10__add_category_type.sql`
+- `V11__add_category_matcher_year.sql` (adds `id` PK and optional `year` column to `category_matchers`)
 
 Migrations run automatically on application startup.
 
@@ -133,6 +134,8 @@ Two-level hierarchy:
 - **Category**: Specific category (e.g., "Groceries", "Salary")
 
 Categories have a `CategoryType` (INCOME, EXPENSE, TRANSFER) that determines how they're treated in calculations.
+
+Each category holds a set of `CategoryMatcher` objects: a regex `matcher` string and an optional `year`. When matching a transaction, the year filter is applied first (null year = match any year), then the regex is tested against the transaction description.
 
 ### Budgets
 Monthly spending limits per category with tracking against actual spending.

@@ -18,7 +18,7 @@ public class CategoryDTO {
     private CategoryType type;
     private String emoji;
     private String userOwner;
-    private Set<String> matchers;
+    private Set<CategoryMatcherDTO> matchers;
     private Instant insertedAt;
     private Instant updatedAt;
 

@@ -4,9 +4,7 @@ import antessio.personalfinance.domain.dto.CreateTransactionDTO;
 import antessio.personalfinance.domain.model.AccountType;
 import antessio.personalfinance.domain.model.TransactionImport;
 import antessio.personalfinance.domain.model.TransactionImportId;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
@@ -16,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class SatispayTransactionParser implements TransactionParser {
 
@@ -62,13 +61,32 @@ public class SatispayTransactionParser implements TransactionParser {
             String shopName = row.getCell(1).getStringCellValue();
             double amount = row.getCell(3).getNumericCellValue();
             String type = row.getCell(4).getStringCellValue();
+            // 5 state
+            // 6 availability
+            // 7 meal vouchers
+            Optional<Double> maybeMealVouchersAmount = Optional.ofNullable(row.getCell(7))
+                    .filter(c -> c.getCellType() == CellType.NUMERIC)
+                    .map(Cell::getNumericCellValue);
+            // 8 gift cards
+            Optional<Double> maybeGiftCardsAmount = Optional.ofNullable(row.getCell(8))
+                    .filter(c -> c.getCellType() == CellType.NUMERIC)
+                    .map(Cell::getNumericCellValue);
+            // 9 flex ben
+            Optional<Double> maybeFlexBenAmount = Optional.ofNullable(row.getCell(9))
+                    .filter(c -> c.getCellType() == CellType.NUMERIC)
+                    .map(Cell::getNumericCellValue);
 
+            BigDecimal totalAmount = Stream.of(maybeMealVouchersAmount, maybeGiftCardsAmount, maybeFlexBenAmount)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(BigDecimal::valueOf)
+                    .reduce(BigDecimal.valueOf(amount), BigDecimal::add);
             String description = shopName + " " + type;
-            
+
             return Optional.of(new CreateTransactionDTO(
                     userOwner,
                     transactionDate,
-                    BigDecimal.valueOf(amount),
+                    totalAmount,
                     description,
                     SOURCE,
                     id

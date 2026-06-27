@@ -1,6 +1,8 @@
 package antessio.personalfinance.domain.model;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -18,7 +20,7 @@ public class Category {
     private CategoryType type;
     private String emoji;
     private String userOwner;
-    private Set<String> matchers;
+    private Set<CategoryMatcher> matchers;
     private Instant insertedAt;
     private Instant updatedAt;
 
@@ -27,9 +29,27 @@ public class Category {
         this.updatedAt = Instant.now();
     }
 
-    public void updateMatchers(Set<String> matchers) {
+    public void updateMatchers(Set<CategoryMatcher> matchers) {
         this.matchers = matchers;
         this.updatedAt = Instant.now();
+    }
+
+    public boolean matches(Transaction transaction) {
+        if (matchers == null || matchers.isEmpty()) {
+            return false;
+        }
+        return matchers.stream()
+                .anyMatch(cm -> matchYear(cm, transaction.getDate()) && matchDescription(cm, transaction.getDescription()));
+    }
+
+    private static boolean matchDescription(CategoryMatcher cm, String transactionDescription) {
+        return Pattern.compile(cm.getMatcher()).matcher(transactionDescription).find();
+    }
+
+    private static Boolean matchYear(CategoryMatcher cm, LocalDate transactionDate) {
+        return Optional.ofNullable(cm.getYear())
+                .map(y -> transactionDate.getYear() == y)
+                .orElse(true);
     }
 
     public boolean matches(String description) {
@@ -37,6 +57,7 @@ public class Category {
             return false;
         }
         return matchers.stream()
+                .map(CategoryMatcher::getMatcher)
                 .map(Pattern::compile)
                 .anyMatch(pattern -> pattern.matcher(description).find());
     }

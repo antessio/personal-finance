@@ -3,18 +3,21 @@ package antessio.personalfinance.infrastructure.web.controller.dashboard;
 import antessio.personalfinance.domain.dto.CategoryDTO;
 import antessio.personalfinance.domain.dto.CreateCategoryDTO;
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.CategoryMatcher;
 import antessio.personalfinance.domain.service.CategoryService;
 import antessio.personalfinance.infrastructure.security.persistence.User;
 import antessio.personalfinance.infrastructure.security.service.SecurityUtils;
 import antessio.personalfinance.infrastructure.web.controller.common.PaginatedResult;
+import antessio.personalfinance.infrastructure.web.controller.dto.CategoryMatchersUpdateDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -43,7 +46,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@RequestBody CreateCategoryDTO category) {
-         User user = securityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -53,18 +56,29 @@ public class CategoryController {
     @PutMapping("/{id}/matchers")
     public ResponseEntity<Void> updateMatchers(
             @PathVariable Long id,
-            @RequestBody List<String> matchers) {
-         User user = securityUtils.getAuthenticatedUser();
+            @RequestBody CategoryMatchersUpdateDTO categoryMatchersUpdateDTO) {
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        categoryService.updateCategoryMatchers(user.getUsername(), new CategoryId(id), new HashSet<>(matchers));
+
+        Optional.ofNullable(categoryMatchersUpdateDTO.matchers())
+                .filter(Predicate.not(List::isEmpty))
+                .map(m -> m.stream()
+                        .map(cmDTO -> new CategoryMatcher(cmDTO.matcher(), cmDTO.year()))
+                        .collect(Collectors.toSet()))
+                .ifPresent(categoryMatchers -> categoryService.updateCategoryMatchers(
+                        user.getUsername(),
+                        new CategoryId(id),
+                        categoryMatchers));
+
         return ResponseEntity.accepted().build();
     }
+
     @PostMapping("/skip-matchers")
     public ResponseEntity<Void> updateSkipMatchers(
             @RequestBody List<String> skipMatchers) {
-         User user = securityUtils.getAuthenticatedUser();
+        User user = securityUtils.getAuthenticatedUser();
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

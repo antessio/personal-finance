@@ -601,6 +601,82 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   }
 
+  async getTotalInvestments(year: number, month?: number): Promise<number> {
+    await simulateDelay();
+    const investmentCategoryIds = this.categories
+      .filter(c => c.macroCategory === 'INVESTMENTS')
+      .map(c => c.id);
+
+    return this.transactions
+      .filter(tx => {
+        const transactionDate = new Date(tx.date);
+        const transactionYear = transactionDate.getFullYear();
+        const transactionMonth = transactionDate.getMonth() + 1;
+
+        return tx.included &&
+               tx.categoryId &&
+               investmentCategoryIds.includes(tx.categoryId) &&
+               transactionYear === year &&
+               (month === undefined || transactionMonth === month);
+      })
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  }
+
+  async getCategoryInvestments(year: number, month?: number): Promise<CategorySpending[]> {
+    await simulateDelay();
+    if (month) {
+      return this.getCategorySpendingByMonth(year, month);
+    }
+    const totalIncome = await this.getTotalIncome(year, month);
+    const categoryInvestments: CategorySpending[] = this.categories.map(category => {
+      const totalInvested = this.transactions
+        .filter(tx => tx.categoryId === category.id && tx.date.startsWith(year.toString()) && tx.included)
+        .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+      const budget = this.budgets
+        .find(budget => budget.categoryId === category.id && budget.year === year.toString());
+      return {
+        categoryName: category.name,
+        totalSpent: totalInvested,
+        budgetedAmount: budget?.amount || 0,
+        percentage: totalInvested / (budget?.amount || 1) * 100,
+        percentageOfIncome: totalIncome > 0 ? (totalInvested / totalIncome * 100) : 0,
+        categoryType: category.type,
+        macroCategory: category.macroCategory,
+      };
+    });
+    return categoryInvestments;
+  }
+
+  async getInvestmentsBudget(year: number, month?: number): Promise<number> {
+    await simulateDelay();
+    const investmentCategoryIds = this.categories
+      .filter(c => c.macroCategory === 'INVESTMENTS')
+      .map(c => c.id);
+
+    if (month !== undefined) {
+      const monthStr = month.toString().padStart(2, '0');
+      const monthlyBudgets = this.budgets.filter(budget =>
+        investmentCategoryIds.includes(budget.categoryId) &&
+        budget.year === year.toString() &&
+        budget.period === 'monthly' &&
+        budget.month === monthStr
+      );
+      const annualBudgets = this.budgets.filter(budget =>
+        investmentCategoryIds.includes(budget.categoryId) &&
+        budget.year === year.toString() &&
+        budget.period === 'annual'
+      );
+      const monthlyTotal = monthlyBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+      const annualTotal = annualBudgets.reduce((sum, budget) => sum + budget.amount, 0) / 12;
+      return monthlyTotal || annualTotal;
+    }
+
+    const investmentsBudgets = this.budgets.filter(budget =>
+      investmentCategoryIds.includes(budget.categoryId) && budget.year === year.toString()
+    );
+    return investmentsBudgets.reduce((sum, budget) => sum + budget.amount, 0);
+  }
+
   async getTotalIncomeByMonth(year: number, month: string): Promise<number> {
     await simulateDelay();
     const incomeCategoryIds = this.categories

@@ -53,8 +53,6 @@ export default function HomePage() {
   });
 
 
-  // Calculate budget data
-  const totalBudget = incomeBudget + expenseBudget + savingsBudget;
   const { data: categorySpending = [] } = useQuery({
     queryKey: ['categorySpending', selectedYear],
     queryFn: () => service.getCategorySpending(selectedYear),
@@ -64,6 +62,24 @@ export default function HomePage() {
     queryKey: ['categorySavings', selectedYear],
     queryFn: () => service.getCategorySavings(selectedYear),
   });
+
+  const { data: totalInvestments = 0 } = useQuery({
+    queryKey: ['totalInvestments', selectedYear],
+    queryFn: () => service.getTotalInvestments(selectedYear),
+  });
+
+  const { data: investmentsBudget = 0 } = useQuery({
+    queryKey: ['investmentsBudget', selectedYear],
+    queryFn: () => service.getInvestmentsBudget(selectedYear),
+  });
+
+  const { data: categoryInvestments = [] } = useQuery({
+    queryKey: ['categoryInvestments', selectedYear],
+    queryFn: () => service.getCategoryInvestments(selectedYear),
+  });
+
+  // Calculate budget data
+  const totalBudget = incomeBudget + expenseBudget + savingsBudget + investmentsBudget;
 
   // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -109,7 +125,8 @@ export default function HomePage() {
     'SAVINGS': '#2196f3',
     'SUBSCRIPTIONS': '#9c27b0',
     'DEBTS': '#795548',
-    'INCOME': '#4caf50'
+    'INCOME': '#4caf50',
+    'INVESTMENTS': '#00897b'
   };
 
   // Get unique macro categories from the data
@@ -235,7 +252,7 @@ export default function HomePage() {
 
   // Calculate left to spend
   
-  const leftToSpend = totalIncome + totalSavings - totalExpenses;
+  const leftToSpend = totalIncome + totalSavings + totalInvestments - totalExpenses;
 
   return (
     <Layout>
@@ -291,8 +308,8 @@ export default function HomePage() {
                     <Typography variant="body2" fontWeight={700}>€{Math.abs(expenseBudget).toLocaleString()}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Savings</Typography>
-                    <Typography variant="body2" fontWeight={700}>€{Math.abs(savingsBudget).toLocaleString()}</Typography>
+                    <Typography variant="body2">Savings & Investments</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(savingsBudget + investmentsBudget).toLocaleString()}</Typography>
                   </Box>
                 </Box>
               </Box>
@@ -314,8 +331,8 @@ export default function HomePage() {
                     <Typography variant="body2" fontWeight={700}>€{Math.abs(totalExpenses).toLocaleString()}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Savings</Typography>
-                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalSavings).toLocaleString()}</Typography>
+                    <Typography variant="body2">Savings & Investments</Typography>
+                    <Typography variant="body2" fontWeight={700}>€{Math.abs(totalSavings + totalInvestments).toLocaleString()}</Typography>
                   </Box>
                 </Box>
               </Box>
@@ -433,6 +450,32 @@ export default function HomePage() {
             <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
             <Typography variant="caption" color="text.secondary" mt={1}>
               {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
+            </Typography>
+          </Paper>
+
+          {/* Investments Card */}
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
+            <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, fontSize: 80 }}>
+              <TrendingUp fontSize="inherit" sx={{ color: '#00897b' }} />
+            </Box>
+            <Typography fontWeight={700} mb={1} sx={{ color: '#00897b' }}>
+              <TrendingUp sx={{ verticalAlign: 'middle', mr: 1, color: '#00897b' }} /> Investments
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: '#b2dfdb', color: '#00695c' }} />
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#00897b' }}>
+                €{investmentsBudget.toLocaleString()}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: '#e0f2f1', color: '#00695c' }} />
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#00695c' }}>
+                €{totalInvestments.toLocaleString()}
+              </Typography>
+            </Box>
+            <LinearProgress variant="determinate" value={Math.min(100, (totalInvestments / (investmentsBudget === 0 ? 1 : investmentsBudget)) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: '#b2dfdb', '& .MuiLinearProgress-bar': { bgcolor: '#00897b' } }} />
+            <Typography variant="caption" color="text.secondary" mt={1}>
+              {Math.round((totalInvestments / (investmentsBudget == 0 ? 1 : investmentsBudget) * 100))}% of investments target reached
             </Typography>
           </Paper>
         </Box>
@@ -795,6 +838,125 @@ export default function HomePage() {
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body1" color="text.secondary">
                 No savings data available for {selectedYear}
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+
+        {/* Investments Breakdown Section */}
+        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', mb: 3, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <TrendingUp sx={{ mr: 1, color: '#00897b' }} />
+            <Typography fontWeight={700} variant="h6" sx={{ color: '#00695c' }}>
+              Investments Breakdown
+            </Typography>
+          </Box>
+
+          {categoryInvestments.length > 0 ? (
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(4, 1fr)'
+              },
+              gap: 3
+            }}>
+              {categoryInvestments.map((category) => {
+                const difference = Math.abs(category.totalSpent) - (category.budgetedAmount || 0);
+                const isOverBudget = difference > 0;
+                const percentage = (category.budgetedAmount || 0) > 0
+                  ? (Math.abs(category.totalSpent) / (category.budgetedAmount || 1)) * 100
+                  : 0;
+
+                return (
+                  <Box key={category.categoryName} sx={{
+                    p: 2,
+                    borderRadius: 3,
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }
+                  }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                      <Typography variant="subtitle2" fontWeight={700} noWrap>
+                        {category.categoryName}
+                      </Typography>
+                      <Chip
+                        label={`${Math.round(percentage)}%`}
+                        size="small"
+                        sx={{
+                          bgcolor: percentage > 100 ? 'success.light' : '#b2dfdb',
+                          color: percentage > 100 ? 'success.dark' : '#00695c',
+                          fontWeight: 700,
+                          minWidth: 50,
+                          height: 24
+                        }}
+                      />
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(100, percentage)}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: 'grey.200',
+                        mb: 1.5,
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: percentage > 100 ? 'success.main' : '#00897b',
+                          borderRadius: 5,
+                        },
+                      }}
+                    />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Box>
+                        <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
+                          €{Math.abs(category.totalSpent).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Invested
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
+                          €{(category.budgetedAmount || 0).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          Goal
+                        </Typography>
+                      </Box>
+                    </Box>
+                    {(category.budgetedAmount || 0) > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                        <Chip
+                          icon={isOverBudget ? <CheckCircle /> : <Warning />}
+                          label={`€${Math.abs(difference).toLocaleString()}`}
+                          size="small"
+                          sx={{
+                            bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
+                            color: 'white',
+                            fontWeight: 600,
+                            '& .MuiChip-icon': {
+                              color: 'white'
+                            }
+                          }}
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                No investments data available for {selectedYear}
               </Typography>
             </Box>
           )}

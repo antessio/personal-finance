@@ -31,6 +31,7 @@ import {
   PieChart as PieChartIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeContext } from '../contexts/ThemeContext';
@@ -73,6 +74,7 @@ export default function Layout({ children }: LayoutProps) {
     { text: 'Transactions', icon: <ListIcon />, path: '/transactions' },
     { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
     { text: 'Budgets', icon: <AccountBalanceIcon />, path: '/budgets' },
+    { text: 'Investments', icon: <TrendingUpIcon />, path: '/investments' },
     { text: 'Upload', icon: <UploadIcon />, path: '/upload' },
   ];
 

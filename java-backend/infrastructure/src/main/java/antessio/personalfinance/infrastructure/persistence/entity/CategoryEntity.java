@@ -40,10 +40,8 @@ public class CategoryEntity {
     @Column(name = "user_owner", nullable = false)
     private String userOwner;
 
-    @ElementCollection
-    @CollectionTable(name = "category_matchers", joinColumns = @JoinColumn(name = "category_id"))
-    @Column(name = "matcher")
-    private Set<String> matchers;
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CategoryMatcherEntity> matchers;
 
     @Column(name = "inserted_at", nullable = false)
     private Instant insertedAt;
@@ -54,4 +52,16 @@ public class CategoryEntity {
     public CategoryId getCategoryId() {
         return new CategoryId(id);
     }
-} 
+
+
+    public void addMatcher(CategoryMatcherEntity matcher) {
+        matchers.add(matcher);
+        matcher.setCategory(this);
+    }
+
+    public void removeMatcher(CategoryMatcherEntity matcher) {
+        matchers.remove(matcher);
+        matcher.setCategory(null);
+    }
+
+}

@@ -1,6 +1,7 @@
 package antessio.personalfinance.domain.dto;
 
 import antessio.personalfinance.domain.model.CategoryId;
+import antessio.personalfinance.domain.model.MacroCategoryEnum;
 import antessio.personalfinance.domain.model.TransactionId;
 import lombok.Builder;
 import lombok.Value;
@@ -19,8 +20,9 @@ public class TransactionsQueryDTO {
     String source;
     int limit;
     TransactionId cursor;
+    MacroCategoryEnum macroCategory;
 
-    public TransactionsQueryDTO(String userOwner, YearMonth month, CategoryId categoryId, Boolean uncategorized, Boolean skip, String source, int limit, TransactionId cursor) {
+    public TransactionsQueryDTO(String userOwner, YearMonth month, CategoryId categoryId, Boolean uncategorized, Boolean skip, String source, int limit, TransactionId cursor, MacroCategoryEnum macroCategory) {
         if (userOwner == null) {
             throw new IllegalArgumentException("User owner cannot be null");
         }
@@ -38,6 +40,7 @@ public class TransactionsQueryDTO {
         this.source = source;
         this.limit = limit;
         this.cursor = cursor;
+        this.macroCategory = macroCategory;
     }
 
     public Optional<YearMonth> getMonth() {
@@ -62,6 +65,10 @@ public class TransactionsQueryDTO {
 
     public Optional<Boolean> getUncategorized() {
         return Optional.ofNullable(uncategorized);
+    }
+
+    public Optional<MacroCategoryEnum> getMacroCategory() {
+        return Optional.ofNullable(macroCategory);
     }
 
 }
