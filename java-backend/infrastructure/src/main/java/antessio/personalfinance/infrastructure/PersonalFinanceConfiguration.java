@@ -6,7 +6,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import antessio.personalfinance.common.Id;
+import antessio.personalfinance.domain.ports.AutomaticSkipRepository;
 import antessio.personalfinance.domain.ports.BudgetRepository;
+import antessio.personalfinance.domain.ports.CategoryRepository;
 import antessio.personalfinance.domain.service.*;
 import antessio.personalfinance.infrastructure.eventpublisher.SpringEventPublisher;
 import antessio.personalfinance.infrastructure.persistence.repository.AutomaticSkipSpringDataRepositoryAdapter;
@@ -94,6 +96,16 @@ public class PersonalFinanceConfiguration {
     public ReportDataService reportDataService(TransactionQueryService transactionQueryService,
                                                BudgetService budgetService) {
         return new ReportDataService(transactionQueryService, budgetService);
+    }
+
+    @Bean
+    public DataExportService dataExportService(TransactionRepository transactionRepository,
+                                               CategoryRepository categoryRepository,
+                                               BudgetRepository budgetRepository,
+                                               AutomaticSkipRepository automaticSkipRepository,
+                                               TransactionImportRepository transactionImportRepository) {
+        return new DataExportService(transactionRepository, categoryRepository, budgetRepository,
+                automaticSkipRepository, transactionImportRepository);
     }
 
 }

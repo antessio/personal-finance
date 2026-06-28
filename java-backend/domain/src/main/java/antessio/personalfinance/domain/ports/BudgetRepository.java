@@ -17,4 +17,6 @@ public interface BudgetRepository {
     void create(Budget budget);
 
     List<Budget> getByIds(List<BudgetId> createdIds);
+
+    List<Budget> findAllByUser(String userOwner);
 }

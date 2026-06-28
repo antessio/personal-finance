@@ -92,6 +92,21 @@ public class BudgetRepositoryAdapter implements BudgetRepository {
     }
 
     @Override
+    public List<Budget> findAllByUser(String userOwner) {
+        return this.budgetSpringDataRepository.findAllByUser(userOwner, Integer.MAX_VALUE)
+                .stream()
+                .map(budgetEntity -> new Budget(
+                        budgetEntity.getBudgetId(),
+                        budgetEntity.getCategoryIdObj(),
+                        budgetEntity.getAmount(),
+                        budgetEntity.getUserOwner(),
+                        budgetEntity.getYear(),
+                        budgetEntity.getMonth()
+                ))
+                .toList();
+    }
+
+    @Override
     public List<Budget> getByIds(List<BudgetId> createdIds) {
         return budgetSpringDataRepository.findAllById(
                         createdIds.stream()

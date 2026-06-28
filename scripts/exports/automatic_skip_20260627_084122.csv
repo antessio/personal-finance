@@ -1,0 +1,19 @@
+matcher
+(?i)Prelievo Carta Debito Su Banche Del Gruppo.*
+(?i).*Ricarica Dell'app Satispay Addebito Diretto Sdd.*
+(?i)Interessi - Interest payment.*
+(?i)Importo Periodico Accantonamento Periodico Sul XME Salvadanaio.*
+(?i)Addebito Saldo E/c Carta Di Credito.*
+(?i)Canone Mensile Base E Servizi Aggiuntivi Canone Mensile.*
+(?i)Punti Satispay.*
+(?i)Ricarica Satispay.*
+(?i)Imposte - Stamp Duty Tax (Portfolio).*
+(?i)Welfare Fringe ITA.*
+(?i)Addebito Sdd.*A Favore Paypal.*
+(?i)Movimento Salvadanaio Svuotamento Somme Dal XME Salvadanaio.*
+(?i)Movimento Salvadanaio Riunione Somme Al Conto.*
+(?i).*Mio Conto Intesa Ordine Permanente Di Bonifico.*
+(?i)Imposta Di Bollo Su Estratto Conto.*
+(?i)Importo Bonifici: .*? Importo Commissioni: .*? Bon\. Numero: .*? Benef: Mio Conto Intesa Data Accettazione .*? Mio Conto Intesa
+(?i)Addebito Sdd.*A Favore Satispay Europe.*
+(?i)Rendimento - Cash Dividend for.*

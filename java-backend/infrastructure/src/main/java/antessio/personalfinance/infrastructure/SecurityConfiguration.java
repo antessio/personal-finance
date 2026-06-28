@@ -73,6 +73,7 @@ public class SecurityConfiguration {
                     .requestMatchers("/api/categories/**").authenticated()
                     .requestMatchers("/api/transactions/**").authenticated()
                     .requestMatchers("/api/transaction-imports/**").authenticated()
+                    .requestMatchers("/api/export/**").authenticated()
                     .requestMatchers("/dashboard/**").authenticated()
                     .anyRequest().denyAll())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
