@@ -1,8 +1,8 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip } from '@mui/material';
 import Layout from '../components/Layout';
-import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
+import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
 import { Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
@@ -15,6 +15,7 @@ export default function HomePage() {
   // const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [categoryBreakdownView, setCategoryBreakdownView] = useState<'categories' | 'groups'>('categories');
   // Year options for the selector (current year and 4 years back)
   const yearOptions = [];
   for (let year = currentYear; year >= currentYear - 4; year--) {
@@ -251,8 +252,40 @@ export default function HomePage() {
   };
 
   // Calculate left to spend
-  
+
   const leftToSpend = totalIncome + totalSavings + totalInvestments - totalExpenses;
+
+  // --- Category Breakdown (bar chart + detail list) ---
+  const categoryPalette = ['#4c93af', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#795548', '#607d8b', '#4caf50', '#00897b', '#e91e63', '#3f51b5', '#8bc34a'];
+  const categoryColorMap: { [name: string]: string } = {};
+  categorySpending.forEach((c, index) => {
+    categoryColorMap[c.categoryName] = categoryPalette[index % categoryPalette.length];
+  });
+
+  const categoryBreakdownData = categoryBreakdownView === 'categories'
+    ? categorySpending
+      .map(c => ({
+        name: c.categoryName,
+        totalSpent: c.totalSpent,
+        budgetedAmount: c.budgetedAmount || 0,
+        color: categoryColorMap[c.categoryName],
+      }))
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+    : Object.values(
+      categorySpending.reduce((acc, c) => {
+        const key = c.macroCategory || 'OTHER';
+        if (!acc[key]) acc[key] = { name: key, totalSpent: 0, budgetedAmount: 0 };
+        acc[key].totalSpent += c.totalSpent;
+        acc[key].budgetedAmount += c.budgetedAmount || 0;
+        return acc;
+      }, {} as { [key: string]: { name: string; totalSpent: number; budgetedAmount: number } })
+    )
+      .map(g => ({ ...g, color: macroCategoryColors[g.name] || '#607d8b' }))
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+
+  const totalCategoryBreakdownSpend = categoryBreakdownData.reduce((sum, d) => sum + d.totalSpent, 0);
+  const totalCategoryBreakdownBudget = categoryBreakdownData.reduce((sum, d) => sum + d.budgetedAmount, 0);
+  const categoryBreakdownBarMax = Math.max(totalCategoryBreakdownSpend, totalCategoryBreakdownBudget, 1);
 
   return (
     <Layout>
@@ -621,102 +654,126 @@ export default function HomePage() {
 
         {/* Category Breakdown - Full Width */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <PieChart color="info" sx={{ mr: 1 }} />
-            <Typography color="info.dark" fontWeight={700} variant="h6">
-              Category Breakdown
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <MuiBarChart color="info" sx={{ mr: 1 }} />
+              <Typography color="info.dark" fontWeight={700} variant="h6">
+                Category Breakdown
+              </Typography>
+            </Box>
+            <ToggleButtonGroup
+              value={categoryBreakdownView}
+              exclusive
+              size="small"
+              onChange={(_, value) => value && setCategoryBreakdownView(value)}
+            >
+              <ToggleButton value="categories">Categories</ToggleButton>
+              <ToggleButton value="groups">Groups</ToggleButton>
+            </ToggleButtonGroup>
           </Box>
+
+          {/* Total + Stacked Bar (Groups view only - too many categories to read as slivers) */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="overline" color="text.secondary">
+              Total Spending
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="text.primary" mb={categoryBreakdownView === 'groups' ? 3 : 0}>
+              €{totalCategoryBreakdownSpend.toLocaleString()}
+            </Typography>
+            {categoryBreakdownView === 'groups' && (
+              <>
+                <Box sx={{ position: 'relative', width: '100%', pb: totalCategoryBreakdownBudget > 0 ? 1 : 0 }}>
+                  <Box sx={{ display: 'flex', width: '100%', height: 40, borderRadius: 3, overflow: 'hidden', bgcolor: 'grey.200' }}>
+                    {categoryBreakdownData.map((item) => {
+                      const widthPct = (item.totalSpent / categoryBreakdownBarMax) * 100;
+                      if (widthPct <= 0) return null;
+                      const share = totalCategoryBreakdownSpend > 0 ? (item.totalSpent / totalCategoryBreakdownSpend) * 100 : 0;
+                      return (
+                        <MuiTooltip key={item.name} title={`${item.name}: €${item.totalSpent.toLocaleString()} (${share.toFixed(1)}%)`} arrow>
+                          <Box sx={{ width: `${widthPct}%`, bgcolor: item.color, cursor: 'pointer', transition: 'opacity 0.15s', '&:hover': { opacity: 0.85 } }} />
+                        </MuiTooltip>
+                      );
+                    })}
+                  </Box>
+                  {totalCategoryBreakdownBudget > 0 && (
+                    <Box sx={{
+                      position: 'absolute',
+                      top: -6,
+                      bottom: 4,
+                      left: `${Math.min(100, (totalCategoryBreakdownBudget / categoryBreakdownBarMax) * 100)}%`,
+                      borderLeft: `2px dashed ${isDark ? '#fff' : '#222'}`,
+                    }} />
+                  )}
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {totalCategoryBreakdownBudget > 0
+                    ? `Dashed line marks total budget of €${totalCategoryBreakdownBudget.toLocaleString()}`
+                    : 'No budget set for these groups'}
+                </Typography>
+              </>
+            )}
+          </Box>
+
+          {/* Detail List - full width */}
           <Box sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(4, 1fr)'
-            },
-            gap: 3
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
+            gap: 2
           }}>
-            {categorySpending.map((category) => {
-              const difference = (category.budgetedAmount || 0) - category.totalSpent;
+            {categoryBreakdownData.map((item) => {
+              const share = totalCategoryBreakdownSpend > 0 ? (item.totalSpent / totalCategoryBreakdownSpend) * 100 : 0;
+              const difference = item.budgetedAmount - item.totalSpent;
               const isUnderBudget = difference > 0;
 
               return (
-                <Box key={category.categoryName} sx={{
-                  p: 2,
-                  borderRadius: 3,
+                <Box key={item.name} sx={{
+                  p: 1.5,
+                  borderRadius: 2,
                   bgcolor: 'rgba(255, 255, 255, 0.9)',
                   border: '1px solid',
                   borderColor: 'grey.200',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }
                 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography variant="subtitle2" fontWeight={700} noWrap>
-                      {category.categoryName}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
+                      <Typography variant="body2" fontWeight={700} noWrap>
+                        {item.name}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" fontWeight={700} sx={{ flexShrink: 0, ml: 1 }}>
+                      €{item.totalSpent.toLocaleString()}
                     </Typography>
-                    <Chip
-                      label={`${Math.round(category.percentage)}%`}
-                      size="small"
-                      sx={{
-                        bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
-                        color: category.percentage > 100 ? 'error.dark' : 'success.dark',
-                        fontWeight: 700,
-                        minWidth: 50,
-                        height: 24
-                      }}
-                    />
                   </Box>
                   <LinearProgress
                     variant="determinate"
-                    value={Math.min(100, category.percentage)}
+                    value={Math.min(100, share)}
                     sx={{
-                      height: 10,
-                      borderRadius: 5,
+                      height: 6,
+                      borderRadius: 3,
                       bgcolor: 'grey.200',
-                      mb: 1.5,
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
-                        borderRadius: 5,
-                      },
+                      mb: 0.5,
+                      '& .MuiLinearProgress-bar': { bgcolor: item.color, borderRadius: 3 },
                     }}
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Box>
-                      <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
-                        €{category.totalSpent.toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        Spent
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
-                        €{(category.budgetedAmount || 0).toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        Budget
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-                    <Chip
-                      icon={isUnderBudget ? <CheckCircle /> : <Warning />}
-                      label={`€${Math.abs(difference).toLocaleString()}`}
-                      size="small"
-                      sx={{
-                        bgcolor: isUnderBudget ? '#4caf50' : '#f44336',
-                        color: 'white',
-                        fontWeight: 600,
-                        '& .MuiChip-icon': {
-                          color: 'white'
-                        }
-                      }}
-                    />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {share.toFixed(1)}% of spending
+                    </Typography>
+                    {item.budgetedAmount > 0 && (
+                      <Chip
+                        icon={isUnderBudget ? <CheckCircle /> : <Warning />}
+                        label={`€${Math.abs(difference).toLocaleString()}`}
+                        size="small"
+                        sx={{
+                          bgcolor: isUnderBudget ? '#4caf50' : '#f44336',
+                          color: 'white',
+                          fontWeight: 600,
+                          height: 20,
+                          '& .MuiChip-icon': { color: 'white', fontSize: '0.9rem' },
+                          '& .MuiChip-label': { fontSize: '0.7rem', px: 1 }
+                        }}
+                      />
+                    )}
                   </Box>
                 </Box>
               );
