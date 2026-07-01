@@ -54,10 +54,13 @@ export default function UploadPage() {
     queryFn: () => service.getAccounts(),
   });
 
+  const hasPendingUploads = allUploads.some(u => u.status === 'pending' || u.status === 'processing');
+
   // Get uploaded files with pagination
   const { data: paginatedData, isLoading } = useQuery<PaginatedResponse<UploadFile>>({
     queryKey: ['uploads', filters],
     queryFn: () => service.getUploads(filters),
+    refetchInterval: hasPendingUploads ? 3000 : false,
   });
 
   // Update allUploads when new data is fetched

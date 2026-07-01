@@ -23,6 +23,10 @@ import {
   FormControlLabel,
   Radio,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -339,6 +343,18 @@ export default function CategoriesPage() {
             onChange={(e) => setFormData({ ...formData, macroCategory: e.target.value })}
             sx={{ mb: 2 }}
           />
+          <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+            <InputLabel>Type</InputLabel>
+            <Select
+              value={formData.type}
+              label="Type"
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as Category['type'] })}
+            >
+              <MenuItem value="NEEDS">Needs</MenuItem>
+              <MenuItem value="WANTS">Wants</MenuItem>
+              <MenuItem value="SAVINGS_DEBTS">Savings / Debts</MenuItem>
+            </Select>
+          </FormControl>
           <TextField
             margin="dense"
             label="Regex Patterns (one per line)"
