@@ -27,7 +27,8 @@ export interface Budget {
 }
 
 export interface TransactionFilters {
-  month?: string;
+  year?: number;
+  month?: number; // 1-12, only meaningful together with `year` - omit for the whole year
   included?: boolean;
   account?: string;
   categoryId?: string;

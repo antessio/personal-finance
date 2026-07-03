@@ -88,9 +88,8 @@ export default function InvestmentsPage() {
   const transactionFilters = {
     macroCategory: 'INVESTMENTS',
     limit: 20,
-    month: selectedMonth !== undefined
-      ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-      : `${selectedYear}-01-01`,
+    year: selectedYear,
+    month: selectedMonth,
     cursor: transactionCursor,
   };
 

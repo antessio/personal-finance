@@ -314,7 +314,16 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   convertFilters(filters: TransactionFilters): Record<string, any> {
     const params: Record<string, any> = {};
-    if (filters.month) params.targetDate = filters.month;
+    if (filters.year !== undefined) {
+      if (filters.month !== undefined) {
+        const monthStr = filters.month.toString().padStart(2, '0');
+        params.fromDate = `${filters.year}-${monthStr}-01`;
+        params.toDate = `${filters.year}-${monthStr}-${new Date(filters.year, filters.month, 0).getDate()}`;
+      } else {
+        params.fromDate = `${filters.year}-01-01`;
+        params.toDate = `${filters.year}-12-31`;
+      }
+    }
     if (filters.included !== undefined) params.skip = !filters.included;
     if (filters.account) params.source = filters.account.toLowerCase();
     if (filters.categoryId) {

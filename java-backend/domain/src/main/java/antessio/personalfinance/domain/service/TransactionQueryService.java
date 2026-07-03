@@ -49,7 +49,8 @@ public class TransactionQueryService {
         List<Transaction> allByUserAndFilters = transactionRepository.findAllByUserAndFilters(
                 query.getUserOwner(),
                 query.getLimit(),
-                query.getMonth().orElse(null),
+                query.getFromDate().orElse(null),
+                query.getToDate().orElse(null),
                 query.getSkip().orElse(null),
                 query.getSource().orElse(null),
                 categoryIds,
@@ -191,7 +192,8 @@ public class TransactionQueryService {
         return transactionRepository.findAllByUserAndFilters(
                 username,
                 300,
-                yearMonth,
+                yearMonth.atDay(1),
+                yearMonth.atEndOfMonth(),
                 false,
                 null,
                 categoryIds,

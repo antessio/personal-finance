@@ -28,13 +28,29 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Transaction, TransactionFilters, Category, BulkUpdatePayload, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
+const monthOptions = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
 
 export default function TransactionsPage() {
   const [selected, setSelected] = useState<string[]>([]);
@@ -180,14 +196,37 @@ export default function TransactionsPage() {
           Transactions
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-          <DatePicker
-            label="Month"
-            views={['year', 'month']}
-            value={filters.month ? new Date(filters.month) : null}
-            onChange={(date: Date | null) =>
-              setFilters({ ...filters, month: date?.toISOString().split('T')[0], cursor: undefined })
-            }
-          />
+          <FormControl sx={{ minWidth: 120 }}>
+            <InputLabel>Year</InputLabel>
+            <Select
+              value={filters.year ?? ''}
+              label="Year"
+              onChange={(e) => {
+                const year = e.target.value === '' ? undefined : (e.target.value as number);
+                setFilters({ ...filters, year, month: year === undefined ? undefined : filters.month, cursor: undefined });
+              }}
+            >
+              <MenuItem value="">All Years</MenuItem>
+              {yearOptions.map((year) => (
+                <MenuItem key={year} value={year}>{year}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 140 }} disabled={filters.year === undefined}>
+            <InputLabel>Month</InputLabel>
+            <Select
+              value={filters.month ?? ''}
+              label="Month"
+              onChange={(e) =>
+                setFilters({ ...filters, month: e.target.value === '' ? undefined : (e.target.value as number), cursor: undefined })
+              }
+            >
+              <MenuItem value="">All Months</MenuItem>
+              {monthOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Included</InputLabel>
             <Select

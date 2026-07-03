@@ -173,7 +173,7 @@ public class TransactionService {
 
     public void processCategoriesAll(String userOwner) {
         List<TransactionEvent> events = new ArrayList<>();
-        List<Transaction> transactions = transactionRepository.findAllByUserAndFilters(userOwner, 10000, null, null, null, null, null)
+        List<Transaction> transactions = transactionRepository.findAllByUserAndFilters(userOwner, 10000, null, null, null, null, null, null)
                 .stream()
                 .map(t -> updateTransactionAndGetEvents(userOwner, t, events))
                 .toList();

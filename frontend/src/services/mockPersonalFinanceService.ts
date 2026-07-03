@@ -793,8 +793,13 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     
     // Filter transactions based on criteria
     let filteredTransactions = this.transactions.filter(transaction => {
-      if (filters.month && !transaction.date.startsWith(filters.month)) {
-        return false;
+      if (filters.year !== undefined) {
+        const prefix = filters.month !== undefined
+          ? `${filters.year}-${filters.month.toString().padStart(2, '0')}`
+          : `${filters.year}`;
+        if (!transaction.date.startsWith(prefix)) {
+          return false;
+        }
       }
       if (filters.included !== undefined && transaction.included !== filters.included) {
         return false;

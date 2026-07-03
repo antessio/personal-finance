@@ -10,7 +10,6 @@ import antessio.personalfinance.infrastructure.web.controller.common.PaginatedRe
 import antessio.personalfinance.domain.dto.CategorySpendingDTO;
 import antessio.personalfinance.infrastructure.web.controller.dto.TransactionBulkUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +32,8 @@ public class TransactionController {
     @GetMapping
     public ResponseEntity<PaginatedResult<TransactionDTO>> getTransactions(
             @RequestParam(value = "limit", required = false) Integer limit,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
+            @RequestParam(required = false) LocalDate fromDate,
+            @RequestParam(required = false) LocalDate toDate,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String source,
             @RequestParam(required = false) Boolean skip,
@@ -48,9 +48,8 @@ public class TransactionController {
         limit = Optional.ofNullable(limit).orElse(20);
         List<TransactionDTO> results = transactionQueryService.findTransactions(
                 TransactionsQueryDTO.builder()
-                        .month(Optional.ofNullable(targetDate)
-                                .map(date -> YearMonth.of(date.getYear(), date.getMonthValue()))
-                                .orElse(null))
+                        .fromDate(fromDate)
+                        .toDate(toDate)
                         .skip(skip)
                         .categoryId(Optional.ofNullable(categoryId).map(CategoryId::new).orElse(null))
                         .cursor(Optional.ofNullable(cursor).map(TransactionId::fromString).orElse(null))
