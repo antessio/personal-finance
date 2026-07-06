@@ -267,6 +267,17 @@ public class TransactionController {
         return ResponseEntity.ok(monthlyData);
     }
 
+    @GetMapping("/expenses-macro-category-trend")
+    public ResponseEntity<List<MacroCategoryMonthlyBudgetDTO>> getExpensesMacroCategoryTrend(
+            @RequestParam int year) {
+        User user = securityUtils.getAuthenticatedUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MacroCategoryMonthlyBudgetDTO> trend = transactionQueryService.getExpensesMacroCategoryYearlyTrend(user.getUsername(), year);
+        return ResponseEntity.ok(trend);
+    }
+
     @GetMapping("/account-monthly-data")
     public ResponseEntity<List<AccountMonthlyDataDTO>> getAccountMonthlyData(
             @RequestParam LocalDate fromDate,

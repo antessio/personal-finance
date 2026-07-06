@@ -33,6 +33,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Category, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 
 export default function CategoriesPage() {
   const [open, setOpen] = useState(false);
@@ -209,7 +210,9 @@ export default function CategoriesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {allCategories.map((category: Category, index: number) => (
+              {isLoading ? (
+                <TableRowsSkeleton columns={5} />
+              ) : allCategories.map((category: Category, index: number) => (
                 <TableRow 
                   key={category.id} 
                   sx={{ 
@@ -292,13 +295,6 @@ export default function CategoriesPage() {
                     <Typography variant="body1" color="text.secondary">
                       No categories found. Add your first category to get started.
                     </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-              {isLoading && (
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
-                    <CircularProgress />
                   </TableCell>
                 </TableRow>
               )}

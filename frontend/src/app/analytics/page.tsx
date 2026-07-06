@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { useState } from 'react';
 import MonthlyDataTable from '../../components/charts/MonthlyDataTable';
+import ChartSkeleton from '../../components/skeletons/ChartSkeleton';
+import ListRowsSkeleton from '../../components/skeletons/ListRowsSkeleton';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { CheckCircle, Warning } from '@mui/icons-material';
 
@@ -26,8 +28,11 @@ export default function AnalyticsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.year);
   const [selectedMonth, setSelectedMonth] = useState<number | undefined>(previousMonth.month);
   const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({});
+  const [selectedCategory, setSelectedCategory] = useState<{ categoryId: string; categoryName: string } | null>(null);
   const BREAKDOWN_LIST_LIMIT = 8;
   const toggleGroupExpand = (key: string) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleCategoryClick = (categoryId: string, categoryName: string) =>
+    setSelectedCategory((prev) => (prev?.categoryId === categoryId ? null : { categoryId, categoryName }));
 
   // Year options for the selector (current year and 4 years back)
   const yearOptions = [];
@@ -57,7 +62,7 @@ export default function AnalyticsPage() {
     'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
   };
   // Fetch data
-  const { data: monthlyData = [] } = useQuery({
+  const { data: monthlyData = [], isLoading: isLoadingMonthlyData } = useQuery({
     queryKey: ['monthlyData', selectedYear, selectedMonth],
     queryFn: async () => {
       const data = await service.getMonthlyData(selectedYear, selectedMonth);
@@ -65,33 +70,41 @@ export default function AnalyticsPage() {
     }
   });
 
-  const { data: categorySpending = [] } = useQuery({
+  const { data: categorySpending = [], isLoading: isLoadingCategorySpending } = useQuery({
     queryKey: ['categorySpending', selectedYear, selectedMonth],
     queryFn: async () => {
       const data = await service.getCategorySpending(selectedYear, selectedMonth);
       return data;
     },
   });
-  const { data: categoryIncome = [] } = useQuery({
+  const { data: categoryIncome = [], isLoading: isLoadingCategoryIncome } = useQuery({
     queryKey: ['categoryIncome', selectedYear, selectedMonth],
     queryFn: async () => {
       const data = await service.getCategoryIncome(selectedYear, selectedMonth);
       return data;
     },
   });
-  const { data: categorySavings = [] } = useQuery({
+  const { data: categorySavings = [], isLoading: isLoadingCategorySavings } = useQuery({
     queryKey: ['categorySavings', selectedYear, selectedMonth],
     queryFn: async () => {
       const data = await service.getCategorySavings(selectedYear, selectedMonth);
       return data;
     },
   });
-  const { data: categoryInvestments = [] } = useQuery({
+  const { data: categoryInvestments = [], isLoading: isLoadingCategoryInvestments } = useQuery({
     queryKey: ['categoryInvestments', selectedYear, selectedMonth],
     queryFn: async () => {
       const data = await service.getCategoryInvestments(selectedYear, selectedMonth);
       return data;
     },
+  });
+
+  const isLoadingCategoryComparison = isLoadingCategorySpending || isLoadingCategoryIncome || isLoadingCategorySavings || isLoadingCategoryInvestments;
+
+  const { data: categoryTransactions, isLoading: isLoadingCategoryTransactions } = useQuery({
+    queryKey: ['categoryTransactions', selectedCategory?.categoryId, selectedYear, selectedMonth],
+    queryFn: () => service.getTransactions({ categoryId: selectedCategory!.categoryId, year: selectedYear, month: selectedMonth, limit: 100 }),
+    enabled: !!selectedCategory,
   });
 
 
@@ -209,7 +222,9 @@ export default function AnalyticsPage() {
           <Typography variant="h6" fontWeight={700} color="text.primary" mb={3} textAlign="center">
             CATEGORY BUDGET COMPARISON
           </Typography>
-          {(() => {
+          {isLoadingCategoryComparison ? (
+            <ListRowsSkeleton rows={6} />
+          ) : (() => {
             // Income/Savings/Investments keep their own macro-group, ranked-list treatment.
             // Expense/Bills/Subscriptions/Debts are all "spending" and are unified below into one
             // pie + detailed list, instead of 4 separate near-identical ranked lists.
@@ -263,8 +278,24 @@ export default function AnalyticsPage() {
                       ? `€${Math.abs(difference).toLocaleString()} ${isGood ? 'above target' : 'below target'}`
                       : `€${Math.abs(difference).toLocaleString()} ${isGood ? 'left' : 'over'}`;
 
+                    const isSelected = selectedCategory?.categoryId === category.categoryId;
+
                     return (
-                      <Box key={category.categoryName} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                      <Box
+                        key={category.categoryName}
+                        onClick={() => handleCategoryClick(category.categoryId, category.categoryName)}
+                        sx={{
+                          py: 1.25,
+                          px: 1,
+                          mx: -1,
+                          borderBottom: '1px solid',
+                          borderColor: 'grey.200',
+                          borderRadius: 1,
+                          cursor: 'pointer',
+                          bgcolor: isSelected ? config.bgcolor : 'transparent',
+                          '&:hover': { bgcolor: config.bgcolor },
+                        }}
+                      >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                             <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: config.color, flexShrink: 0 }} />
@@ -328,7 +359,7 @@ export default function AnalyticsPage() {
               key: string,
               label: string,
               headerColor: string,
-              items: { name: string; amount: number; budget: number; color: string }[],
+              items: { categoryId: string; name: string; amount: number; budget: number; color: string }[],
               judgmentMode: 'expense' | 'neutral'
             ) => {
               const total = items.reduce((sum, c) => sum + c.amount, 0);
@@ -338,6 +369,7 @@ export default function AnalyticsPage() {
                 ? [
                   ...items.slice(0, PIE_SLICE_LIMIT),
                   {
+                    categoryId: '',
                     name: 'Other',
                     amount: items.slice(PIE_SLICE_LIMIT).reduce((sum, c) => sum + c.amount, 0),
                     budget: 0,
@@ -387,9 +419,24 @@ export default function AnalyticsPage() {
                             const share = total > 0 ? (item.amount / total) * 100 : 0;
                             const difference = item.budget - item.amount;
                             const isGood = hasBudget && difference > 0;
+                            const isSelected = !!item.categoryId && selectedCategory?.categoryId === item.categoryId;
 
                             return (
-                              <Box key={item.name} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+                              <Box
+                                key={item.name}
+                                onClick={() => item.categoryId && handleCategoryClick(item.categoryId, item.name)}
+                                sx={{
+                                  py: 1.25,
+                                  px: 1,
+                                  mx: -1,
+                                  borderBottom: '1px solid',
+                                  borderColor: 'grey.200',
+                                  borderRadius: 1,
+                                  cursor: item.categoryId ? 'pointer' : 'default',
+                                  bgcolor: isSelected ? 'rgba(0,0,0,0.04)' : 'transparent',
+                                  '&:hover': item.categoryId ? { bgcolor: 'rgba(0,0,0,0.04)' } : undefined,
+                                }}
+                              >
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                                     <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
@@ -465,6 +512,7 @@ export default function AnalyticsPage() {
             // Colored by macro-group (red=Expense, orange=Bills, etc.) since it merges those 4 groups.
             const spendingItems = [...categorySpending]
               .map((c) => ({
+                categoryId: c.categoryId,
                 name: c.categoryName,
                 amount: Math.abs(c.totalSpent),
                 budget: c.budgetedAmount || 0,
@@ -476,6 +524,7 @@ export default function AnalyticsPage() {
             // per-category instead (a single macro-group color would make every slice identical).
             const buildFundItems = (categories: typeof nonSpendingCategories) => [...categories]
               .map((c, index) => ({
+                categoryId: c.categoryId,
                 name: c.categoryName,
                 amount: Math.abs(c.totalSpent),
                 budget: c.budgetedAmount || 0,
@@ -500,9 +549,61 @@ export default function AnalyticsPage() {
           })()}
         </Paper>
 
+        {/* Category Transactions Drill-down - only shown when a category is selected above */}
+        {selectedCategory && (
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4 }}>
+            <Typography variant="h6" fontWeight={700} color="text.primary" mb={2}>
+              Transactions — {selectedCategory.categoryName} ({selectedMonth ? `${monthOptions.find(m => m.value === selectedMonth)?.label} ` : ''}{selectedYear})
+            </Typography>
+            {isLoadingCategoryTransactions ? (
+              <ListRowsSkeleton rows={5} />
+            ) : categoryTransactions && categoryTransactions.data.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                {categoryTransactions.data.map((tx) => (
+                  <Box key={tx.id} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'grey.200', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={700} noWrap>
+                        {tx.description}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {tx.date} · {tx.account}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        bgcolor: tx.amount < 0 ? 'error.lighter' : 'success.lighter',
+                        color: tx.amount < 0 ? 'error.dark' : 'success.dark',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: 2,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {tx.amount < 0 ? '-' : '+'}€{Math.abs(tx.amount).toLocaleString()}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 3 }}>
+                No transactions found for this category in the selected period
+              </Typography>
+            )}
+          </Paper>
+        )}
+
         {/* Monthly Data Tables Row - Only show when viewing full year */}
         {!selectedMonth && (
           <Grid container spacing={3} sx={{ mb: 4 }}>
+            {isLoadingMonthlyData ? (
+              [0, 1, 2].map((i) => (
+                <Grid key={i} size={{ xs: 12, md: 4 }}>
+                  <ChartSkeleton height={300} />
+                </Grid>
+              ))
+            ) : (
+            <>
             <Grid size={{ xs: 12, md: 4 }}>
               <MonthlyDataTable
                 title="INCOME"
@@ -533,6 +634,8 @@ export default function AnalyticsPage() {
                 type="savings"
               />
             </Grid>
+            </>
+            )}
           </Grid>
         )}
       </Box>

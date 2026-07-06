@@ -1,4 +1,4 @@
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, UploadFile, PaginatedResponse, Budget, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, MacroCategoryMonthlyBudget, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
 import { mockTransactions, mockCategories, mockUsers, mockUploads, mockBudgets } from './mockData';
 
@@ -86,6 +86,31 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       }
     }
     return monthlyData;
+  }
+
+  async getMacroCategoryBudgetTrend(year: number): Promise<MacroCategoryMonthlyBudget[]> {
+    await simulateDelay();
+    const expenseMacroCategories = ['EXPENSE', 'BILLS', 'SUBSCRIPTIONS', 'DEBTS'];
+    const trend: MacroCategoryMonthlyBudget[] = [];
+
+    for (const macroCategory of expenseMacroCategories) {
+      const categoriesInGroup = this.categories.filter(cat => cat.macroCategory === macroCategory);
+      const monthlyBudget = categoriesInGroup.reduce((sum, cat) => {
+        const budget = this.budgets.find(b => b.categoryId === cat.id && b.year === year.toString());
+        return sum + (budget ? budget.amount / 12 : 0);
+      }, 0);
+
+      for (let month = 1; month <= 12; month++) {
+        const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+        const actual = this.transactions
+          .filter(tx => tx.included && tx.date.startsWith(monthStr) && categoriesInGroup.some(cat => cat.id === tx.categoryId))
+          .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+        trend.push({ macroCategory, year, month, actual, budget: monthlyBudget });
+      }
+    }
+
+    return trend;
   }
 
   async getCategoryTrendsData(year: number, month?: number): Promise<CategoryTrendsData[]> {
@@ -267,6 +292,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       const budget = this.budgets
         .find(budget => budget.categoryId === category.id && budget.year === year.toString());
       return {
+        categoryId: category.id,
         categoryName: category.name,
         totalSpent: totalEarned,
         budgetedAmount: budget?.amount || 0,
@@ -293,6 +319,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       const budget = this.budgets
         .find(budget => budget.categoryId === category.id && budget.year === year.toString());
       return {
+        categoryId: category.id,
         categoryName: category.name,
         totalSpent: totalSaved,
         budgetedAmount: budget?.amount || 0,
@@ -366,6 +393,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
         .find(budget => budget.categoryId === category.id && budget.year === year.toString());
 
       return {
+        categoryId: category.id,
         categoryName: category.name,
         totalSpent,
         budgetedAmount: budget?.amount || 0,
@@ -635,6 +663,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
       const budget = this.budgets
         .find(budget => budget.categoryId === category.id && budget.year === year.toString());
       return {
+        categoryId: category.id,
         categoryName: category.name,
         totalSpent: totalInvested,
         budgetedAmount: budget?.amount || 0,
@@ -777,6 +806,7 @@ export class MockPersonalFinanceService implements PersonalFinanceService {
     });
 
     return Object.entries(categorySpending).map(([categoryName, data]) => ({
+      categoryId: data.category.id,
       categoryName,
       totalSpent: data.totalSpent,
       budgetedAmount: data.budgetedAmount,

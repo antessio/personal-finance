@@ -36,6 +36,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { UploadFile, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { useEffect } from 'react';
 
 export default function UploadPage() {
@@ -236,7 +237,9 @@ export default function UploadPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {allUploads.map((upload: UploadFile) => (
+                {isLoading ? (
+                  <TableRowsSkeleton columns={6} />
+                ) : allUploads.map((upload: UploadFile) => (
                   <TableRow 
                     key={upload.id}
                     hover

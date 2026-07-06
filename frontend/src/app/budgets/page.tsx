@@ -29,6 +29,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Budget, Category } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { Add as AddIcon, PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 
 export default function BudgetsPage() {
@@ -234,7 +235,9 @@ export default function BudgetsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {budgets.map((budget) => (
+              {isLoadingBudgets ? (
+                <TableRowsSkeleton columns={6} />
+              ) : budgets.map((budget) => (
                 <TableRow key={budget.id} sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
                   <TableCell sx={{ fontWeight: 600 }}>{getCategoryName(budget.categoryId)}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>€{budget.amount.toLocaleString()}</TableCell>

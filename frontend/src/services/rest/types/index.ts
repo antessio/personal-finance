@@ -86,3 +86,11 @@ export interface CategoryFlowDataRest{
   week: number;
   total: number;
 }
+
+export interface MacroCategoryMonthlyBudgetRest {
+  year: number;
+  month: number;
+  macroCategory: string;
+  actual: number;
+  budget: number;
+}

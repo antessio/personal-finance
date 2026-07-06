@@ -70,6 +70,7 @@ export interface  AccountFlowData {
 }
 
 export interface CategorySpending{
+  categoryId: string;
   categoryName: string;
   totalSpent: number;
   budgetedAmount?: number;
@@ -122,4 +123,12 @@ export interface CategoryTrendsData{
   month: number;
   week: number;
   total: number;
+}
+
+export interface MacroCategoryMonthlyBudget {
+  macroCategory: string;
+  year: number;
+  month: number;
+  actual: number;
+  budget: number;
 }

@@ -1,7 +1,10 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
 import Layout from '../components/Layout';
+import MacroCategoryBudgetTrend from '../components/charts/MacroCategoryBudgetTrend';
+import ChartSkeleton from '../components/skeletons/ChartSkeleton';
+import ListRowsSkeleton from '../components/skeletons/ListRowsSkeleton';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
 import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
@@ -27,58 +30,58 @@ export default function HomePage() {
   }
 
   // Fetch data with month filtering
-  const { data: totalIncome = 0 } = useQuery({
+  const { data: totalIncome = 0, isLoading: isLoadingTotalIncome } = useQuery({
     queryKey: ['totalIncome', selectedYear],
     queryFn: () => service.getTotalIncome(selectedYear),
   });
 
-  const { data: totalExpenses = 0 } = useQuery({
+  const { data: totalExpenses = 0, isLoading: isLoadingTotalExpenses } = useQuery({
     queryKey: ['totalExpenses', selectedYear],
     queryFn: () => service.getTotalExpenses(selectedYear),
   });
 
-  const { data: totalSavings = 0 } = useQuery({
+  const { data: totalSavings = 0, isLoading: isLoadingTotalSavings } = useQuery({
     queryKey: ['totalSavings', selectedYear],
     queryFn: () => service.getTotalSavings(selectedYear),
   });
 
-  const { data: incomeBudget = 0 } = useQuery({
+  const { data: incomeBudget = 0, isLoading: isLoadingIncomeBudget } = useQuery({
     queryKey: ['incomeBudget', selectedYear],
     queryFn: () => service.getIncomeBudget(selectedYear),
   });
 
-  const { data: expenseBudget = 0 } = useQuery({
+  const { data: expenseBudget = 0, isLoading: isLoadingExpenseBudget } = useQuery({
     queryKey: ['expenseBudget', selectedYear],
     queryFn: () => service.getExpenseBudget(selectedYear),
   });
 
-  const { data: savingsBudget = 0 } = useQuery({
+  const { data: savingsBudget = 0, isLoading: isLoadingSavingsBudget } = useQuery({
     queryKey: ['savingsBudget', selectedYear],
     queryFn: () => service.getSavingsBudget(selectedYear),
   });
 
 
-  const { data: categorySpending = [] } = useQuery({
+  const { data: categorySpending = [], isLoading: isLoadingCategorySpending } = useQuery({
     queryKey: ['categorySpending', selectedYear],
     queryFn: () => service.getCategorySpending(selectedYear),
   });
 
-  const { data: categorySavings = [] } = useQuery({
+  const { data: categorySavings = [], isLoading: isLoadingCategorySavings } = useQuery({
     queryKey: ['categorySavings', selectedYear],
     queryFn: () => service.getCategorySavings(selectedYear),
   });
 
-  const { data: totalInvestments = 0 } = useQuery({
+  const { data: totalInvestments = 0, isLoading: isLoadingTotalInvestments } = useQuery({
     queryKey: ['totalInvestments', selectedYear],
     queryFn: () => service.getTotalInvestments(selectedYear),
   });
 
-  const { data: investmentsBudget = 0 } = useQuery({
+  const { data: investmentsBudget = 0, isLoading: isLoadingInvestmentsBudget } = useQuery({
     queryKey: ['investmentsBudget', selectedYear],
     queryFn: () => service.getInvestmentsBudget(selectedYear),
   });
 
-  const { data: categoryInvestments = [] } = useQuery({
+  const { data: categoryInvestments = [], isLoading: isLoadingCategoryInvestments } = useQuery({
     queryKey: ['categoryInvestments', selectedYear],
     queryFn: () => service.getCategoryInvestments(selectedYear),
   });
@@ -88,7 +91,7 @@ export default function HomePage() {
 
   // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const { data: monthlyData = [] } = useQuery({
+  const { data: monthlyData = [], isLoading: isLoadingMonthlyData } = useQuery({
     queryKey: ['monthlyData', selectedYear],
     queryFn: () => service.getMonthlyData(selectedYear)
   });
@@ -115,21 +118,35 @@ export default function HomePage() {
   });
 
   // Account Flow data
-  const { data: accountFlowData = [] } = useQuery({
+  const { data: accountFlowData = [], isLoading: isLoadingAccountFlowData } = useQuery({
     queryKey: ['accountFlowData', selectedYear],
     queryFn: () => service.getAccountFlowData(selectedYear)
   });
 
   // Fetch accounts from API
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => service.getAccounts()
   });
 
-  const { data: macroCategoryTrends = [] } = useQuery({
+  const { data: macroCategoryTrends = [], isLoading: isLoadingMacroCategoryTrends } = useQuery({
     queryKey: ['macroCategoryTrends', selectedYear],
     queryFn: () => service.getMacroCategoriesMontlyData(selectedYear)
   });
+
+  const { data: macroCategoryBudgetTrend = [], isLoading: isLoadingMacroCategoryBudgetTrend } = useQuery({
+    queryKey: ['macroCategoryBudgetTrend', selectedYear],
+    queryFn: () => service.getMacroCategoryBudgetTrend(selectedYear)
+  });
+
+  // Per-section loading flags, derived from the queries each section actually depends on
+  const isLoadingAnnualSummary = isLoadingIncomeBudget || isLoadingExpenseBudget || isLoadingSavingsBudget || isLoadingInvestmentsBudget || isLoadingTotalIncome || isLoadingTotalExpenses || isLoadingTotalSavings || isLoadingTotalInvestments;
+  const isLoadingIncomeCard = isLoadingTotalIncome || isLoadingIncomeBudget;
+  const isLoadingExpensesCard = isLoadingTotalExpenses || isLoadingExpenseBudget;
+  const isLoadingSavingsCard = isLoadingTotalSavings || isLoadingSavingsBudget;
+  const isLoadingInvestmentsCard = isLoadingTotalInvestments || isLoadingInvestmentsBudget;
+  const isLoadingAccountFlow = isLoadingAccountFlowData || isLoadingAccounts;
+  const isLoadingBudgetTrend = isLoadingMacroCategoryBudgetTrend || isLoadingCategorySpending;
 
   // Transform macro category data for line chart
   const transformedMacroData = months.map((month, index) => {
@@ -438,6 +455,9 @@ export default function HomePage() {
           <Typography variant="h5" fontWeight={700} mb={3} textAlign="center">
             ANNUAL SUMMARY {selectedYear}
           </Typography>
+          {isLoadingAnnualSummary ? (
+            <Skeleton variant="rounded" width="100%" height={220} sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+          ) : (
           <Grid container spacing={3}>
             {/* Budget Breakdown */}
             <Grid size={{ xs: 12, md: 4 }}>
@@ -517,6 +537,7 @@ export default function HomePage() {
               </Box>
             </Grid>
           </Grid>
+          )}
         </Paper>
 
         {/* Top Cards */}
@@ -529,22 +550,33 @@ export default function HomePage() {
             <Typography color="success.main" fontWeight={700} mb={1}>
               <TrendingUp sx={{ verticalAlign: 'middle', mr: 1 }} /> My Income
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'success.light', color: 'success.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="success.main">
-                €{incomeBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'success.100', color: 'success.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="success.dark">
-                €{totalIncome.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalIncome / (incomeBudget == 0 ? 1 : incomeBudget) * 100))}% of income target reached
-            </Typography>
+            {isLoadingIncomeCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'success.light', color: 'success.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="success.main">
+                    €{incomeBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'success.100', color: 'success.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="success.dark">
+                    €{totalIncome.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalIncome / (incomeBudget == 0 ? 1 : incomeBudget) * 100))}% of income target reached
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* My Expenses Card */}
@@ -555,23 +587,33 @@ export default function HomePage() {
             <Typography color="error.main" fontWeight={700} mb={1}>
               <TrendingDown sx={{ verticalAlign: 'middle', mr: 1 }} /> My Expenses
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'error.light', color: 'error.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="error.main">
-                €{expenseBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'error.100', color: 'error.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="error.dark">
-                €{totalExpenses.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
-
-            </Typography>
+            {isLoadingExpensesCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'error.light', color: 'error.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="error.main">
+                    €{expenseBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'error.100', color: 'error.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="error.dark">
+                    €{totalExpenses.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* Savings Card */}
@@ -582,22 +624,33 @@ export default function HomePage() {
             <Typography color="info.main" fontWeight={700} mb={1}>
               <Savings sx={{ verticalAlign: 'middle', mr: 1 }} /> Savings
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'info.light', color: 'info.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="info.main">
-                €{savingsBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'info.100', color: 'info.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="info.dark">
-                €{totalSavings.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
-            </Typography>
+            {isLoadingSavingsCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'info.light', color: 'info.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="info.main">
+                    €{savingsBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'info.100', color: 'info.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="info.dark">
+                    €{totalSavings.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* Investments Card */}
@@ -608,22 +661,33 @@ export default function HomePage() {
             <Typography fontWeight={700} mb={1} sx={{ color: '#00897b' }}>
               <TrendingUp sx={{ verticalAlign: 'middle', mr: 1, color: '#00897b' }} /> Investments
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: '#b2dfdb', color: '#00695c' }} />
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#00897b' }}>
-                €{investmentsBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: '#e0f2f1', color: '#00695c' }} />
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#00695c' }}>
-                €{totalInvestments.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalInvestments / (investmentsBudget === 0 ? 1 : investmentsBudget)) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: '#b2dfdb', '& .MuiLinearProgress-bar': { bgcolor: '#00897b' } }} />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalInvestments / (investmentsBudget == 0 ? 1 : investmentsBudget) * 100))}% of investments target reached
-            </Typography>
+            {isLoadingInvestmentsCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: '#b2dfdb', color: '#00695c' }} />
+                  <Typography variant="h6" fontWeight={700} sx={{ color: '#00897b' }}>
+                    €{investmentsBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: '#e0f2f1', color: '#00695c' }} />
+                  <Typography variant="h6" fontWeight={700} sx={{ color: '#00695c' }}>
+                    €{totalInvestments.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalInvestments / (investmentsBudget === 0 ? 1 : investmentsBudget)) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: '#b2dfdb', '& .MuiLinearProgress-bar': { bgcolor: '#00897b' } }} />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalInvestments / (investmentsBudget == 0 ? 1 : investmentsBudget) * 100))}% of investments target reached
+                </Typography>
+              </>
+            )}
           </Paper>
         </Box>
 
@@ -639,6 +703,9 @@ export default function HomePage() {
               </Typography>
             </Box>
             <Box sx={{ width: '100%', height: 400, mb: 2 }}>
+              {isLoadingAccountFlow ? (
+                <ChartSkeleton height={400} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={transformedAccountData} margin={{ top: 40, right: 30, left: 20, bottom: 100 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
@@ -709,6 +776,7 @@ export default function HomePage() {
                   </Line>
                 </ComposedChart>
               </ResponsiveContainer>
+              )}
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               Total balance (income + savings - expenses) per account with overall total trend line
@@ -727,6 +795,9 @@ export default function HomePage() {
               </Typography>
             </Box>
             <Box sx={{ width: '100%', height: 280, mb: 2 }}>
+              {isLoadingMacroCategoryTrends ? (
+                <ChartSkeleton height={280} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
@@ -762,7 +833,30 @@ export default function HomePage() {
                   ))}
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </Box>
+          </Paper>
+        </Box>
+
+        {/* Macro Category Budget vs Actual Trend Chart */}
+        <Box sx={{ mb: 3 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Timeline color="warning" sx={{ mr: 1 }} />
+              <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
+                Budget vs Actual Trend
+              </Typography>
+            </Box>
+            {isLoadingBudgetTrend ? (
+              <ChartSkeleton height={320} />
+            ) : (
+            <MacroCategoryBudgetTrend
+              data={macroCategoryBudgetTrend}
+              categorySpending={categorySpending}
+              months={months}
+              colors={macroCategoryColors}
+            />
+            )}
           </Paper>
         </Box>
 
@@ -773,6 +867,9 @@ export default function HomePage() {
               INCOME vs SAVINGS (Monthly)
             </Typography>
             <Box sx={{ width: '100%', height: 300 }}>
+              {isLoadingMonthlyData ? (
+                <ChartSkeleton height={300} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
@@ -800,6 +897,7 @@ export default function HomePage() {
                   <Bar dataKey="Savings" fill="#2196f3" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </Box>
           </Paper>
         </Box>
@@ -811,6 +909,9 @@ export default function HomePage() {
               INCOME vs EXPENSE (Monthly)
             </Typography>
             <Box sx={{ width: '100%', height: 300 }}>
+              {isLoadingMonthlyData ? (
+                <ChartSkeleton height={300} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={incomeVsExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
@@ -838,6 +939,7 @@ export default function HomePage() {
                   <Bar dataKey="Expense" fill="#f44336" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </Box>
           </Paper>
         </Box>
@@ -862,6 +964,13 @@ export default function HomePage() {
             </ToggleButtonGroup>
           </Box>
 
+          {isLoadingCategorySpending ? (
+            <>
+              <Skeleton variant="text" width={180} height={48} sx={{ mb: 2 }} />
+              <ListRowsSkeleton rows={8} />
+            </>
+          ) : (
+          <>
           {/* Total + Stacked Bar (Groups view only - too many categories to read as slivers) */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="overline" color="text.secondary">
@@ -974,6 +1083,8 @@ export default function HomePage() {
               />
             </Box>
           )}
+          </>
+          )}
         </Paper>
 
         {/* Savings Breakdown Section */}
@@ -985,7 +1096,9 @@ export default function HomePage() {
             </Typography>
           </Box>
 
-          {savingsBreakdownData.length > 0
+          {isLoadingCategorySavings ? (
+            <ListRowsSkeleton rows={5} />
+          ) : savingsBreakdownData.length > 0
             ? renderFundBreakdown(
               savingsBreakdownData,
               totalSavingsBreakdown,
@@ -1011,7 +1124,9 @@ export default function HomePage() {
             </Typography>
           </Box>
 
-          {investmentsBreakdownData.length > 0
+          {isLoadingCategoryInvestments ? (
+            <ListRowsSkeleton rows={5} />
+          ) : investmentsBreakdownData.length > 0
             ? renderFundBreakdown(
               investmentsBreakdownData,
               totalInvestmentsBreakdown,
@@ -1033,6 +1148,9 @@ export default function HomePage() {
           <Typography variant="h6" fontWeight={700} color="#222" mb={2}>
             50-30-20 Budget Breakdown
           </Typography>
+          {isLoadingCategorySpending ? (
+            <ChartSkeleton height={220} />
+          ) : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {/* Percentage Breakdown */}
             <Box sx={{ flex: 1, minWidth: 220 }}>
@@ -1082,6 +1200,7 @@ export default function HomePage() {
               </TableContainer>
             </Box>
           </Box>
+          )}
         </Paper>
       </Box>
     </Layout>

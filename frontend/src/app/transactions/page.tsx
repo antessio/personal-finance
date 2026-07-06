@@ -32,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Transaction, TransactionFilters, Category, BulkUpdatePayload, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -380,7 +381,9 @@ export default function TransactionsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {allTransactions.map((transaction, idx) => {
+              {isLoadingTransactions ? (
+                <TableRowsSkeleton columns={8} />
+              ) : allTransactions.map((transaction, idx) => {
                 const category = transaction.category
                 const isItemSelected = isSelected(transaction.id);
                 
