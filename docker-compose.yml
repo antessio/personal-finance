@@ -10,6 +10,8 @@ services:
       - .app.env
     depends_on:
       - postgres
+    networks:
+      - personal_finance_network
     profiles:
       - prod
   frontend:
@@ -21,6 +23,8 @@ services:
       - NEXT_PUBLIC_API_URL=http://app:8080
     depends_on:
       - app
+    networks:
+      - personal_finance_network
     profiles:
       - prod
   postgres:
