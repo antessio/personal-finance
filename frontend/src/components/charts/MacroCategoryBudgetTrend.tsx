@@ -38,15 +38,19 @@ export default function MacroCategoryBudgetTrend({ data, categorySpending, month
     })
     : [];
 
-  const allCategoriesChartData = months.map((month, index) => {
+  const totalChartData = months.map((month, index) => {
     const monthNumber = index + 1;
-    const result: { [key: string]: string | number } = { month };
-    macroCategories.forEach(category => {
-      const entry = data.find(item => item.macroCategory === category && item.month === monthNumber);
-      result[category] = entry?.actual || 0;
-    });
-    return result;
+    const monthEntries = data.filter(item => item.month === monthNumber);
+    return {
+      month,
+      actual: monthEntries.reduce((sum, item) => sum + item.actual, 0),
+      budget: monthEntries.reduce((sum, item) => sum + item.budget, 0),
+    };
   });
+
+  const activeChartData = selectedMacroCategory ? singleCategoryChartData : totalChartData;
+  const activeColor = selectedMacroCategory ? (colors[selectedMacroCategory] || '#666666') : '#1976d2';
+  const activeLabel = selectedMacroCategory ? 'Actual' : 'Total Actual';
 
   const categoriesInGroup = selectedMacroCategory
     ? categorySpending
@@ -75,85 +79,48 @@ export default function MacroCategoryBudgetTrend({ data, categorySpending, month
         ))}
       </Box>
 
-      <Box sx={{ width: '100%', height: 280, mb: selectedMacroCategory ? 3 : 0 }}>
+      <Box sx={{ width: '100%', height: 280, mb: 3 }}>
         <ResponsiveContainer width="100%" height="100%">
-          {selectedMacroCategory ? (
-            <LineChart data={singleCategoryChartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: theme.palette.text.primary }}
-                stroke={theme.palette.text.secondary}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                tickFormatter={(value) => `€${value.toLocaleString()}`}
-                stroke={theme.palette.text.secondary}
-              />
-              <Tooltip
-                formatter={(value) => `€${Number(value).toLocaleString()}`}
-                contentStyle={{
-                  backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
-                  border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                  borderRadius: '8px',
-                  color: isDark ? '#ffffff' : '#000000'
-                }}
-              />
-              <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
-              <Line
-                type="monotone"
-                dataKey="actual"
-                stroke={colors[selectedMacroCategory] || '#666666'}
-                strokeWidth={3}
-                dot={{ r: 4 }}
-                name="Actual"
-              />
-              <Line
-                type="monotone"
-                dataKey="budget"
-                stroke={theme.palette.text.secondary}
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false}
-                name="Budget"
-              />
-            </LineChart>
-          ) : (
-            <LineChart data={allCategoriesChartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: theme.palette.text.primary }}
-                stroke={theme.palette.text.secondary}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                tickFormatter={(value) => `€${value.toLocaleString()}`}
-                stroke={theme.palette.text.secondary}
-              />
-              <Tooltip
-                formatter={(value) => `€${Number(value).toLocaleString()}`}
-                contentStyle={{
-                  backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
-                  border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                  borderRadius: '8px',
-                  color: isDark ? '#ffffff' : '#000000'
-                }}
-              />
-              <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
-              {macroCategories.map(category => (
-                <Line
-                  key={category}
-                  type="monotone"
-                  dataKey={category}
-                  stroke={colors[category] || '#666666'}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  name={category.charAt(0) + category.slice(1).toLowerCase()}
-                />
-              ))}
-            </LineChart>
-          )}
+          <LineChart data={activeChartData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+              stroke={theme.palette.text.secondary}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+              tickFormatter={(value) => `€${value.toLocaleString()}`}
+              stroke={theme.palette.text.secondary}
+            />
+            <Tooltip
+              formatter={(value) => `€${Number(value).toLocaleString()}`}
+              contentStyle={{
+                backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                borderRadius: '8px',
+                color: isDark ? '#ffffff' : '#000000'
+              }}
+            />
+            <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
+            <Line
+              type="monotone"
+              dataKey="actual"
+              stroke={activeColor}
+              strokeWidth={3}
+              dot={{ r: 4 }}
+              name={activeLabel}
+            />
+            <Line
+              type="monotone"
+              dataKey="budget"
+              stroke={theme.palette.text.secondary}
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+              name={selectedMacroCategory ? 'Budget' : 'Total Budget'}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </Box>
 

@@ -6,7 +6,7 @@ import MacroCategoryBudgetTrend from '../components/charts/MacroCategoryBudgetTr
 import ChartSkeleton from '../components/skeletons/ChartSkeleton';
 import ListRowsSkeleton from '../components/skeletons/ListRowsSkeleton';
 import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
-import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Line, ComposedChart, LabelList } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
 import { MonthlyData } from '../types';
@@ -129,11 +129,6 @@ export default function HomePage() {
     queryFn: () => service.getAccounts()
   });
 
-  const { data: macroCategoryTrends = [], isLoading: isLoadingMacroCategoryTrends } = useQuery({
-    queryKey: ['macroCategoryTrends', selectedYear],
-    queryFn: () => service.getMacroCategoriesMontlyData(selectedYear)
-  });
-
   const { data: macroCategoryBudgetTrend = [], isLoading: isLoadingMacroCategoryBudgetTrend } = useQuery({
     queryKey: ['macroCategoryBudgetTrend', selectedYear],
     queryFn: () => service.getMacroCategoryBudgetTrend(selectedYear)
@@ -148,19 +143,6 @@ export default function HomePage() {
   const isLoadingAccountFlow = isLoadingAccountFlowData || isLoadingAccounts;
   const isLoadingBudgetTrend = isLoadingMacroCategoryBudgetTrend || isLoadingCategorySpending;
 
-  // Transform macro category data for line chart
-  const transformedMacroData = months.map((month, index) => {
-    const monthNumber = index + 1; // 1, 2, 3, etc.
-    const monthData = macroCategoryTrends.filter(data => data.month === monthNumber);
-
-    const result: { [key: string]: string | number } = { month };
-    monthData.forEach(item => {
-      result[item.macroCategory] = item.total;
-    });
-
-    return result;
-  });
-
   // Define colors for each macro category
   const macroCategoryColors: { [key: string]: string } = {
     'EXPENSE': '#f44336',
@@ -171,9 +153,6 @@ export default function HomePage() {
     'INCOME': '#4caf50',
     'INVESTMENTS': '#00897b'
   };
-
-  // Get unique macro categories from the data
-  const uniqueMacroCategories = [...new Set(macroCategoryTrends.map(item => item.macroCategory))];
 
   // Transform account flow data for chart
   const transformedAccountData = (() => {
@@ -784,59 +763,6 @@ export default function HomePage() {
           </Paper>
         </Box>
 
-
-        {/* Macro Category Trends Chart */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Timeline color="warning" sx={{ mr: 1 }} />
-              <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
-                Macro Category Trends
-              </Typography>
-            </Box>
-            <Box sx={{ width: '100%', height: 280, mb: 2 }}>
-              {isLoadingMacroCategoryTrends ? (
-                <ChartSkeleton height={280} />
-              ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
-                    stroke={theme.palette.text.secondary}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
-                    stroke={theme.palette.text.secondary}
-                  />
-                  <Tooltip
-                    formatter={(value) => `€${value?.toLocaleString()}`}
-                    contentStyle={{
-                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
-                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                      borderRadius: '8px',
-                      color: isDark ? '#ffffff' : '#000000'
-                    }}
-                  />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
-                  {uniqueMacroCategories.map((category) => (
-                    <Line
-                      key={category}
-                      type="monotone"
-                      dataKey={category}
-                      stroke={macroCategoryColors[category as keyof typeof macroCategoryColors] || '#666666'}
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      name={category.charAt(0) + category.slice(1).toLowerCase()}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-              )}
-            </Box>
-          </Paper>
-        </Box>
 
         {/* Macro Category Budget vs Actual Trend Chart */}
         <Box sx={{ mb: 3 }}>
