@@ -36,6 +36,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { UploadFile, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { useEffect } from 'react';
 
 export default function UploadPage() {
@@ -54,10 +55,13 @@ export default function UploadPage() {
     queryFn: () => service.getAccounts(),
   });
 
+  const hasPendingUploads = allUploads.some(u => u.status === 'pending' || u.status === 'processing');
+
   // Get uploaded files with pagination
   const { data: paginatedData, isLoading } = useQuery<PaginatedResponse<UploadFile>>({
     queryKey: ['uploads', filters],
     queryFn: () => service.getUploads(filters),
+    refetchInterval: hasPendingUploads ? 3000 : false,
   });
 
   // Update allUploads when new data is fetched
@@ -233,7 +237,9 @@ export default function UploadPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {allUploads.map((upload: UploadFile) => (
+                {isLoading ? (
+                  <TableRowsSkeleton columns={6} />
+                ) : allUploads.map((upload: UploadFile) => (
                   <TableRow 
                     key={upload.id}
                     hover

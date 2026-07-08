@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
-import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
+import { Transaction, Category, TransactionFilters, BulkUpdatePayload, PaginatedResponse, Budget, UploadFile, Account, CategorySpending, MonthlyData, MacroCategoryMonthlyData, MacroCategoryMonthlyBudget, AccountFlowData, CategoryTrendsData, CumulativeSpendingData, LargestExpenseItem } from '../types';
 import { PersonalFinanceService } from './personalFinanceService';
-import { AccountFlowDataRest, BudgetRest, CategoryFlowDataRest, CategoryRest, CategorySpendingRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
+import { AccountFlowDataRest, BudgetRest, CategoryFlowDataRest, CategoryRest, CategorySpendingRest, MacroCategoryMonthlyBudgetRest, MonthlyDataRest, PaginatedResponseRest, TransactionRest, UploadFilRest } from './rest/types';
 import { isAuthEnabled } from '../config/auth';
 
 export class RestPersonalFinanceService implements PersonalFinanceService {
@@ -101,6 +101,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-spending?fromDate=${fromDate}&toDate=${toDate}`);
     console.log(response.data);
     return response.data.map(spending => ({
+      categoryId: spending.category.id,
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
@@ -118,6 +119,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-income?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
+      categoryId: spending.category.id,
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
@@ -135,6 +137,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-savings?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
+      categoryId: spending.category.id,
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
@@ -152,6 +155,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     }
     const response = await this.api.get<CategorySpendingRest[]>(`/api/transactions/category-investments?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data.map(spending => ({
+      categoryId: spending.category.id,
       categoryName: spending.category.name + ' ' + spending.category.emoji,
       totalSpent: spending.totalSpent,
       budgetedAmount: spending.budgetAmount || 0,
@@ -171,6 +175,18 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     const response = await this.api.get<MacroCategoryMonthlyData[]>(`/api/transactions/expenses-monthly-data?fromDate=${fromDate}&toDate=${toDate}`);
     return response.data;
   }
+
+  async getMacroCategoryBudgetTrend(year: number): Promise<MacroCategoryMonthlyBudget[]> {
+    const response = await this.api.get<MacroCategoryMonthlyBudgetRest[]>(`/api/transactions/expenses-macro-category-trend?year=${year}`);
+    return response.data.map(item => ({
+      macroCategory: item.macroCategory,
+      year: item.year,
+      month: item.month,
+      actual: item.actual,
+      budget: item.budget,
+    }));
+  }
+
   async getMonthlyData(year: number, month?: number): Promise<MonthlyData[]> {
     let fromDate = `${year}-01-01`;
     let toDate = `${year}-12-31`;
@@ -314,7 +330,16 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
 
   convertFilters(filters: TransactionFilters): Record<string, any> {
     const params: Record<string, any> = {};
-    if (filters.month) params.targetDate = filters.month;
+    if (filters.year !== undefined) {
+      if (filters.month !== undefined) {
+        const monthStr = filters.month.toString().padStart(2, '0');
+        params.fromDate = `${filters.year}-${monthStr}-01`;
+        params.toDate = `${filters.year}-${monthStr}-${new Date(filters.year, filters.month, 0).getDate()}`;
+      } else {
+        params.fromDate = `${filters.year}-01-01`;
+        params.toDate = `${filters.year}-12-31`;
+      }
+    }
     if (filters.included !== undefined) params.skip = !filters.included;
     if (filters.account) params.source = filters.account.toLowerCase();
     if (filters.categoryId) {

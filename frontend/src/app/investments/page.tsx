@@ -30,6 +30,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Transaction, BulkUpdatePayload, Category } from '../../types';
 import Layout from '../../components/Layout';
+import ChartSkeleton from '../../components/skeletons/ChartSkeleton';
+import ListRowsSkeleton from '../../components/skeletons/ListRowsSkeleton';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 
 export default function InvestmentsPage() {
   const currentYear = new Date().getFullYear();
@@ -70,17 +73,17 @@ export default function InvestmentsPage() {
     { value: 12, label: 'December' },
   ];
 
-  const { data: totalInvestments = 0 } = useQuery({
+  const { data: totalInvestments = 0, isLoading: isLoadingTotalInvestments } = useQuery({
     queryKey: ['totalInvestments', selectedYear, selectedMonth],
     queryFn: () => service.getTotalInvestments(selectedYear, selectedMonth),
   });
 
-  const { data: investmentsBudget = 0 } = useQuery({
+  const { data: investmentsBudget = 0, isLoading: isLoadingInvestmentsBudget } = useQuery({
     queryKey: ['investmentsBudget', selectedYear, selectedMonth],
     queryFn: () => service.getInvestmentsBudget(selectedYear, selectedMonth),
   });
 
-  const { data: categoryInvestments = [] } = useQuery({
+  const { data: categoryInvestments = [], isLoading: isLoadingCategoryInvestments } = useQuery({
     queryKey: ['categoryInvestments', selectedYear, selectedMonth],
     queryFn: () => service.getCategoryInvestments(selectedYear, selectedMonth),
   });
@@ -88,13 +91,12 @@ export default function InvestmentsPage() {
   const transactionFilters = {
     macroCategory: 'INVESTMENTS',
     limit: 20,
-    month: selectedMonth !== undefined
-      ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-      : `${selectedYear}-01-01`,
+    year: selectedYear,
+    month: selectedMonth,
     cursor: transactionCursor,
   };
 
-  const { data: paginatedTransactions } = useQuery({
+  const { data: paginatedTransactions, isLoading: isLoadingTransactions } = useQuery({
     queryKey: ['transactions', transactionFilters],
     queryFn: () => service.getTransactions(transactionFilters),
   });
@@ -194,6 +196,10 @@ export default function InvestmentsPage() {
 
       {/* Summary card */}
       <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.15)' }}>
+        {isLoadingTotalInvestments || isLoadingInvestmentsBudget ? (
+          <ChartSkeleton height={90} />
+        ) : (
+        <>
         <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
           <Box>
             <Typography variant="body2" color="text.secondary">Invested</Typography>
@@ -222,10 +228,19 @@ export default function InvestmentsPage() {
             </Typography>
           </>
         )}
+        </>
+        )}
       </Paper>
 
       {/* Category breakdown */}
-      {activeCategories.length > 0 && (
+      {isLoadingCategoryInvestments ? (
+        <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
+          <Typography variant="h6" fontWeight={700} mb={2} sx={{ color: '#00695c' }}>
+            By Category
+          </Typography>
+          <ListRowsSkeleton rows={4} />
+        </Paper>
+      ) : activeCategories.length > 0 && (
         <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
           <Typography variant="h6" fontWeight={700} mb={2} sx={{ color: '#00695c' }}>
             By Category
@@ -307,7 +322,9 @@ export default function InvestmentsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {allTransactions.map((tx, idx) => {
+              {isLoadingTransactions ? (
+                <TableRowsSkeleton columns={7} />
+              ) : allTransactions.map((tx, idx) => {
                 const isItemSelected = selected.includes(tx.id);
                 return (
                   <TableRow

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class TransactionQueryService {
@@ -49,7 +50,8 @@ public class TransactionQueryService {
         List<Transaction> allByUserAndFilters = transactionRepository.findAllByUserAndFilters(
                 query.getUserOwner(),
                 query.getLimit(),
-                query.getMonth().orElse(null),
+                query.getFromDate().orElse(null),
+                query.getToDate().orElse(null),
                 query.getSkip().orElse(null),
                 query.getSource().orElse(null),
                 categoryIds,
@@ -191,7 +193,8 @@ public class TransactionQueryService {
         return transactionRepository.findAllByUserAndFilters(
                 username,
                 300,
-                yearMonth,
+                yearMonth.atDay(1),
+                yearMonth.atEndOfMonth(),
                 false,
                 null,
                 categoryIds,
@@ -593,6 +596,48 @@ public class TransactionQueryService {
                     }
                 })
                 .sorted(Comparator.comparing(MacroCategoryMonthlyDataDTO::macroCategory).thenComparing(MacroCategoryMonthlyDataDTO::month).thenComparing(MacroCategoryMonthlyDataDTO::week))
+                .toList();
+    }
+
+    public List<MacroCategoryMonthlyBudgetDTO> getExpensesMacroCategoryYearlyTrend(String username, int year) {
+        Map<CategoryId, CategoryDTO> expenseCategories = categoryService.getAllCategories(username, Integer.MAX_VALUE, null)
+                .stream()
+                .filter(c -> c.getMacroCategory().isExpense())
+                .collect(Collectors.toMap(CategoryDTO::getId, Function.identity()));
+
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+
+        Map<Integer, Map<MacroCategoryEnum, BigDecimal>> actualsByMonth = transactionRepository
+                .findAllIncludedCategorizedByUserAndYear(username, startDate, endDate)
+                .filter(t -> t.getCategoryId() != null && expenseCategories.containsKey(t.getCategoryId()))
+                .collect(Collectors.groupingBy(t -> t.getDate().getMonthValue(),
+                        Collectors.groupingBy(t -> expenseCategories.get(t.getCategoryId()).getMacroCategory(),
+                                Collectors.reducing(BigDecimal.ZERO, t -> t.getAmount().abs(), BigDecimal::add))));
+
+        Map<Integer, Map<MacroCategoryEnum, BigDecimal>> budgetsByMonth = IntStream.rangeClosed(1, 12)
+                .boxed()
+                .collect(Collectors.toMap(Function.identity(), month -> {
+                    Map<CategoryId, BigDecimal> budgetTotals = budgetService.getBudgetsTotals(username, year, month);
+                    return budgetTotals.entrySet().stream()
+                            .filter(e -> expenseCategories.containsKey(e.getKey()))
+                            .collect(Collectors.groupingBy(e -> expenseCategories.get(e.getKey()).getMacroCategory(),
+                                    Collectors.reducing(BigDecimal.ZERO, Map.Entry::getValue, BigDecimal::add)));
+                }));
+
+        Set<MacroCategoryEnum> macroCategories = Stream.concat(
+                        actualsByMonth.values().stream().flatMap(m -> m.keySet().stream()),
+                        budgetsByMonth.values().stream().flatMap(m -> m.keySet().stream()))
+                .collect(Collectors.toSet());
+
+        return IntStream.rangeClosed(1, 12)
+                .boxed()
+                .flatMap(month -> macroCategories.stream().map(mc -> new MacroCategoryMonthlyBudgetDTO(
+                        year, month, mc,
+                        actualsByMonth.getOrDefault(month, Map.of()).getOrDefault(mc, BigDecimal.ZERO),
+                        budgetsByMonth.getOrDefault(month, Map.of()).getOrDefault(mc, BigDecimal.ZERO)
+                )))
+                .sorted(Comparator.comparing(MacroCategoryMonthlyBudgetDTO::macroCategory).thenComparing(MacroCategoryMonthlyBudgetDTO::month))
                 .toList();
     }
 

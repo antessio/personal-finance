@@ -23,12 +23,17 @@ import {
   FormControlLabel,
   Radio,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Category, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 
 export default function CategoriesPage() {
   const [open, setOpen] = useState(false);
@@ -205,7 +210,9 @@ export default function CategoriesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {allCategories.map((category: Category, index: number) => (
+              {isLoading ? (
+                <TableRowsSkeleton columns={5} />
+              ) : allCategories.map((category: Category, index: number) => (
                 <TableRow 
                   key={category.id} 
                   sx={{ 
@@ -291,13 +298,6 @@ export default function CategoriesPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {isLoading && (
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -339,6 +339,18 @@ export default function CategoriesPage() {
             onChange={(e) => setFormData({ ...formData, macroCategory: e.target.value })}
             sx={{ mb: 2 }}
           />
+          <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+            <InputLabel>Type</InputLabel>
+            <Select
+              value={formData.type}
+              label="Type"
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as Category['type'] })}
+            >
+              <MenuItem value="NEEDS">Needs</MenuItem>
+              <MenuItem value="WANTS">Wants</MenuItem>
+              <MenuItem value="SAVINGS_DEBTS">Savings / Debts</MenuItem>
+            </Select>
+          </FormControl>
           <TextField
             margin="dense"
             label="Regex Patterns (one per line)"

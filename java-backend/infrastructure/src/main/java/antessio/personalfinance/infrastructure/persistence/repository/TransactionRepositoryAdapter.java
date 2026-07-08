@@ -18,7 +18,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -93,18 +92,12 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
     }
 
     @Override
-    public List<Transaction> findAllByUserAndFilters(String userId, int limit, YearMonth yearMonth, Boolean skip,
+    public List<Transaction> findAllByUserAndFilters(String userId, int limit, LocalDate fromDate, LocalDate toDate, Boolean skip,
                                                      String source, List<CategoryId> categories, TransactionId startingAfterId) {
 
         Pageable page = PageRequest.of(0, limit,
                 Sort.by("id"));
 
-        LocalDate fromDate = Optional.ofNullable(yearMonth)
-                .map(ym -> ym.atDay(1))
-                .orElse(null);
-        LocalDate toDate = Optional.ofNullable(yearMonth)
-                .map(YearMonth::atEndOfMonth)
-                .orElse(null);
         Specification<TransactionEntity> filters = TransactionSpringDataRepository.byFilters(
                 userId, fromDate,
                 toDate, skip, source,

@@ -27,7 +27,8 @@ export interface Budget {
 }
 
 export interface TransactionFilters {
-  month?: string;
+  year?: number;
+  month?: number; // 1-12, only meaningful together with `year` - omit for the whole year
   included?: boolean;
   account?: string;
   categoryId?: string;
@@ -69,6 +70,7 @@ export interface  AccountFlowData {
 }
 
 export interface CategorySpending{
+  categoryId: string;
   categoryName: string;
   totalSpent: number;
   budgetedAmount?: number;
@@ -121,4 +123,12 @@ export interface CategoryTrendsData{
   month: number;
   week: number;
   total: number;
+}
+
+export interface MacroCategoryMonthlyBudget {
+  macroCategory: string;
+  year: number;
+  month: number;
+  actual: number;
+  budget: number;
 }

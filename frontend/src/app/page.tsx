@@ -1,9 +1,12 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
 import Layout from '../components/Layout';
-import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, PieChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
-import { Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, LineChart, Line, ComposedChart, LabelList } from 'recharts';
+import MacroCategoryBudgetTrend from '../components/charts/MacroCategoryBudgetTrend';
+import ChartSkeleton from '../components/skeletons/ChartSkeleton';
+import ListRowsSkeleton from '../components/skeletons/ListRowsSkeleton';
+import { TrendingUp, TrendingDown, Savings, BarChart as MuiBarChart, Timeline, CheckCircle, Warning } from '@mui/icons-material';
+import { Bar, BarChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, Line, ComposedChart, LabelList } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { service } from '../services/api';
 import { MonthlyData } from '../types';
@@ -15,6 +18,11 @@ export default function HomePage() {
   // const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [categoryBreakdownView, setCategoryBreakdownView] = useState<'categories' | 'groups'>('categories');
+  const [showAllCategoryBreakdown, setShowAllCategoryBreakdown] = useState(false);
+  const [showAllSavingsBreakdown, setShowAllSavingsBreakdown] = useState(false);
+  const [showAllInvestmentsBreakdown, setShowAllInvestmentsBreakdown] = useState(false);
+  const BREAKDOWN_LIST_LIMIT = 8;
   // Year options for the selector (current year and 4 years back)
   const yearOptions = [];
   for (let year = currentYear; year >= currentYear - 4; year--) {
@@ -22,58 +30,58 @@ export default function HomePage() {
   }
 
   // Fetch data with month filtering
-  const { data: totalIncome = 0 } = useQuery({
+  const { data: totalIncome = 0, isLoading: isLoadingTotalIncome } = useQuery({
     queryKey: ['totalIncome', selectedYear],
     queryFn: () => service.getTotalIncome(selectedYear),
   });
 
-  const { data: totalExpenses = 0 } = useQuery({
+  const { data: totalExpenses = 0, isLoading: isLoadingTotalExpenses } = useQuery({
     queryKey: ['totalExpenses', selectedYear],
     queryFn: () => service.getTotalExpenses(selectedYear),
   });
 
-  const { data: totalSavings = 0 } = useQuery({
+  const { data: totalSavings = 0, isLoading: isLoadingTotalSavings } = useQuery({
     queryKey: ['totalSavings', selectedYear],
     queryFn: () => service.getTotalSavings(selectedYear),
   });
 
-  const { data: incomeBudget = 0 } = useQuery({
+  const { data: incomeBudget = 0, isLoading: isLoadingIncomeBudget } = useQuery({
     queryKey: ['incomeBudget', selectedYear],
     queryFn: () => service.getIncomeBudget(selectedYear),
   });
 
-  const { data: expenseBudget = 0 } = useQuery({
+  const { data: expenseBudget = 0, isLoading: isLoadingExpenseBudget } = useQuery({
     queryKey: ['expenseBudget', selectedYear],
     queryFn: () => service.getExpenseBudget(selectedYear),
   });
 
-  const { data: savingsBudget = 0 } = useQuery({
+  const { data: savingsBudget = 0, isLoading: isLoadingSavingsBudget } = useQuery({
     queryKey: ['savingsBudget', selectedYear],
     queryFn: () => service.getSavingsBudget(selectedYear),
   });
 
 
-  const { data: categorySpending = [] } = useQuery({
+  const { data: categorySpending = [], isLoading: isLoadingCategorySpending } = useQuery({
     queryKey: ['categorySpending', selectedYear],
     queryFn: () => service.getCategorySpending(selectedYear),
   });
 
-  const { data: categorySavings = [] } = useQuery({
+  const { data: categorySavings = [], isLoading: isLoadingCategorySavings } = useQuery({
     queryKey: ['categorySavings', selectedYear],
     queryFn: () => service.getCategorySavings(selectedYear),
   });
 
-  const { data: totalInvestments = 0 } = useQuery({
+  const { data: totalInvestments = 0, isLoading: isLoadingTotalInvestments } = useQuery({
     queryKey: ['totalInvestments', selectedYear],
     queryFn: () => service.getTotalInvestments(selectedYear),
   });
 
-  const { data: investmentsBudget = 0 } = useQuery({
+  const { data: investmentsBudget = 0, isLoading: isLoadingInvestmentsBudget } = useQuery({
     queryKey: ['investmentsBudget', selectedYear],
     queryFn: () => service.getInvestmentsBudget(selectedYear),
   });
 
-  const { data: categoryInvestments = [] } = useQuery({
+  const { data: categoryInvestments = [], isLoading: isLoadingCategoryInvestments } = useQuery({
     queryKey: ['categoryInvestments', selectedYear],
     queryFn: () => service.getCategoryInvestments(selectedYear),
   });
@@ -83,40 +91,57 @@ export default function HomePage() {
 
   // Money Flow data - show different data based on month selection
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const { data: monthlyData = [] } = useQuery({
+  const { data: monthlyData = [], isLoading: isLoadingMonthlyData } = useQuery({
     queryKey: ['monthlyData', selectedYear],
     queryFn: () => service.getMonthlyData(selectedYear)
   });
 
+  // Prepare income vs savings / income vs expense bar chart data - always all 12 months
+  const incomeVsSavingsData = months.map((month, index) => {
+    const monthStr = (index + 1).toString().padStart(2, '0');
+    const monthData = monthlyData.find((d: MonthlyData) => d.month === monthStr && d.year === selectedYear.toString());
+    return {
+      month,
+      Income: monthData ? monthData.totalIncome : 0,
+      Savings: monthData ? Math.abs(monthData.totalSavings) : 0
+    };
+  });
+
+  const incomeVsExpenseData = months.map((month, index) => {
+    const monthStr = (index + 1).toString().padStart(2, '0');
+    const monthData = monthlyData.find((d: MonthlyData) => d.month === monthStr && d.year === selectedYear.toString());
+    return {
+      month,
+      Income: monthData ? monthData.totalIncome : 0,
+      Expense: monthData ? Math.abs(monthData.totalExpenses) : 0
+    };
+  });
+
   // Account Flow data
-  const { data: accountFlowData = [] } = useQuery({
+  const { data: accountFlowData = [], isLoading: isLoadingAccountFlowData } = useQuery({
     queryKey: ['accountFlowData', selectedYear],
     queryFn: () => service.getAccountFlowData(selectedYear)
   });
 
   // Fetch accounts from API
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], isLoading: isLoadingAccounts } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => service.getAccounts()
   });
 
-  const { data: macroCategoryTrends = [] } = useQuery({
-    queryKey: ['macroCategoryTrends', selectedYear],
-    queryFn: () => service.getMacroCategoriesMontlyData(selectedYear)
+  const { data: macroCategoryBudgetTrend = [], isLoading: isLoadingMacroCategoryBudgetTrend } = useQuery({
+    queryKey: ['macroCategoryBudgetTrend', selectedYear],
+    queryFn: () => service.getMacroCategoryBudgetTrend(selectedYear)
   });
 
-  // Transform macro category data for line chart
-  const transformedMacroData = months.map((month, index) => {
-    const monthNumber = index + 1; // 1, 2, 3, etc.
-    const monthData = macroCategoryTrends.filter(data => data.month === monthNumber);
-
-    const result: { [key: string]: string | number } = { month };
-    monthData.forEach(item => {
-      result[item.macroCategory] = item.total;
-    });
-
-    return result;
-  });
+  // Per-section loading flags, derived from the queries each section actually depends on
+  const isLoadingAnnualSummary = isLoadingIncomeBudget || isLoadingExpenseBudget || isLoadingSavingsBudget || isLoadingInvestmentsBudget || isLoadingTotalIncome || isLoadingTotalExpenses || isLoadingTotalSavings || isLoadingTotalInvestments;
+  const isLoadingIncomeCard = isLoadingTotalIncome || isLoadingIncomeBudget;
+  const isLoadingExpensesCard = isLoadingTotalExpenses || isLoadingExpenseBudget;
+  const isLoadingSavingsCard = isLoadingTotalSavings || isLoadingSavingsBudget;
+  const isLoadingInvestmentsCard = isLoadingTotalInvestments || isLoadingInvestmentsBudget;
+  const isLoadingAccountFlow = isLoadingAccountFlowData || isLoadingAccounts;
+  const isLoadingBudgetTrend = isLoadingMacroCategoryBudgetTrend || isLoadingCategorySpending;
 
   // Define colors for each macro category
   const macroCategoryColors: { [key: string]: string } = {
@@ -128,9 +153,6 @@ export default function HomePage() {
     'INCOME': '#4caf50',
     'INVESTMENTS': '#00897b'
   };
-
-  // Get unique macro categories from the data
-  const uniqueMacroCategories = [...new Set(macroCategoryTrends.map(item => item.macroCategory))];
 
   // Transform account flow data for chart
   const transformedAccountData = (() => {
@@ -251,8 +273,129 @@ export default function HomePage() {
   };
 
   // Calculate left to spend
-  
+
   const leftToSpend = totalIncome + totalSavings + totalInvestments - totalExpenses;
+
+  // --- Category Breakdown (bar chart + detail list) ---
+  const categoryPalette = ['#4c93af', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#795548', '#607d8b', '#4caf50', '#00897b', '#e91e63', '#3f51b5', '#8bc34a'];
+  const categoryColorMap: { [name: string]: string } = {};
+  categorySpending.forEach((c, index) => {
+    categoryColorMap[c.categoryName] = categoryPalette[index % categoryPalette.length];
+  });
+
+  const categoryBreakdownData = categoryBreakdownView === 'categories'
+    ? categorySpending
+      .map(c => ({
+        name: c.categoryName,
+        totalSpent: c.totalSpent,
+        budgetedAmount: c.budgetedAmount || 0,
+        color: categoryColorMap[c.categoryName],
+      }))
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+    : Object.values(
+      categorySpending.reduce((acc, c) => {
+        const key = c.macroCategory || 'OTHER';
+        if (!acc[key]) acc[key] = { name: key, totalSpent: 0, budgetedAmount: 0 };
+        acc[key].totalSpent += c.totalSpent;
+        acc[key].budgetedAmount += c.budgetedAmount || 0;
+        return acc;
+      }, {} as { [key: string]: { name: string; totalSpent: number; budgetedAmount: number } })
+    )
+      .map(g => ({ ...g, color: macroCategoryColors[g.name] || '#607d8b' }))
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+
+  const totalCategoryBreakdownSpend = categoryBreakdownData.reduce((sum, d) => sum + d.totalSpent, 0);
+  const totalCategoryBreakdownBudget = categoryBreakdownData.reduce((sum, d) => sum + d.budgetedAmount, 0);
+  const categoryBreakdownBarMax = Math.max(totalCategoryBreakdownSpend, totalCategoryBreakdownBudget, 1);
+
+  // --- Savings / Investments Breakdown (fund-style: totals are net activity, not a growth signal - see below) ---
+  const buildFundBreakdownData = (items: { categoryName: string; totalSpent: number; budgetedAmount?: number }[]) => items
+    .map((c, index) => ({
+      name: c.categoryName,
+      amount: Math.abs(c.totalSpent),
+      goal: c.budgetedAmount || 0,
+      color: categoryPalette[index % categoryPalette.length],
+    }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const savingsBreakdownData = buildFundBreakdownData(categorySavings);
+  const totalSavingsBreakdown = savingsBreakdownData.reduce((sum, d) => sum + d.amount, 0);
+  const investmentsBreakdownData = buildFundBreakdownData(categoryInvestments);
+  const totalInvestmentsBreakdown = investmentsBreakdownData.reduce((sum, d) => sum + d.amount, 0);
+
+  // Note: the backend nets deposits against withdrawals per category but then takes the absolute
+  // value of the final total, so a fund that grew and one that shrank by the same amount are
+  // indistinguishable here. We show activity + a goal reference, not a directional judgement.
+  const renderFundBreakdown = (
+    data: { name: string; amount: number; goal: number; color: string }[],
+    total: number,
+    activityLabel: string,
+    showAll: boolean,
+    onToggleShowAll: () => void
+  ) => (
+    <>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="overline" color="text.secondary">
+          Total {activityLabel}
+        </Typography>
+        <Typography variant="h4" fontWeight={800} color="text.primary">
+          €{total.toLocaleString()}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        {(showAll ? data : data.slice(0, BREAKDOWN_LIST_LIMIT)).map((item, index) => {
+          const share = total > 0 ? (item.amount / total) * 100 : 0;
+          return (
+            <Box key={item.name} sx={{ py: 1.25, borderBottom: '1px solid', borderColor: 'grey.200' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ width: 20, flexShrink: 0 }}>
+                    {index + 1}
+                  </Typography>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
+                  <Typography variant="body2" fontWeight={700} noWrap>
+                    {item.name}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                  {item.goal > 0 && (
+                    <Chip
+                      variant="outlined"
+                      size="small"
+                      label={`Goal €${item.goal.toLocaleString()}`}
+                      sx={{ height: 20, fontSize: '0.7rem', '& .MuiChip-label': { px: 1 } }}
+                    />
+                  )}
+                  <Typography variant="body2" fontWeight={700}>
+                    €{item.amount.toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, pl: 3.5 }}>
+                <Box sx={{ flex: 1, height: 4, borderRadius: 2, bgcolor: 'grey.200', overflow: 'hidden' }}>
+                  <Box sx={{ width: `${Math.min(100, share)}%`, height: '100%', bgcolor: item.color, opacity: 0.6 }} />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, minWidth: 70, textAlign: 'right' }}>
+                  {share.toFixed(1)}% of total
+                </Typography>
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+      {data.length > BREAKDOWN_LIST_LIMIT && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Chip
+            clickable
+            onClick={onToggleShowAll}
+            label={showAll ? 'Show less' : `Show all ${data.length}`}
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
+        </Box>
+      )}
+    </>
+  );
 
   return (
     <Layout>
@@ -291,9 +434,12 @@ export default function HomePage() {
           <Typography variant="h5" fontWeight={700} mb={3} textAlign="center">
             ANNUAL SUMMARY {selectedYear}
           </Typography>
+          {isLoadingAnnualSummary ? (
+            <Skeleton variant="rounded" width="100%" height={220} sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+          ) : (
           <Grid container spacing={3}>
             {/* Budget Breakdown */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
                   BUDGET
@@ -316,7 +462,7 @@ export default function HomePage() {
             </Grid>
 
             {/* Actual Breakdown */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
                   ACTUAL
@@ -339,7 +485,7 @@ export default function HomePage() {
             </Grid>
 
             {/* Left to Spend */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Box sx={{ bgcolor: 'rgba(255,255,255,0.25)', p: 3, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={1} textAlign="center">
                   LEFT TO SPEND
@@ -370,6 +516,7 @@ export default function HomePage() {
               </Box>
             </Grid>
           </Grid>
+          )}
         </Paper>
 
         {/* Top Cards */}
@@ -382,22 +529,33 @@ export default function HomePage() {
             <Typography color="success.main" fontWeight={700} mb={1}>
               <TrendingUp sx={{ verticalAlign: 'middle', mr: 1 }} /> My Income
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'success.light', color: 'success.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="success.main">
-                €{incomeBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'success.100', color: 'success.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="success.dark">
-                €{totalIncome.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalIncome / (incomeBudget == 0 ? 1 : incomeBudget) * 100))}% of income target reached
-            </Typography>
+            {isLoadingIncomeCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'success.light', color: 'success.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="success.main">
+                    €{incomeBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'success.100', color: 'success.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="success.dark">
+                    €{totalIncome.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalIncome / incomeBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'success.light' }} color="success" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalIncome / (incomeBudget == 0 ? 1 : incomeBudget) * 100))}% of income target reached
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* My Expenses Card */}
@@ -408,23 +566,33 @@ export default function HomePage() {
             <Typography color="error.main" fontWeight={700} mb={1}>
               <TrendingDown sx={{ verticalAlign: 'middle', mr: 1 }} /> My Expenses
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'error.light', color: 'error.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="error.main">
-                €{expenseBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'error.100', color: 'error.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="error.dark">
-                €{totalExpenses.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
-
-            </Typography>
+            {isLoadingExpensesCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'error.light', color: 'error.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="error.main">
+                    €{expenseBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'error.100', color: 'error.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="error.dark">
+                    €{totalExpenses.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalExpenses / totalBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'error.light' }} color="error" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalExpenses / (totalBudget == 0 ? 1 : totalBudget) * 100))}% of budget spent
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* Savings Card */}
@@ -435,22 +603,33 @@ export default function HomePage() {
             <Typography color="info.main" fontWeight={700} mb={1}>
               <Savings sx={{ verticalAlign: 'middle', mr: 1 }} /> Savings
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'info.light', color: 'info.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="info.main">
-                €{savingsBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'info.100', color: 'info.dark' }} />
-              <Typography variant="h6" fontWeight={700} color="info.dark">
-                €{totalSavings.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
-            </Typography>
+            {isLoadingSavingsCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: 'info.light', color: 'info.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="info.main">
+                    €{savingsBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: 'info.100', color: 'info.dark' }} />
+                  <Typography variant="h6" fontWeight={700} color="info.dark">
+                    €{totalSavings.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalSavings / savingsBudget) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: 'info.light' }} color="info" />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalSavings / (savingsBudget == 0 ? 1 : savingsBudget) * 100))}% of savings target reached
+                </Typography>
+              </>
+            )}
           </Paper>
 
           {/* Investments Card */}
@@ -461,22 +640,33 @@ export default function HomePage() {
             <Typography fontWeight={700} mb={1} sx={{ color: '#00897b' }}>
               <TrendingUp sx={{ verticalAlign: 'middle', mr: 1, color: '#00897b' }} /> Investments
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: '#b2dfdb', color: '#00695c' }} />
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#00897b' }}>
-                €{investmentsBudget.toLocaleString()}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: '#e0f2f1', color: '#00695c' }} />
-              <Typography variant="h6" fontWeight={700} sx={{ color: '#00695c' }}>
-                €{totalInvestments.toLocaleString()}
-              </Typography>
-            </Box>
-            <LinearProgress variant="determinate" value={Math.min(100, (totalInvestments / (investmentsBudget === 0 ? 1 : investmentsBudget)) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: '#b2dfdb', '& .MuiLinearProgress-bar': { bgcolor: '#00897b' } }} />
-            <Typography variant="caption" color="text.secondary" mt={1}>
-              {Math.round((totalInvestments / (investmentsBudget == 0 ? 1 : investmentsBudget) * 100))}% of investments target reached
-            </Typography>
+            {isLoadingInvestmentsCard ? (
+              <>
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 1 }} />
+                <Skeleton variant="text" width="60%" height={32} sx={{ mb: 2 }} />
+                <Skeleton variant="rounded" height={8} sx={{ borderRadius: 5, mb: 1 }} />
+                <Skeleton variant="text" width="80%" />
+              </>
+            ) : (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Chip label="Budget" size="small" sx={{ mr: 1, bgcolor: '#b2dfdb', color: '#00695c' }} />
+                  <Typography variant="h6" fontWeight={700} sx={{ color: '#00897b' }}>
+                    €{investmentsBudget.toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Chip label="Actual" size="small" sx={{ mr: 1, bgcolor: '#e0f2f1', color: '#00695c' }} />
+                  <Typography variant="h6" fontWeight={700} sx={{ color: '#00695c' }}>
+                    €{totalInvestments.toLocaleString()}
+                  </Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={Math.min(100, (totalInvestments / (investmentsBudget === 0 ? 1 : investmentsBudget)) * 100)} sx={{ height: 8, borderRadius: 5, bgcolor: '#b2dfdb', '& .MuiLinearProgress-bar': { bgcolor: '#00897b' } }} />
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  {Math.round((totalInvestments / (investmentsBudget == 0 ? 1 : investmentsBudget) * 100))}% of investments target reached
+                </Typography>
+              </>
+            )}
           </Paper>
         </Box>
 
@@ -492,6 +682,9 @@ export default function HomePage() {
               </Typography>
             </Box>
             <Box sx={{ width: '100%', height: 400, mb: 2 }}>
+              {isLoadingAccountFlow ? (
+                <ChartSkeleton height={400} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={transformedAccountData} margin={{ top: 40, right: 30, left: 20, bottom: 100 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
@@ -562,6 +755,7 @@ export default function HomePage() {
                   </Line>
                 </ComposedChart>
               </ResponsiveContainer>
+              )}
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               Total balance (income + savings - expenses) per account with overall total trend line
@@ -570,18 +764,40 @@ export default function HomePage() {
         </Box>
 
 
-        {/* Macro Category Trends Chart */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 400, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'linear-gradient(135deg, #fffbf5ff 0%, #ffffff 100%)' }}>
+        {/* Macro Category Budget vs Actual Trend Chart */}
+        <Box sx={{ mb: 3 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Timeline color="warning" sx={{ mr: 1 }} />
               <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
-                Macro Category Trends
+                Budget vs Actual Trend
               </Typography>
             </Box>
-            <Box sx={{ width: '100%', height: 280, mb: 2 }}>
+            {isLoadingBudgetTrend ? (
+              <ChartSkeleton height={320} />
+            ) : (
+            <MacroCategoryBudgetTrend
+              data={macroCategoryBudgetTrend}
+              categorySpending={categorySpending}
+              months={months}
+              colors={macroCategoryColors}
+            />
+            )}
+          </Paper>
+        </Box>
+
+        {/* Income vs Savings Bar Chart */}
+        <Box sx={{ mb: 4 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+            <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
+              INCOME vs SAVINGS (Monthly)
+            </Typography>
+            <Box sx={{ width: '100%', height: 300 }}>
+              {isLoadingMonthlyData ? (
+                <ChartSkeleton height={300} />
+              ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={transformedMacroData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                <BarChart data={incomeVsSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="month"
@@ -590,10 +806,11 @@ export default function HomePage() {
                   />
                   <YAxis
                     tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `€${value.toLocaleString()}`}
                     stroke={theme.palette.text.secondary}
                   />
                   <Tooltip
-                    formatter={(value) => `€${value?.toLocaleString()}`}
+                    formatter={(value) => `€${Number(value).toLocaleString()}`}
                     contentStyle={{
                       backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
                       border: `1px solid ${isDark ? '#444' : '#ccc'}`,
@@ -601,127 +818,199 @@ export default function HomePage() {
                       color: isDark ? '#ffffff' : '#000000'
                     }}
                   />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: theme.palette.text.primary }} />
-                  {uniqueMacroCategories.map((category) => (
-                    <Line
-                      key={category}
-                      type="monotone"
-                      dataKey={category}
-                      stroke={macroCategoryColors[category as keyof typeof macroCategoryColors] || '#666666'}
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      name={category.charAt(0) + category.slice(1).toLowerCase()}
-                    />
-                  ))}
-                </LineChart>
+                  <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
+                  <Bar dataKey="Income" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Savings" fill="#2196f3" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
+              )}
+            </Box>
+          </Paper>
+        </Box>
+
+        {/* Income vs Expense Bar Chart */}
+        <Box sx={{ mb: 4 }}>
+          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
+            <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
+              INCOME vs EXPENSE (Monthly)
+            </Typography>
+            <Box sx={{ width: '100%', height: 300 }}>
+              {isLoadingMonthlyData ? (
+                <ChartSkeleton height={300} />
+              ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={incomeVsExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: theme.palette.text.primary }}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `€${value.toLocaleString()}`}
+                    stroke={theme.palette.text.secondary}
+                  />
+                  <Tooltip
+                    formatter={(value) => `€${Number(value).toLocaleString()}`}
+                    contentStyle={{
+                      backgroundColor: isDark ? '#2c2c2c' : '#ffffff',
+                      border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                      borderRadius: '8px',
+                      color: isDark ? '#ffffff' : '#000000'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ color: theme.palette.text.primary }} />
+                  <Bar dataKey="Income" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Expense" fill="#f44336" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              )}
             </Box>
           </Paper>
         </Box>
 
         {/* Category Breakdown - Full Width */}
         <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <PieChart color="info" sx={{ mr: 1 }} />
-            <Typography color="info.dark" fontWeight={700} variant="h6">
-              Category Breakdown
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <MuiBarChart color="info" sx={{ mr: 1 }} />
+              <Typography color="info.dark" fontWeight={700} variant="h6">
+                Category Breakdown
+              </Typography>
+            </Box>
+            <ToggleButtonGroup
+              value={categoryBreakdownView}
+              exclusive
+              size="small"
+              onChange={(_, value) => { if (value) { setCategoryBreakdownView(value); setShowAllCategoryBreakdown(false); } }}
+            >
+              <ToggleButton value="categories">Categories</ToggleButton>
+              <ToggleButton value="groups">Groups</ToggleButton>
+            </ToggleButtonGroup>
           </Box>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(4, 1fr)'
-            },
-            gap: 3
-          }}>
-            {categorySpending.map((category) => {
-              const difference = (category.budgetedAmount || 0) - category.totalSpent;
+
+          {isLoadingCategorySpending ? (
+            <>
+              <Skeleton variant="text" width={180} height={48} sx={{ mb: 2 }} />
+              <ListRowsSkeleton rows={8} />
+            </>
+          ) : (
+          <>
+          {/* Total + Stacked Bar (Groups view only - too many categories to read as slivers) */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="overline" color="text.secondary">
+              Total Spending
+            </Typography>
+            <Typography variant="h4" fontWeight={800} color="text.primary" mb={categoryBreakdownView === 'groups' ? 3 : 0}>
+              €{totalCategoryBreakdownSpend.toLocaleString()}
+            </Typography>
+            {categoryBreakdownView === 'groups' && (
+              <>
+                <Box sx={{ position: 'relative', width: '100%', pb: totalCategoryBreakdownBudget > 0 ? 1 : 0 }}>
+                  <Box sx={{ display: 'flex', width: '100%', height: 40, borderRadius: 3, overflow: 'hidden', bgcolor: 'grey.200' }}>
+                    {categoryBreakdownData.map((item) => {
+                      const widthPct = (item.totalSpent / categoryBreakdownBarMax) * 100;
+                      if (widthPct <= 0) return null;
+                      const share = totalCategoryBreakdownSpend > 0 ? (item.totalSpent / totalCategoryBreakdownSpend) * 100 : 0;
+                      return (
+                        <MuiTooltip key={item.name} title={`${item.name}: €${item.totalSpent.toLocaleString()} (${share.toFixed(1)}%)`} arrow>
+                          <Box sx={{ width: `${widthPct}%`, bgcolor: item.color, cursor: 'pointer', transition: 'opacity 0.15s', '&:hover': { opacity: 0.85 } }} />
+                        </MuiTooltip>
+                      );
+                    })}
+                  </Box>
+                  {totalCategoryBreakdownBudget > 0 && (
+                    <Box sx={{
+                      position: 'absolute',
+                      top: -6,
+                      bottom: 4,
+                      left: `${Math.min(100, (totalCategoryBreakdownBudget / categoryBreakdownBarMax) * 100)}%`,
+                      borderLeft: `2px dashed ${isDark ? '#fff' : '#222'}`,
+                    }} />
+                  )}
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {totalCategoryBreakdownBudget > 0
+                    ? `Dashed line marks total budget of €${totalCategoryBreakdownBudget.toLocaleString()}`
+                    : 'No budget set for these groups'}
+                </Typography>
+              </>
+            )}
+          </Box>
+
+          {/* Detail List - ranked rows, largest spend first */}
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            {(showAllCategoryBreakdown ? categoryBreakdownData : categoryBreakdownData.slice(0, BREAKDOWN_LIST_LIMIT)).map((item, index) => {
+              const share = totalCategoryBreakdownSpend > 0 ? (item.totalSpent / totalCategoryBreakdownSpend) * 100 : 0;
+              const difference = item.budgetedAmount - item.totalSpent;
               const isUnderBudget = difference > 0;
 
               return (
-                <Box key={category.categoryName} sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid',
+                <Box key={item.name} sx={{
+                  py: 1.25,
+                  borderBottom: '1px solid',
                   borderColor: 'grey.200',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }
                 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Typography variant="subtitle2" fontWeight={700} noWrap>
-                      {category.categoryName}
+                  {/* Row 1: identity + amount + budget standing */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ width: 20, flexShrink: 0 }}>
+                        {index + 1}
+                      </Typography>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: item.color, flexShrink: 0 }} />
+                      <Typography variant="body2" fontWeight={700} noWrap>
+                        {item.name}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                      {item.budgetedAmount > 0 && (
+                        <Chip
+                          icon={isUnderBudget ? <CheckCircle /> : <Warning />}
+                          label={`€${Math.abs(difference).toLocaleString()} ${isUnderBudget ? 'left' : 'over'}`}
+                          size="small"
+                          sx={{
+                            bgcolor: isUnderBudget ? '#4caf50' : '#f44336',
+                            color: 'white',
+                            fontWeight: 600,
+                            height: 20,
+                            '& .MuiChip-icon': { color: 'white', fontSize: '0.9rem' },
+                            '& .MuiChip-label': { fontSize: '0.7rem', px: 1 }
+                          }}
+                        />
+                      )}
+                      <Typography variant="body2" fontWeight={700}>
+                        €{item.totalSpent.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {/* Row 2: de-emphasized share-of-total */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, pl: 3.5 }}>
+                    <Box sx={{ flex: 1, height: 4, borderRadius: 2, bgcolor: 'grey.200', overflow: 'hidden' }}>
+                      <Box sx={{ width: `${Math.min(100, share)}%`, height: '100%', bgcolor: item.color, opacity: 0.6 }} />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, minWidth: 70, textAlign: 'right' }}>
+                      {share.toFixed(1)}% of total
                     </Typography>
-                    <Chip
-                      label={`${Math.round(category.percentage)}%`}
-                      size="small"
-                      sx={{
-                        bgcolor: category.percentage > 100 ? 'error.light' : 'success.light',
-                        color: category.percentage > 100 ? 'error.dark' : 'success.dark',
-                        fontWeight: 700,
-                        minWidth: 50,
-                        height: 24
-                      }}
-                    />
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={Math.min(100, category.percentage)}
-                    sx={{
-                      height: 10,
-                      borderRadius: 5,
-                      bgcolor: 'grey.200',
-                      mb: 1.5,
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: category.percentage > 100 ? 'error.main' : 'success.main',
-                        borderRadius: 5,
-                      },
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                    <Box>
-                      <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
-                        €{category.totalSpent.toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        Spent
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
-                        €{(category.budgetedAmount || 0).toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        Budget
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-                    <Chip
-                      icon={isUnderBudget ? <CheckCircle /> : <Warning />}
-                      label={`€${Math.abs(difference).toLocaleString()}`}
-                      size="small"
-                      sx={{
-                        bgcolor: isUnderBudget ? '#4caf50' : '#f44336',
-                        color: 'white',
-                        fontWeight: 600,
-                        '& .MuiChip-icon': {
-                          color: 'white'
-                        }
-                      }}
-                    />
                   </Box>
                 </Box>
               );
             })}
           </Box>
+
+          {categoryBreakdownData.length > BREAKDOWN_LIST_LIMIT && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Chip
+                clickable
+                onClick={() => setShowAllCategoryBreakdown((prev) => !prev)}
+                label={showAllCategoryBreakdown ? 'Show less' : `Show all ${categoryBreakdownData.length}`}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+          )}
+          </>
+          )}
         </Paper>
 
         {/* Savings Breakdown Section */}
@@ -733,114 +1022,23 @@ export default function HomePage() {
             </Typography>
           </Box>
 
-          {categorySavings.length > 0 ? (
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(4, 1fr)'
-              },
-              gap: 3
-            }}>
-              {categorySavings.map((category) => {
-                const difference = Math.abs(category.totalSpent) - (category.budgetedAmount || 0);
-                const isOverBudget = difference > 0;
-                const percentage = (category.budgetedAmount || 0) > 0
-                  ? (Math.abs(category.totalSpent) / (category.budgetedAmount || 1)) * 100
-                  : 0;
-
-                return (
-                  <Box key={category.categoryName} sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    border: '1px solid',
-                    borderColor: 'grey.200',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }
-                  }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                      <Typography variant="subtitle2" fontWeight={700} noWrap>
-                        {category.categoryName}
-                      </Typography>
-                      <Chip
-                        label={`${Math.round(percentage)}%`}
-                        size="small"
-                        sx={{
-                          bgcolor: percentage > 100 ? 'success.light' : 'info.light',
-                          color: percentage > 100 ? 'success.dark' : 'info.dark',
-                          fontWeight: 700,
-                          minWidth: 50,
-                          height: 24
-                        }}
-                      />
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(100, percentage)}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: 'grey.200',
-                        mb: 1.5,
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: percentage > 100 ? 'success.main' : 'info.main',
-                          borderRadius: 5,
-                        },
-                      }}
-                    />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                      <Box>
-                        <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
-                          €{Math.abs(category.totalSpent).toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Saved
-                        </Typography>
-                      </Box>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
-                          €{(category.budgetedAmount || 0).toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Goal
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {(category.budgetedAmount || 0) > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-                        <Chip
-                          icon={isOverBudget ? <CheckCircle /> : <Warning />}
-                          label={`€${Math.abs(difference).toLocaleString()}`}
-                          size="small"
-                          sx={{
-                            bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': {
-                              color: 'white'
-                            }
-                          }}
-                        />
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="body1" color="text.secondary">
-                No savings data available for {selectedYear}
-              </Typography>
-            </Box>
-          )}
+          {isLoadingCategorySavings ? (
+            <ListRowsSkeleton rows={5} />
+          ) : savingsBreakdownData.length > 0
+            ? renderFundBreakdown(
+              savingsBreakdownData,
+              totalSavingsBreakdown,
+              'Saved',
+              showAllSavingsBreakdown,
+              () => setShowAllSavingsBreakdown((prev) => !prev)
+            )
+            : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  No savings data available for {selectedYear}
+                </Typography>
+              </Box>
+            )}
         </Paper>
 
         {/* Investments Breakdown Section */}
@@ -852,114 +1050,23 @@ export default function HomePage() {
             </Typography>
           </Box>
 
-          {categoryInvestments.length > 0 ? (
-            <Box sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(4, 1fr)'
-              },
-              gap: 3
-            }}>
-              {categoryInvestments.map((category) => {
-                const difference = Math.abs(category.totalSpent) - (category.budgetedAmount || 0);
-                const isOverBudget = difference > 0;
-                const percentage = (category.budgetedAmount || 0) > 0
-                  ? (Math.abs(category.totalSpent) / (category.budgetedAmount || 1)) * 100
-                  : 0;
-
-                return (
-                  <Box key={category.categoryName} sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
-                    border: '1px solid',
-                    borderColor: 'grey.200',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }
-                  }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                      <Typography variant="subtitle2" fontWeight={700} noWrap>
-                        {category.categoryName}
-                      </Typography>
-                      <Chip
-                        label={`${Math.round(percentage)}%`}
-                        size="small"
-                        sx={{
-                          bgcolor: percentage > 100 ? 'success.light' : '#b2dfdb',
-                          color: percentage > 100 ? 'success.dark' : '#00695c',
-                          fontWeight: 700,
-                          minWidth: 50,
-                          height: 24
-                        }}
-                      />
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(100, percentage)}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: 'grey.200',
-                        mb: 1.5,
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: percentage > 100 ? 'success.main' : '#00897b',
-                          borderRadius: 5,
-                        },
-                      }}
-                    />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                      <Box>
-                        <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ fontSize: '0.95rem' }}>
-                          €{Math.abs(category.totalSpent).toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Invested
-                        </Typography>
-                      </Box>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: '0.95rem' }}>
-                          €{(category.budgetedAmount || 0).toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                          Goal
-                        </Typography>
-                      </Box>
-                    </Box>
-                    {(category.budgetedAmount || 0) > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-                        <Chip
-                          icon={isOverBudget ? <CheckCircle /> : <Warning />}
-                          label={`€${Math.abs(difference).toLocaleString()}`}
-                          size="small"
-                          sx={{
-                            bgcolor: isOverBudget ? '#4caf50' : '#ff9800',
-                            color: 'white',
-                            fontWeight: 600,
-                            '& .MuiChip-icon': {
-                              color: 'white'
-                            }
-                          }}
-                        />
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          ) : (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="body1" color="text.secondary">
-                No investments data available for {selectedYear}
-              </Typography>
-            </Box>
-          )}
+          {isLoadingCategoryInvestments ? (
+            <ListRowsSkeleton rows={5} />
+          ) : investmentsBreakdownData.length > 0
+            ? renderFundBreakdown(
+              investmentsBreakdownData,
+              totalInvestmentsBreakdown,
+              'Invested',
+              showAllInvestmentsBreakdown,
+              () => setShowAllInvestmentsBreakdown((prev) => !prev)
+            )
+            : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  No investments data available for {selectedYear}
+                </Typography>
+              </Box>
+            )}
         </Paper>
 
         {/* 50-30-20 Budget Section */}
@@ -967,6 +1074,9 @@ export default function HomePage() {
           <Typography variant="h6" fontWeight={700} color="#222" mb={2}>
             50-30-20 Budget Breakdown
           </Typography>
+          {isLoadingCategorySpending ? (
+            <ChartSkeleton height={220} />
+          ) : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {/* Percentage Breakdown */}
             <Box sx={{ flex: 1, minWidth: 220 }}>
@@ -1016,6 +1126,7 @@ export default function HomePage() {
               </TableContainer>
             </Box>
           </Box>
+          )}
         </Paper>
       </Box>
     </Layout>

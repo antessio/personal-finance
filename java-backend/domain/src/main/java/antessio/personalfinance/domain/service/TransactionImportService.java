@@ -16,6 +16,7 @@ import antessio.personalfinance.domain.service.transactionparser.PayPalTransacti
 import antessio.personalfinance.domain.service.transactionparser.SatispayTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TradeRepublicTransactionParser;
 import antessio.personalfinance.domain.service.transactionparser.TransactionParser;
+import antessio.personalfinance.domain.service.transactionparser.WidibaCardTransactionParser;
 
 public class TransactionImportService {
 
@@ -35,6 +36,7 @@ public class TransactionImportService {
         this.transactionImportEventPublisher = transactionImportEventPublisher;
         this.transactionParsers = List.of(
                 new antessio.personalfinance.domain.service.transactionparser.WidibaTransactionParser(),
+                new WidibaCardTransactionParser(),
                 new SatispayTransactionParser(),
                 new antessio.personalfinance.domain.service.transactionparser.IntesaTransactionParser(),
                 new PayPalTransactionParser(),

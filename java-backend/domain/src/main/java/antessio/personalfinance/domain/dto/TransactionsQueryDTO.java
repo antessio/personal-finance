@@ -6,14 +6,15 @@ import antessio.personalfinance.domain.model.TransactionId;
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.YearMonth;
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Builder
 @Value
 public class TransactionsQueryDTO {
     String userOwner;
-    YearMonth month;
+    LocalDate fromDate;
+    LocalDate toDate;
     CategoryId categoryId;
     Boolean uncategorized;
     Boolean skip;
@@ -22,7 +23,7 @@ public class TransactionsQueryDTO {
     TransactionId cursor;
     MacroCategoryEnum macroCategory;
 
-    public TransactionsQueryDTO(String userOwner, YearMonth month, CategoryId categoryId, Boolean uncategorized, Boolean skip, String source, int limit, TransactionId cursor, MacroCategoryEnum macroCategory) {
+    public TransactionsQueryDTO(String userOwner, LocalDate fromDate, LocalDate toDate, CategoryId categoryId, Boolean uncategorized, Boolean skip, String source, int limit, TransactionId cursor, MacroCategoryEnum macroCategory) {
         if (userOwner == null) {
             throw new IllegalArgumentException("User owner cannot be null");
         }
@@ -33,7 +34,8 @@ public class TransactionsQueryDTO {
             throw new IllegalArgumentException("Cannot specify both uncategorized and categoryId");
         }
         this.userOwner = userOwner;
-        this.month = month;
+        this.fromDate = fromDate;
+        this.toDate = toDate;
         this.categoryId = categoryId;
         this.uncategorized = uncategorized;
         this.skip = skip;
@@ -43,8 +45,12 @@ public class TransactionsQueryDTO {
         this.macroCategory = macroCategory;
     }
 
-    public Optional<YearMonth> getMonth() {
-        return Optional.ofNullable(month);
+    public Optional<LocalDate> getFromDate() {
+        return Optional.ofNullable(fromDate);
+    }
+
+    public Optional<LocalDate> getToDate() {
+        return Optional.ofNullable(toDate);
     }
 
     public Optional<CategoryId> getCategoryId() {

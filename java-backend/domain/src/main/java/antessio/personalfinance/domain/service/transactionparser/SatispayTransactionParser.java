@@ -47,14 +47,14 @@ public class SatispayTransactionParser implements TransactionParser {
                 Row row = sheet.getRow(i);
                 if (row != null ) {
                     parseRow(row, userOwner, id)
-                            .ifPresent(transactions::add);
+                            .forEach(transactions::add);
                 }
             }
         }
         return transactions;
     }
 
-    private Optional<CreateTransactionDTO> parseRow(Row row, String userOwner, TransactionImportId id) {
+    private Stream<CreateTransactionDTO> parseRow(Row row, String userOwner, TransactionImportId id) {
         try {
 
             LocalDate transactionDate = row.getCell(0).getLocalDateTimeCellValue().toLocalDate();
@@ -75,24 +75,33 @@ public class SatispayTransactionParser implements TransactionParser {
             Optional<Double> maybeFlexBenAmount = Optional.ofNullable(row.getCell(9))
                     .filter(c -> c.getCellType() == CellType.NUMERIC)
                     .map(Cell::getNumericCellValue);
-
+            String description = shopName + " " + type;
+            Stream<CreateTransactionDTO> adjustments = Stream.of(maybeMealVouchersAmount, maybeGiftCardsAmount, maybeFlexBenAmount)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(extraAmount -> new CreateTransactionDTO(
+                            userOwner,
+                            transactionDate,
+                            BigDecimal.valueOf(extraAmount).negate(),
+                            "%s - %s".formatted(description, "adjustment (meal vouchers - flex benefits)"),
+                            SOURCE,
+                            id));
             BigDecimal totalAmount = Stream.of(maybeMealVouchersAmount, maybeGiftCardsAmount, maybeFlexBenAmount)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .map(BigDecimal::valueOf)
                     .reduce(BigDecimal.valueOf(amount), BigDecimal::add);
-            String description = shopName + " " + type;
 
-            return Optional.of(new CreateTransactionDTO(
+            return Stream.concat(Stream.of(new CreateTransactionDTO(
                     userOwner,
                     transactionDate,
                     totalAmount,
                     description,
                     SOURCE,
                     id
-            ));
+            )), adjustments);
         } catch (Exception e) {
-            return Optional.empty();
+            return Stream.empty();
         }
     }
 }

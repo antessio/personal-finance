@@ -29,6 +29,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Budget, Category } from '../../types';
 import Layout from '../../components/Layout';
+import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { Add as AddIcon, PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 
 export default function BudgetsPage() {
@@ -185,7 +186,19 @@ export default function BudgetsPage() {
           <Typography variant="h4" fontWeight={800} color="primary.main" letterSpacing={1}>
             Budgets
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Year</InputLabel>
+              <Select
+                value={selectedYear}
+                label="Year"
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                  <MenuItem key={year} value={year.toString()}>{year}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               color="primary"
@@ -222,7 +235,9 @@ export default function BudgetsPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {budgets.map((budget) => (
+              {isLoadingBudgets ? (
+                <TableRowsSkeleton columns={6} />
+              ) : budgets.map((budget) => (
                 <TableRow key={budget.id} sx={{ '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
                   <TableCell sx={{ fontWeight: 600 }}>{getCategoryName(budget.categoryId)}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>€{budget.amount.toLocaleString()}</TableCell>

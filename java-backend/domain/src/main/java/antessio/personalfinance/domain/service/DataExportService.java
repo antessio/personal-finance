@@ -36,7 +36,7 @@ public class DataExportService {
     }
 
     public Stream<Transaction> exportTransactions(String userOwner) {
-        return transactionRepository.findAllByUserAndFilters(userOwner, Integer.MAX_VALUE, null, null, null, null, null)
+        return transactionRepository.findAllByUserAndFilters(userOwner, Integer.MAX_VALUE, null, null, null, null, null, null)
                 .stream();
     }
 

@@ -2,7 +2,6 @@
 package antessio.personalfinance.domain.ports;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -26,7 +25,8 @@ public interface TransactionRepository {
 
     List<Transaction> findAllByUserAndFilters(String userId,
                                               int limit,
-                                              YearMonth yearMonth,
+                                              LocalDate fromDate,
+                                              LocalDate toDate,
                                               Boolean skip,
                                               String source,
                                               List<CategoryId> categories,

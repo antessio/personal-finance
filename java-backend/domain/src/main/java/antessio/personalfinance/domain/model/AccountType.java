@@ -2,6 +2,7 @@ package antessio.personalfinance.domain.model;
 
 public enum AccountType {
     WIDIBA("Widiba"),
+    WIDIBA_CARD("Widiba Card"),
     INTESA("Intesa"),
     PAYPAL("PayPal"),
     SATISPAY("Satispay"),
