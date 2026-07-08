@@ -1,11 +1,12 @@
 # define postgres
 services:
   app:
-    build: backend
-    image: personal_finance
+    build:
+      context: ./java-backend
+    image: personal_finance_backend
     ports:
-      - "4000:4000"
-    env_file: 
+      - "127.0.0.1:8080:8080"
+    env_file:
       - .app.env
     depends_on:
       - postgres
@@ -15,9 +16,9 @@ services:
     build: frontend
     image: personal_finance_frontend
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://app:4000
+      - NEXT_PUBLIC_API_URL=http://app:8080
     depends_on:
       - app
     profiles:
@@ -28,7 +29,7 @@ services:
     env_file:
       - .db.env
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
