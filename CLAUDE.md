@@ -57,9 +57,12 @@ mvn test -Dtest=TransactionServiceTest#methodName    # Single test method
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8080   # Backend base URL
 NEXT_PUBLIC_AUTH_ENABLED=false             # Disable auth enforcement
+NEXT_PUBLIC_USE_MOCK=false                 # Force the in-memory mock service instead of the real backend
 ```
 
 Copy `.env.example` to `.env.local` to configure locally.
+
+All `NEXT_PUBLIC_*` vars are inlined into the browser bundle at **build time** (`next build`/`next dev`), not read at container runtime — when building a Docker image, they must be passed as `docker build --build-arg` (see `frontend/Dockerfile`), not as a container `environment:` entry, or they'll have no effect on the already-compiled JS.
 
 ## Architecture
 
@@ -77,7 +80,7 @@ The legacy Phoenix/Elixir `backend/` is inactive — all active development is i
 - **`services/`** — Service layer with a `personalFinanceService` interface and two implementations:
   - `restPersonalFinanceService.ts` — REST client (Axios, attaches JWT from localStorage)
   - `mockPersonalFinanceService.ts` — in-memory mock with 500ms simulated delays
-  - **`api.ts` factory**: REST is active when `NODE_ENV === 'development'`; Mock in production builds (intentionally inverted — development targets a real backend)
+  - **`api.ts` factory**: REST (real backend) is the default; set `NEXT_PUBLIC_USE_MOCK=true` (a build-time env var — see below) to force the in-memory mock, e.g. for a public demo build with no backend
 - **`contexts/`** — `AuthContext` (JWT state + login/logout), `ThemeContext` (dark/light mode)
 - **`components/charts/`** — Recharts-based visualization components
 - **`config/auth.ts`** — `isAuthEnabled()` toggle to disable auth enforcement in development

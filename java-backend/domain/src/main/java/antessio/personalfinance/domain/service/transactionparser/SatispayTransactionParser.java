@@ -86,16 +86,12 @@ public class SatispayTransactionParser implements TransactionParser {
                             "%s - %s".formatted(description, "adjustment (meal vouchers - flex benefits)"),
                             SOURCE,
                             id));
-            BigDecimal totalAmount = Stream.of(maybeMealVouchersAmount, maybeGiftCardsAmount, maybeFlexBenAmount)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .map(BigDecimal::valueOf)
-                    .reduce(BigDecimal.valueOf(amount), BigDecimal::add);
+
 
             return Stream.concat(Stream.of(new CreateTransactionDTO(
                     userOwner,
                     transactionDate,
-                    totalAmount,
+                    BigDecimal.valueOf(amount),
                     description,
                     SOURCE,
                     id

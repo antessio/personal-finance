@@ -15,12 +15,16 @@ services:
     profiles:
       - prod
   frontend:
-    build: frontend
+    build:
+      context: frontend
+      args:
+        # NEXT_PUBLIC_* vars are inlined into the browser bundle at build time,
+        # so this must be reachable from the browser, not from other containers.
+        # Assumes access via `ssh -L 8080:localhost:8080 ...` per the tunnel setup.
+        - NEXT_PUBLIC_API_URL=http://localhost:8080
     image: personal_finance_frontend
     ports:
       - "127.0.0.1:3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://app:8080
     depends_on:
       - app
     networks:

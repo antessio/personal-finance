@@ -23,11 +23,11 @@ All data access goes through the `PersonalFinanceService` interface (`personalFi
 
 **Service factory** (`api.ts`) selects the implementation:
 ```typescript
-export const service = process.env.NODE_ENV != 'development'
+export const service = process.env.NEXT_PUBLIC_USE_MOCK === 'true'
   ? new MockPersonalFinanceService()
   : new RestPersonalFinanceService();
 ```
-Note: This is inverted — REST is active in `development`, Mock in other environments (production build).
+REST (the real backend) is the default in every build mode. `NEXT_PUBLIC_USE_MOCK=true` forces the mock — e.g. for a public demo build with no backend. Since `NEXT_PUBLIC_*` vars are inlined at build time, this must be set before/during `next build` (a Docker build arg, not a container runtime env var) to take effect — see `frontend/Dockerfile`.
 
 ### State Management
 
