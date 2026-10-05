@@ -5,13 +5,19 @@ services:
       context: ./java-backend
     image: personal_finance_backend
     ports:
-      - "127.0.0.1:8080:8080"
+      # Host port is only for the SSH tunnel; the VPS sets APP_HOST_PORT=8081
+      # because easypost already uses 127.0.0.1:8080.
+      - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
     env_file:
       - .app.env
     depends_on:
       - postgres
     networks:
-      - personal_finance_network
+      personal_finance_network:
+      # Edge nginx (vps-dev-settings) reaches the API as finance-backend:8080
+      proxy:
+        aliases:
+          - finance-backend
     profiles:
       - prod
   frontend:
@@ -51,5 +57,8 @@ services:
 networks:
   personal_finance_network:
     driver: bridge
+  # Created once with `docker network create proxy`; shared with the edge proxy stack.
+  proxy:
+    external: true
 volumes:
   postgres-data:
