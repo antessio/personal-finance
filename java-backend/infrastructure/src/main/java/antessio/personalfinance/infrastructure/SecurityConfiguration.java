@@ -70,10 +70,8 @@ public class SecurityConfiguration {
                     .requestMatchers("/public/**").permitAll()
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/users/me").authenticated()
-                    .requestMatchers("/api/categories/**").authenticated()
-                    .requestMatchers("/api/transactions/**").authenticated()
-                    .requestMatchers("/api/transaction-imports/**").authenticated()
-                    .requestMatchers("/api/export/**").authenticated()
+                    // every other /api route (reports, budgets, accounts, configurations, ...) requires a JWT
+                    .requestMatchers("/api/**").authenticated()
                     .requestMatchers("/dashboard/**").authenticated()
                     .anyRequest().denyAll())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
