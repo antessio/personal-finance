@@ -315,7 +315,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
           id: transaction.category.id,
           name: transaction.category.name,
           macroCategory: transaction.category.macroCategory,
-          regexPatterns: transaction.category.matchers,
+          regexPatterns: transaction.category.matchers.map(matcher => matcher.matcher),
           type: transaction.category.type
         } : undefined,
         amount: transaction.amount,
@@ -406,7 +406,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
         id: category.id,
         name: category.name,
         macroCategory: category.macroCategory,
-        regexPatterns: category.matchers,
+        regexPatterns: category.matchers.map(matcher => matcher.matcher),
         type: category.type
       })),
       hasMore: response.data.hasNext,

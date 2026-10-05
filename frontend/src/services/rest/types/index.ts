@@ -21,9 +21,13 @@ export interface CategoryRest {
     emoji: string;
     type: 'NEEDS' | 'WANTS' | 'SAVINGS_DEBTS';
     userOwner: string;
-    matchers: string[];
+    matchers: CategoryMatcherRest[];
     insertedAt: string;
     updatedAt?: string;
+}
+
+export interface CategoryMatcherRest {
+  matcher: string;
 }
 
 export interface TransactionRest{
