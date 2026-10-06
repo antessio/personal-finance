@@ -30,6 +30,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Transaction, BulkUpdatePayload, Category } from '../../types';
 import Layout from '../../components/Layout';
+import { hideColumnsOnMobile } from "../../components/hideColumnsOnMobile";
 import ChartSkeleton from '../../components/skeletons/ChartSkeleton';
 import ListRowsSkeleton from '../../components/skeletons/ListRowsSkeleton';
 import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
@@ -195,7 +196,7 @@ export default function InvestmentsPage() {
       </Box>
 
       {/* Summary card */}
-      <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.15)' }}>
+      <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.15)' }}>
         {isLoadingTotalInvestments || isLoadingInvestmentsBudget ? (
           <ChartSkeleton height={90} />
         ) : (
@@ -234,14 +235,14 @@ export default function InvestmentsPage() {
 
       {/* Category breakdown */}
       {isLoadingCategoryInvestments ? (
-        <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
           <Typography variant="h6" fontWeight={700} mb={2} sx={{ color: '#00695c' }}>
             By Category
           </Typography>
           <ListRowsSkeleton rows={4} />
         </Paper>
       ) : activeCategories.length > 0 && (
-        <Paper elevation={4} sx={{ p: 3, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 4, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.12)' }}>
           <Typography variant="h6" fontWeight={700} mb={2} sx={{ color: '#00695c' }}>
             By Category
           </Typography>
@@ -283,7 +284,7 @@ export default function InvestmentsPage() {
 
       {/* Transaction list */}
       <Paper elevation={4} sx={{ borderRadius: 4, p: 2, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)', boxShadow: '0 4px 24px rgba(0,137,123,0.10)' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="subtitle1" fontWeight={700}>
             {allTransactions.length} transactions
           </Typography>
@@ -302,7 +303,7 @@ export default function InvestmentsPage() {
           )}
         </Box>
 
-        <TableContainer>
+        <TableContainer sx={hideColumnsOnMobile([5, 7])}>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>

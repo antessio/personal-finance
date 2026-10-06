@@ -24,3 +24,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* iOS Safari zooms the page when focusing an input whose font is under 16px */
+@media (max-width: 600px) {
+  .MuiInputBase-input,
+  .MuiSelect-select {
+    font-size: 16px !important;
+  }
+}

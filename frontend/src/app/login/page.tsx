@@ -65,7 +65,7 @@ export default function LoginPage() {
       <Paper
         elevation={8}
         sx={{
-          p: 4,
+          p: { xs: 3, sm: 4 },
           maxWidth: 450,
           width: '100%',
           borderRadius: 4,

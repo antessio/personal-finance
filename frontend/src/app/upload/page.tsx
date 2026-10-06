@@ -36,6 +36,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { UploadFile, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import { hideColumnsOnMobile } from "../../components/hideColumnsOnMobile";
 import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { useEffect } from 'react';
 
@@ -163,12 +164,12 @@ export default function UploadPage() {
           </Typography>
         </Stack>
 
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3 }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3 }}>
           <Stack spacing={3}>
             <Alert severity="info" icon={<InfoIcon />}>
               Upload your bank statements in CSV or Excel format. Make sure the file includes date, description, and amount columns.
             </Alert>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
               <FormControl sx={{ minWidth: 200 }}>
                 <InputLabel>Account</InputLabel>
                 <Select
@@ -224,7 +225,7 @@ export default function UploadPage() {
         </Stack>
 
         <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33' }}>
-          <TableContainer>
+          <TableContainer sx={hideColumnsOnMobile([2, 5])}>
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.100' }}>

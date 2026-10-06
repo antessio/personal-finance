@@ -1,15 +1,7 @@
-'use client';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider, createTheme } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { AuthProvider } from '../contexts/AuthContext';
-import { ThemeContextProvider, useThemeContext } from '../contexts/ThemeContext';
+import Providers from './providers';
 import './globals.css';
-import { useMemo } from 'react';
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -21,59 +13,24 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 });
 
-const queryClient = new QueryClient();
+export const metadata: Metadata = {
+  title: 'Personal Finance',
+  description: 'Personal finance tracking: transactions, budgets and analytics',
+  // iOS "Add to Home Screen": full-screen app with a short name under the icon
+  appleWebApp: {
+    capable: true,
+    title: 'Finance',
+    statusBarStyle: 'default',
+  },
+};
 
-function AppThemeProvider({ children }: { children: React.ReactNode }) {
-  const { mode } = useThemeContext();
-
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          ...(mode === 'light'
-            ? {
-                // Light mode colors
-                primary: {
-                  main: '#1976d2',
-                },
-                secondary: {
-                  main: '#dc004e',
-                },
-                background: {
-                  default: '#f5f5f5',
-                  paper: '#ffffff',
-                },
-              }
-            : {
-                // Dark mode colors
-                primary: {
-                  main: '#90caf9',
-                },
-                secondary: {
-                  main: '#f48fb1',
-                },
-                background: {
-                  default: '#121212',
-                  paper: '#1e1e1e',
-                },
-              }),
-        },
-        components: {
-          MuiPaper: {
-            styleOverrides: {
-              root: {
-                backgroundImage: 'none',
-              },
-            },
-          },
-        },
-      }),
-    [mode]
-  );
-
-  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
-}
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // lets the page use the full screen on iPhones; paired with env(safe-area-inset-*) padding
+  viewportFit: 'cover',
+  themeColor: '#1976d2',
+};
 
 export default function RootLayout({
   children,
@@ -83,18 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeContextProvider>
-            <AppThemeProvider>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <AuthProvider>
-                  <CssBaseline />
-                  {children}
-                </AuthProvider>
-              </LocalizationProvider>
-            </AppThemeProvider>
-          </ThemeContextProvider>
-        </QueryClientProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

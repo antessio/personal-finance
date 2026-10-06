@@ -32,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Transaction, TransactionFilters, Category, BulkUpdatePayload, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import { filterBarSx } from "../../components/filterBarSx";
 import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -52,6 +53,9 @@ const monthOptions = [
   { value: 11, label: 'November' },
   { value: 12, label: 'December' },
 ];
+
+// Columns that only fit on tablet and up
+const hideOnMobile = { display: { xs: "none", sm: "table-cell" } };
 
 export default function TransactionsPage() {
   const [selected, setSelected] = useState<string[]>([]);
@@ -196,7 +200,7 @@ export default function TransactionsPage() {
         <Typography variant="h4" gutterBottom>
           Transactions
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Box sx={filterBarSx}>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel>Year</InputLabel>
             <Select
@@ -315,7 +319,7 @@ export default function TransactionsPage() {
           </FormControl>
         </Box>
         {selected.length > 0 && (
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
             <Button
               variant="contained"
               color="primary"
@@ -351,8 +355,8 @@ export default function TransactionsPage() {
           </Box>
         )}
       </Box>
-      <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', p: 2, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Paper elevation={4} sx={{ borderRadius: 4, boxShadow: "0 4px 24px #b2dfdb33", p: { xs: 1, sm: 2 }, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: "wrap", gap: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
             {allTransactions.length} transactions showing
           </Typography>
@@ -371,13 +375,13 @@ export default function TransactionsPage() {
                     onChange={handleSelectAllClick}
                   />
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>ID</TableCell>
+                <TableCell sx={{ ...hideOnMobile, fontWeight: 700, fontSize: "0.9rem" }}>ID</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Date</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Description</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Amount</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Account</TableCell>
+                <TableCell sx={{ ...hideOnMobile, fontWeight: 700, fontSize: "0.9rem" }}>Account</TableCell>
                 <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Category</TableCell>
-                <TableCell sx={{ fontWeight: 700, fontSize: '0.9rem' }}>Status</TableCell>
+                <TableCell sx={{ ...hideOnMobile, fontWeight: 700, fontSize: "0.9rem" }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -411,6 +415,7 @@ export default function TransactionsPage() {
                     </TableCell>
                     <TableCell 
                       sx={{ 
+                        ...hideOnMobile,
                         color: 'grey.600', 
                         fontSize: 13, 
                         fontWeight: 500,
@@ -430,7 +435,7 @@ export default function TransactionsPage() {
                     >
                       {transaction.id}
                     </TableCell>
-                    <TableCell sx={{ color: 'grey.600', fontSize: 13, fontWeight: 500 }}>{transaction.date}</TableCell>
+                    <TableCell sx={{ color: 'grey.600', fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}><Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>{transaction.date.slice(0, 5)}</Box>{transaction.date.slice(5)}</TableCell>
                     <TableCell sx={{ fontWeight: 700, fontSize: 15 }}>{transaction.description}</TableCell>
                     <TableCell sx={{ p: 0 }}>
                       <Box sx={{
@@ -438,17 +443,18 @@ export default function TransactionsPage() {
                         color: transaction.amount < 0 ? 'error.main' : 'success.main',
                         fontWeight: 700,
                         borderRadius: 2,
-                        px: 2,
+                        px: { xs: 0.5, sm: 2 },
                         py: 0.5,
                         display: 'inline-block',
                         fontSize: 15,
-                        minWidth: 80,
+                        minWidth: { xs: 0, sm: 80 },
+                        whiteSpace: "nowrap",
                         textAlign: 'center',
                       }}>
                         {transaction.amount < 0 ? '-' : '+'}€{Math.abs(transaction.amount).toLocaleString()}
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={hideOnMobile}>
                       <Chip 
                         label={transaction.account}
                         size="small"
@@ -464,14 +470,14 @@ export default function TransactionsPage() {
                     <TableCell>
                       {category ? (
                         <Box>
-                          <Chip label={category.name} color="primary" size="small" sx={{ fontWeight: 700, mb: 0.5 }} />
-                          <Chip label={category.macroCategory} variant="outlined" color="primary" size="small" sx={{ fontWeight: 500, ml: 0.5 }} />
+                          <Chip label={category.name} color="primary" size="small" sx={{ fontWeight: 700, mb: 0.5, maxWidth: { xs: 72, sm: "none" } }} />
+                          <Chip label={category.macroCategory} variant="outlined" color="primary" size="small" sx={{ fontWeight: 500, ml: 0.5, display: { xs: "none", sm: "inline-flex" } }} />
                         </Box>
                       ) : (
                         <Chip label={transaction.categoryId} size="small" />
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={hideOnMobile}>
                       <Chip
                         label={transaction.included ? "Included" : "Excluded"}
                         size="small"

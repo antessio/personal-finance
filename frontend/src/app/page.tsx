@@ -1,7 +1,8 @@
 'use client';
 
-import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip, Skeleton } from '@mui/material';
+import { Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, FormControl, InputLabel, Select, MenuItem, Grid, useTheme, ToggleButton, ToggleButtonGroup, Tooltip as MuiTooltip, Skeleton, useMediaQuery } from "@mui/material";
 import Layout from '../components/Layout';
+import { filterBarSx } from '../components/filterBarSx';
 import MacroCategoryBudgetTrend from '../components/charts/MacroCategoryBudgetTrend';
 import ChartSkeleton from '../components/skeletons/ChartSkeleton';
 import ListRowsSkeleton from '../components/skeletons/ListRowsSkeleton';
@@ -14,6 +15,7 @@ import { useState } from 'react';
 
 export default function HomePage() {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isDark = theme.palette.mode === 'dark';
   // const { user } = useAuth();
   const currentYear = new Date().getFullYear();
@@ -401,7 +403,7 @@ export default function HomePage() {
     <Layout>
       <Box sx={{ bgcolor: '#f5f6fa', minHeight: '100vh', p: { xs: 1, md: 4 } }}>
         {/* Year Selector */}
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Box sx={{ ...filterBarSx, justifyContent: "flex-end", mb: 3 }}>
           <FormControl sx={{ minWidth: 120 }}>
             <InputLabel id="year-selector-label">Year</InputLabel>
             <Select
@@ -424,7 +426,7 @@ export default function HomePage() {
         <Paper
           elevation={6}
           sx={{
-            p: 4,
+            p: { xs: 2, sm: 4 },
             mb: 4,
             borderRadius: 4,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -440,7 +442,7 @@ export default function HomePage() {
           <Grid container spacing={3}>
             {/* Budget Breakdown */}
             <Grid size={{ xs: 12, md: 4 }}>
-              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: { xs: 2, sm: 3 }, borderRadius: 3, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
                   BUDGET
                 </Typography>
@@ -463,7 +465,7 @@ export default function HomePage() {
 
             {/* Actual Breakdown */}
             <Grid size={{ xs: 12, md: 4 }}>
-              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: 3, borderRadius: 3, height: '100%' }}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.15)', p: { xs: 2, sm: 3 }, borderRadius: 3, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={2} textAlign="center">
                   ACTUAL
                 </Typography>
@@ -486,7 +488,7 @@ export default function HomePage() {
 
             {/* Left to Spend */}
             <Grid size={{ xs: 12, md: 4 }}>
-              <Box sx={{ bgcolor: 'rgba(255,255,255,0.25)', p: 3, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+              <Box sx={{ bgcolor: 'rgba(255,255,255,0.25)', p: { xs: 2, sm: 3 }, borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography variant="subtitle1" fontWeight={600} mb={1} textAlign="center">
                   LEFT TO SPEND
                 </Typography>
@@ -522,7 +524,7 @@ export default function HomePage() {
         {/* Top Cards */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
           {/* My Income Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
             <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, fontSize: 80 }}>
               <TrendingUp fontSize="inherit" color="success" />
             </Box>
@@ -559,7 +561,7 @@ export default function HomePage() {
           </Paper>
 
           {/* My Expenses Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #ffcdd233', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #ffcdd233', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
             <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, fontSize: 80 }}>
               <TrendingDown fontSize="inherit" color="error" />
             </Box>
@@ -596,7 +598,7 @@ export default function HomePage() {
           </Paper>
 
           {/* Savings Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px #bbdefb33', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #bbdefb33', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
             <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, fontSize: 80 }}>
               <Savings fontSize="inherit" color="info" />
             </Box>
@@ -633,7 +635,7 @@ export default function HomePage() {
           </Paper>
 
           {/* Investments Card */}
-          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ flex: 1, minWidth: 260, p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
             <Box sx={{ position: 'absolute', top: 16, right: 16, opacity: 0.15, fontSize: 80 }}>
               <TrendingUp fontSize="inherit" sx={{ color: '#00897b' }} />
             </Box>
@@ -674,7 +676,7 @@ export default function HomePage() {
         {/* Account Flow Chart */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
           {/* Account Total Flow */}
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <MuiBarChart color="secondary" sx={{ mr: 1 }} />
               <Typography color="secondary.dark" fontWeight={700} variant="h6">
@@ -686,7 +688,7 @@ export default function HomePage() {
                 <ChartSkeleton height={400} />
               ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={transformedAccountData} margin={{ top: 40, right: 30, left: 20, bottom: 100 }}>
+                <ComposedChart data={transformedAccountData} margin={{ top: 40, right: isMobile ? 8 : 30, left: isMobile ? 0 : 20, bottom: 100 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="period"
@@ -766,7 +768,7 @@ export default function HomePage() {
 
         {/* Macro Category Budget vs Actual Trend Chart */}
         <Box sx={{ mb: 3 }}>
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <Timeline color="warning" sx={{ mr: 1 }} />
               <Typography color="warning.dark" fontWeight={700} variant="subtitle1">
@@ -788,7 +790,7 @@ export default function HomePage() {
 
         {/* Income vs Savings Bar Chart */}
         <Box sx={{ mb: 4 }}>
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%)' }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
               INCOME vs SAVINGS (Monthly)
             </Typography>
@@ -797,7 +799,7 @@ export default function HomePage() {
                 <ChartSkeleton height={300} />
               ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={incomeVsSavingsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={incomeVsSavingsData} margin={{ top: 20, right: isMobile ? 8 : 30, left: isMobile ? 0 : 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="month"
@@ -830,7 +832,7 @@ export default function HomePage() {
 
         {/* Income vs Expense Bar Chart */}
         <Box sx={{ mb: 4 }}>
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #ffebee 0%, #ffffff 100%)' }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" mb={2} textAlign="center">
               INCOME vs EXPENSE (Monthly)
             </Typography>
@@ -839,7 +841,7 @@ export default function HomePage() {
                 <ChartSkeleton height={300} />
               ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={incomeVsExpenseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={incomeVsExpenseData} margin={{ top: 20, right: isMobile ? 8 : 30, left: isMobile ? 0 : 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#ccc'} />
                   <XAxis
                     dataKey="month"
@@ -871,7 +873,7 @@ export default function HomePage() {
         </Box>
 
         {/* Category Breakdown - Full Width */}
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <MuiBarChart color="info" sx={{ mr: 1 }} />
@@ -1014,7 +1016,7 @@ export default function HomePage() {
         </Paper>
 
         {/* Savings Breakdown Section */}
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <Savings color="info" sx={{ mr: 1 }} />
             <Typography color="info.dark" fontWeight={700} variant="h6">
@@ -1042,7 +1044,7 @@ export default function HomePage() {
         </Paper>
 
         {/* Investments Breakdown Section */}
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', mb: 3, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,137,123,0.15)', mb: 3, background: 'linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <TrendingUp sx={{ mr: 1, color: '#00897b' }} />
             <Typography fontWeight={700} variant="h6" sx={{ color: '#00695c' }}>
@@ -1070,7 +1072,7 @@ export default function HomePage() {
         </Paper>
 
         {/* 50-30-20 Budget Section */}
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #f5f6fa 0%, #ffffff 100%)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', mb: 3, background: 'linear-gradient(135deg, #f5f6fa 0%, #ffffff 100%)' }}>
           <Typography variant="h6" fontWeight={700} color="#222" mb={2}>
             50-30-20 Budget Breakdown
           </Typography>

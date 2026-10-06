@@ -123,7 +123,7 @@ export default function Layout({ children }: LayoutProps) {
           <IconButton
             color="inherit"
             onClick={toggleTheme}
-            sx={{ mr: 2 }}
+            sx={{ mr: { xs: 0, sm: 2 } }}
             aria-label="toggle theme"
           >
             {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
@@ -133,9 +133,13 @@ export default function Layout({ children }: LayoutProps) {
               <Button
                 color="inherit"
                 onClick={handleMenuOpen}
+                sx={{ minWidth: 0, px: { xs: 1, sm: 2 } }}
                 startIcon={<Avatar sx={{ width: 24, height: 24 }}>{user?.name?.[0]}</Avatar>}
               >
-                {user?.name}
+                {/* name only fits on wider screens; the avatar is enough on phones */}
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  {user?.name}
+                </Box>
               </Button>
               <Menu
                 anchorEl={anchorEl}
@@ -186,7 +190,11 @@ export default function Layout({ children }: LayoutProps) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          // minWidth: 0 lets wide children (tables, charts) shrink/scroll instead of stretching the page
+          minWidth: 0,
+          p: { xs: 1.5, sm: 3 },
+          // keep content clear of the iPhone home indicator
+          pb: { xs: 'calc(12px + env(safe-area-inset-bottom))', sm: 3 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >

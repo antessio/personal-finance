@@ -29,6 +29,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Budget, Category } from '../../types';
 import Layout from '../../components/Layout';
+import { hideColumnsOnMobile } from "../../components/hideColumnsOnMobile";
 import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 import { Add as AddIcon, PlaylistAdd as PlaylistAddIcon } from '@mui/icons-material';
 
@@ -182,11 +183,11 @@ export default function BudgetsPage() {
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="h4" fontWeight={800} color="primary.main" letterSpacing={1}>
             Budgets
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 100 }}>
               <InputLabel>Year</InputLabel>
               <Select
@@ -221,8 +222,8 @@ export default function BudgetsPage() {
         </Box>
       </Box>
 
-      <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
-        <TableContainer>
+      <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px #b2dfdb33', background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' }}>
+        <TableContainer sx={hideColumnsOnMobile([3, 5])}>
           <Table>
             <TableHead>
               <TableRow>

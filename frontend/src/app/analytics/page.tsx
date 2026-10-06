@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
               {selectedMonth ? 'Monthly financial breakdown and insights' : 'Annual financial breakdown and insights'}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, '& > .MuiFormControl-root': { flex: { xs: '1 1 0', sm: '0 0 auto' }, minWidth: { xs: 0 } } }}>
             <FormControl sx={{ minWidth: 150 }}>
               <InputLabel id="year-selector-label">Year</InputLabel>
               <Select
@@ -218,7 +218,7 @@ export default function AnalyticsPage() {
         </Box>
 
         {/* Category Budget Comparison Widget */}
-        <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
+        <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)' }}>
           <Typography variant="h6" fontWeight={700} color="text.primary" mb={3} textAlign="center">
             CATEGORY BUDGET COMPARISON
           </Typography>
@@ -551,7 +551,7 @@ export default function AnalyticsPage() {
 
         {/* Category Transactions Drill-down - only shown when a category is selected above */}
         {selectedCategory && (
-          <Paper elevation={4} sx={{ p: 3, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4 }}>
+          <Paper elevation={4} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', mb: 4 }}>
             <Typography variant="h6" fontWeight={700} color="text.primary" mb={2}>
               Transactions — {selectedCategory.categoryName} ({selectedMonth ? `${monthOptions.find(m => m.value === selectedMonth)?.label} ` : ''}{selectedYear})
             </Typography>

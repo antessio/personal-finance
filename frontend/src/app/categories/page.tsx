@@ -33,6 +33,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { service } from '../../services/api';
 import { Category, PaginatedResponse } from '../../types';
 import Layout from '../../components/Layout';
+import { hideColumnsOnMobile } from "../../components/hideColumnsOnMobile";
 import TableRowsSkeleton from '../../components/skeletons/TableRowsSkeleton';
 
 export default function CategoriesPage() {
@@ -180,7 +181,7 @@ export default function CategoriesPage() {
   return (
     <Layout>
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
           <Typography variant="h4" fontWeight={800} color="success.main" letterSpacing={1}>
             Categories
           </Typography>
@@ -198,7 +199,7 @@ export default function CategoriesPage() {
 
       {/* Categories Table */}
       <Paper elevation={4} sx={{ borderRadius: 4, overflow: 'hidden' }}>
-        <TableContainer>
+        <TableContainer sx={hideColumnsOnMobile([3, 4])}>
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: 'grey.100' }}>

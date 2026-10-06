@@ -65,7 +65,7 @@ export class RestPersonalFinanceService implements PersonalFinanceService {
     localStorage.setItem('auth-token', token);
 
     // Also set as cookie for middleware compatibility
-    document.cookie = `auth-token=${token}; path=/; secure; samesite=strict`;
+    document.cookie = `auth-token=${token}; path=/; max-age=86400; secure; samesite=strict`;
   }
 
   private clearAuthToken(): void {
